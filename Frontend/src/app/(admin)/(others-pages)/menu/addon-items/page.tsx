@@ -109,7 +109,6 @@ const AddonItemsPage = () => {
       category: item.category,
       subcategory: item.subcategory,
       attributes: item.attributes,
-      price: item.price,
       description: item.description,
       image: null
     });
