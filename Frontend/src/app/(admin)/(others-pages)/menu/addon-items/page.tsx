@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import Image from "next/image";
-import { Plus, Edit, Trash2, Search, FilterList, X } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X } from "lucide-react";
 
 interface AddonItem {
   id: string;
