@@ -1,0 +1,9 @@
+Product Name,Category,Subcategory,Attributes,Price,Currency
+Margherita Pizza,Veg,Pizza,Small,299,INR
+Margherita Pizza,Veg,Pizza,Medium,399,INR
+Margherita Pizza,Veg,Pizza,Large,499,INR
+Chicken Biryani,Non-Veg,Punjabi,Regular,349,INR
+Veg Fried Rice,Veg,Chinese,Regular,249,INR
+Paneer Butter Masala,Veg,Punjabi,Regular,279,INR
+Cold Coffee,Fixed,Beverages,Regular,149,INR
+Chocolate Cake,Fixed,Desserts,Regular,199,INR

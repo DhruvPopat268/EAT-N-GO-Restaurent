@@ -1,3 +1,12 @@
+export interface CustomerLocation {
+  latitude: number;
+  longitude: number;
+  address: string;
+  distanceFromRestaurant: number; // in km
+  estimatedArrivalTime: string; // in minutes
+  lastUpdated: string;
+}
+
 export interface Order {
   id: string;
   customerName: string;
@@ -7,6 +16,7 @@ export interface Order {
   amount: string;
   date: string;
   status: "pending" | "ongoing" | "complete" | "cancelled";
+  customerLocation?: CustomerLocation;
 }
 
 export const ordersData: Order[] = [
@@ -18,7 +28,15 @@ export const ordersData: Order[] = [
     subcategory: "Vegetarian",
     amount: "12.99",
     date: "2024-01-15",
-    status: "pending"
+    status: "pending",
+    customerLocation: {
+      latitude: 13.0827,
+      longitude: 80.2707,
+      address: "654 Pine Road, Chennai, Tamil Nadu",
+      distanceFromRestaurant: 2.5,
+      estimatedArrivalTime: "15",
+      lastUpdated: new Date().toISOString()
+    }
   },
   {
     id: "ORD002",
@@ -28,7 +46,15 @@ export const ordersData: Order[] = [
     subcategory: "Non-Vegetarian",
     amount: "8.99",
     date: "2024-01-14",
-    status: "ongoing"
+    status: "ongoing",
+    customerLocation: {
+      latitude: 13.0878,
+      longitude: 80.2785,
+      address: "123 Oak Street, Chennai, Tamil Nadu",
+      distanceFromRestaurant: 1.8,
+      estimatedArrivalTime: "12",
+      lastUpdated: new Date().toISOString()
+    }
   },
   {
     id: "ORD003",

@@ -1,113 +1,154 @@
 "use client";
 import React, { useState } from "react";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "../ui/table";
-import Link from "next/link";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import Image from "next/image";
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import PrintIcon from '@mui/icons-material/Print';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import SearchIcon from '@mui/icons-material/Search';
 
-interface Order {
+interface MenuItem {
   id: string;
-  customerName: string;
-  product: string;
+  name: string;
   category: string;
   subcategory: string;
-  amount: string;
-  date: string;
-  status: "pending" | "ongoing" | "complete" | "cancelled";
+  price: string;
+  currency: string;
+  attributes: string;
+  image: string | null;
+  createdAt: string;
+  status: "active" | "inactive";
 }
 
-interface OrdersTableProps {
-  orders: Order[];
-}
-
-const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
-  const [filteredOrders, setFilteredOrders] = useState(orders);
+const ItemListPage = () => {
+  const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [subcategoryFilter, setSubcategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
 
-  // Get unique values for filters
-  const categories = [...new Set(orders.map(order => order.category))];
-  const subcategories = [...new Set(orders.map(order => order.subcategory))];
-  const statuses = [...new Set(orders.map(order => order.status))];
+  const [menuItems] = useState<MenuItem[]>([
+    {
+      id: "1",
+      name: "Margherita Pizza",
+      category: "Veg",
+      subcategory: "Pizza",
+      price: "299",
+      currency: "INR",
+      attributes: "Small, Medium, Large",
+      image: "/images/product/product-03.jpg",
+      createdAt: "2024-01-15",
+      status: "active"
+    },
+    {
+      id: "2",
+      name: "Chicken Biryani",
+      category: "Non-Veg",
+      subcategory: "Punjabi",
+      price: "349",
+      currency: "INR",
+      attributes: "Regular, Spicy",
+      image: "/images/product/product-04.jpg",
+      createdAt: "2024-01-14",
+      status: "active"
+    },
+    {
+      id: "3",
+      name: "Veg Fried Rice",
+      category: "Veg",
+      subcategory: "Chinese",
+      price: "249",
+      currency: "INR",
+      attributes: "Regular",
+      image: "/images/product/product-05.jpg",
+      createdAt: "2024-01-13",
+      status: "inactive"
+    },
+    {
+      id: "4",
+      name: "Cold Coffee",
+      category: "Fixed",
+      subcategory: "Beverages",
+      price: "149",
+      currency: "INR",
+      attributes: "Regular, Large",
+      image: null,
+      createdAt: "2024-01-12",
+      status: "active"
+    },
+    {
+      id: "5",
+      name: "Chocolate Cake",
+      category: "Fixed",
+      subcategory: "Desserts",
+      price: "199",
+      currency: "INR",
+      attributes: "Regular",
+      image: null,
+      createdAt: "2024-01-11",
+      status: "active"
+    }
+  ]);
 
-  // Filter orders based on selected filters and search term
-  React.useEffect(() => {
-    let filtered = orders;
-    
-    if (categoryFilter) {
-      filtered = filtered.filter(order => order.category === categoryFilter);
-    }
-    
-    if (subcategoryFilter) {
-      filtered = filtered.filter(order => order.subcategory === subcategoryFilter);
-    }
-    
-    if (statusFilter) {
-      filtered = filtered.filter(order => order.status === statusFilter);
-    }
+  const categories = [...new Set(menuItems.map(item => item.category))];
+  const subcategories = [...new Set(menuItems.map(item => item.subcategory))];
+  const statuses = [...new Set(menuItems.map(item => item.status))];
 
-    if (searchTerm) {
-      filtered = filtered.filter(order => 
-        order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.id.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    setFilteredOrders(filtered);
-  }, [orders, categoryFilter, subcategoryFilter, statusFilter, searchTerm]);
-
-  const getStatusBadge = (status: string) => {
-    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
-    
-    switch (status) {
-      case "pending":
-        return `${baseClasses} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300`;
-      case "ongoing":
-        return `${baseClasses} bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300`;
-      case "complete":
-        return `${baseClasses} bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300`;
-      case "cancelled":
-        return `${baseClasses} bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300`;
-      default:
-        return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300`;
-    }
-  };
+  const filteredItems = menuItems.filter(item => {
+    return (
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (categoryFilter === "" || item.category === categoryFilter) &&
+      (subcategoryFilter === "" || item.subcategory === subcategoryFilter) &&
+      (statusFilter === "" || item.status === statusFilter)
+    );
+  });
 
   const clearFilters = () => {
+    setSearchTerm("");
     setCategoryFilter("");
     setSubcategoryFilter("");
     setStatusFilter("");
-    setSearchTerm("");
+  };
+
+  const getStatusBadge = (status: string) => {
+    const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
+    switch (status) {
+      case "active":
+        return `${baseClasses} bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400`;
+      case "inactive":
+        return `${baseClasses} bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400`;
+      default:
+        return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400`;
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header with Search and Filters */}
-      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-        <div className="flex-1 max-w-md">
-          <div className="relative">
-            <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+    <div className="p-6 space-y-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Menu Items
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          View and manage all menu items in your restaurant
+        </p>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SearchIcon className="h-4 w-4 text-gray-400" />
+            </div>
             <input
               type="text"
-              placeholder="Search orders, customers, products..."
+              placeholder="Search menu items..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:ring-blue-400"
+              className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
             />
           </div>
-        </div>
-        
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-2">
-            <FilterListIcon className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
-          </div>
-          
+
           {/* Category Filter */}
           <select
             value={categoryFilter}
@@ -161,7 +202,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
       {/* Results Count */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Showing {filteredOrders.length} of {orders.length} orders
+          Showing {filteredItems.length} of {menuItems.length} items
         </p>
       </div>
 
@@ -172,22 +213,19 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
             <TableHeader>
               <TableRow className="bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Order ID
+                  Image
                 </TableCell>
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Customer
-                </TableCell>
-                <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Product
+                  Item Name
                 </TableCell>
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                   Category
                 </TableCell>
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Amount
+                  Price
                 </TableCell>
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Date
+                  Attributes
                 </TableCell>
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                   Status
@@ -199,77 +237,87 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
             </TableHeader>
 
             <TableBody>
-              {filteredOrders.map((order, index) => (
+              {filteredItems.map((item, index) => (
                 <TableRow 
-                  key={order.id} 
+                  key={item.id} 
                   className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
                     index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
                   }`}
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className="text-sm font-mono font-semibold text-gray-900 dark:text-white">
-                        #{order.id}
-                      </span>
-                    </div>
-                  </TableCell>
-                  
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white font-medium">
-                      {order.customerName}
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+                      {item.image ? (
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          width={48}
+                          height={48}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   
                   <TableCell className="px-6 py-4">
-                    <div className="text-sm text-gray-900 dark:text-white">
-                      {order.product}
+                    <div className="text-sm text-gray-900 dark:text-white font-medium">
+                      {item.name}
                     </div>
                   </TableCell>
                   
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {order.category}
+                        {item.category}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {order.subcategory}
+                        {item.subcategory}
                       </div>
                     </div>
                   </TableCell>
                   
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                      ${order.amount}
+                      ₹{item.price}
                     </div>
                   </TableCell>
                   
-                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                  <TableCell className="px-6 py-4">
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {order.date}
+                      {item.attributes}
                     </div>
                   </TableCell>
                   
                   <TableCell className="px-6 py-4 whitespace-nowrap">
-                    <span className={getStatusBadge(order.status)}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    <span className={getStatusBadge(item.status)}>
+                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                     </span>
                   </TableCell>
                   
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
-                      <Link
-                        href={`/orders/detail/${order.id}`}
+                      <button
                         className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
                         title="View Details"
                       >
                         <VisibilityIcon className="w-4 h-4" />
-                      </Link>
+                      </button>
                       <button
-                        onClick={() => window.print()}
                         className="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-lg transition-colors dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/20"
-                        title="Print Order"
+                        title="Edit Item"
                       >
-                        <PrintIcon className="w-4 h-4" />
+                        <EditIcon className="w-4 h-4" />
+                      </button>
+                      <button
+                        className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                        title="Delete Item"
+                      >
+                        <DeleteIcon className="w-4 h-4" />
                       </button>
                     </div>
                   </TableCell>
@@ -280,16 +328,16 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
         </div>
       </div>
       
-      {filteredOrders.length === 0 && (
+      {filteredItems.length === 0 && (
         <div className="text-center py-12">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full dark:bg-gray-800 mb-4">
             <SearchIcon className="w-6 h-6 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            No orders found
+            No items found
           </h3>
           <p className="text-gray-500 dark:text-gray-400 mb-4">
-            No orders match your current filters. Try adjusting your search criteria.
+            No menu items match your current filters. Try adjusting your search criteria.
           </p>
           {(categoryFilter || subcategoryFilter || statusFilter || searchTerm) && (
             <button
@@ -305,4 +353,4 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
   );
 };
 
-export default OrdersTable;
+export default ItemListPage;

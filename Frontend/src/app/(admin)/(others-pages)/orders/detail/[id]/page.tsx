@@ -60,7 +60,7 @@ const OrderDetailPage = () => {
       </div>
 
       {/* Information Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {/* Customer Information */}
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -92,7 +92,7 @@ const OrderDetailPage = () => {
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
               </svg>
-              654 Pine Road, Chennai, Tamil Nadu
+              {order.customerLocation?.address || "654 Pine Road, Chennai, Tamil Nadu"}
             </div>
           </div>
         </div>
@@ -119,6 +119,63 @@ const OrderDetailPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Customer Live Location */}
+        {order.customerLocation && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Live Location</h3>
+              <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                Live
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-medium text-blue-900 dark:text-blue-100">ETA</span>
+                  </div>
+                  <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{order.customerLocation.estimatedArrivalTime} min</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-300">Estimated arrival</p>
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-medium text-green-900 dark:text-green-100">Distance</span>
+                  </div>
+                  <p className="text-lg font-bold text-green-900 dark:text-green-100">{order.customerLocation.distanceFromRestaurant} km</p>
+                  <p className="text-xs text-green-600 dark:text-green-300">From restaurant</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  const url = `https://www.google.com/maps?q=${order.customerLocation?.latitude},${order.customerLocation?.longitude}`;
+                  window.open(url, '_blank');
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                </svg>
+                View Live Location
+              </button>
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                Last updated: {new Date(order.customerLocation.lastUpdated).toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Order Items Table */}
