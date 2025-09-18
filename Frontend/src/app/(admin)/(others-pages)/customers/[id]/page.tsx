@@ -31,6 +31,7 @@ interface Order {
   orderId: string;
   status: string;
   amount: number;
+  date: string;
 }
 
 const CustomerDetailPage = () => {
@@ -59,31 +60,36 @@ const CustomerDetailPage = () => {
       id: "1",
       orderId: "#ORD004",
       status: "Delivered",
-      amount: 280
+      amount: 280,
+      date: "2024-01-15"
     },
     {
       id: "2",
       orderId: "#ORD013",
       status: "Pending",
-      amount: 350
+      amount: 350,
+      date: "2024-01-14"
     },
     {
       id: "3",
       orderId: "#ORD014",
       status: "Preparing",
-      amount: 420
+      amount: 420,
+      date: "2024-01-13"
     },
     {
       id: "4",
       orderId: "#ORD021",
       status: "Delivered",
-      amount: 180
+      amount: 180,
+      date: "2024-01-12"
     },
     {
       id: "5",
       orderId: "#ORD022",
       status: "Cancelled",
-      amount: 220
+      amount: 220,
+      date: "2024-01-11"
     }
   ];
 
@@ -105,6 +111,17 @@ const CustomerDetailPage = () => {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Back Arrow and Profile Header */}
+      <div className="flex items-center gap-4 mb-4">
+        <Link
+          href="/customers"
+          className="inline-flex items-center justify-center w-10 h-10 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+        >
+          <ArrowBackIcon className="w-5 h-5" />
+        </Link>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Customer Details</h1>
+      </div>
+      
       {/* Profile Header */}
       <div className="bg-slate-700 dark:bg-slate-800 rounded-xl p-6">
         <div className="flex items-center gap-4">
@@ -255,6 +272,9 @@ const CustomerDetailPage = () => {
                   AMOUNT
                 </TableCell>
                 <TableCell isHeader className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  ORDER DATE
+                </TableCell>
+                <TableCell isHeader className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                   ACTIONS
                 </TableCell>
               </TableRow>
@@ -287,6 +307,12 @@ const CustomerDetailPage = () => {
                   <TableCell className="px-4 py-4">
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">
                       ₹{order.amount}
+                    </span>
+                  </TableCell>
+                  
+                  <TableCell className="px-4 py-4">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {order.date}
                     </span>
                   </TableCell>
                   

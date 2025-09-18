@@ -13,6 +13,8 @@ export interface Order {
   product: string;
   category: string;
   subcategory: string;
+  quantity: number;
+  attribute: string;
   amount: string;
   date: string;
   status: "pending" | "ongoing" | "complete" | "cancelled";
@@ -24,8 +26,10 @@ export const ordersData: Order[] = [
     id: "ORD001",
     customerName: "John Smith",
     product: "Margherita Pizza",
-    category: "Pizza",
-    subcategory: "Vegetarian",
+    category: "Veg",
+    subcategory: "Pizza",
+    quantity: 2,
+    attribute: "Large",
     amount: "12.99",
     date: "2024-01-15",
     status: "pending",
@@ -42,8 +46,10 @@ export const ordersData: Order[] = [
     id: "ORD002",
     customerName: "Sarah Johnson",
     product: "Chicken Burger",
-    category: "Burger",
-    subcategory: "Non-Vegetarian",
+    category: "Non-Veg",
+    subcategory: "Burger",
+    quantity: 1,
+    attribute: "Medium",
     amount: "8.99",
     date: "2024-01-14",
     status: "ongoing",
@@ -60,8 +66,10 @@ export const ordersData: Order[] = [
     id: "ORD003",
     customerName: "Mike Davis",
     product: "Butter Chicken",
-    category: "Punjabi Dishes",
-    subcategory: "Curry",
+    category: "Non-Veg",
+    subcategory: "Punjabi",
+    quantity: 1,
+    attribute: "Spicy",
     amount: "15.99",
     date: "2024-01-13",
     status: "complete"
@@ -70,8 +78,10 @@ export const ordersData: Order[] = [
     id: "ORD004",
     customerName: "Emily Brown",
     product: "Pepperoni Pizza",
-    category: "Pizza",
-    subcategory: "Non-Vegetarian",
+    category: "Non-Veg",
+    subcategory: "Pizza",
+    quantity: 3,
+    attribute: "Extra Large",
     amount: "14.99",
     date: "2024-01-12",
     status: "cancelled"
@@ -80,8 +90,10 @@ export const ordersData: Order[] = [
     id: "ORD005",
     customerName: "David Wilson",
     product: "Veggie Burger",
-    category: "Burger",
-    subcategory: "Vegetarian",
+    category: "Veg",
+    subcategory: "Burger",
+    quantity: 2,
+    attribute: "Regular",
     amount: "7.99",
     date: "2024-01-11",
     status: "pending"
@@ -90,8 +102,10 @@ export const ordersData: Order[] = [
     id: "ORD006",
     customerName: "Lisa Garcia",
     product: "Dal Makhani",
-    category: "Punjabi Dishes",
-    subcategory: "Lentils",
+    category: "Veg",
+    subcategory: "Punjabi",
+    quantity: 1,
+    attribute: "Mild",
     amount: "11.99",
     date: "2024-01-10",
     status: "ongoing"
@@ -100,8 +114,10 @@ export const ordersData: Order[] = [
     id: "ORD007",
     customerName: "Tom Anderson",
     product: "BBQ Chicken Pizza",
-    category: "Pizza",
-    subcategory: "Non-Vegetarian",
+    category: "Non-Veg",
+    subcategory: "Pizza",
+    quantity: 1,
+    attribute: "Large",
     amount: "16.99",
     date: "2024-01-09",
     status: "complete"
@@ -110,8 +126,10 @@ export const ordersData: Order[] = [
     id: "ORD008",
     customerName: "Anna Martinez",
     product: "Cheese Burger",
-    category: "Burger",
-    subcategory: "Vegetarian",
+    category: "Veg",
+    subcategory: "Burger",
+    quantity: 4,
+    attribute: "Extra Cheese",
     amount: "6.99",
     date: "2024-01-08",
     status: "pending"
@@ -120,8 +138,10 @@ export const ordersData: Order[] = [
     id: "ORD009",
     customerName: "Chris Taylor",
     product: "Palak Paneer",
-    category: "Punjabi Dishes",
-    subcategory: "Vegetarian",
+    category: "Veg",
+    subcategory: "Punjabi",
+    quantity: 2,
+    attribute: "No Onion",
     amount: "13.99",
     date: "2024-01-07",
     status: "ongoing"
@@ -129,9 +149,11 @@ export const ordersData: Order[] = [
   {
     id: "ORD010",
     customerName: "Jessica Lee",
-    product: "Hawaiian Pizza",
-    category: "Pizza",
-    subcategory: "Non-Vegetarian",
+    product: "Hakka Noodles",
+    category: "Mixed",
+    subcategory: "Chinese",
+    quantity: 1,
+    attribute: "Spicy",
     amount: "15.99",
     date: "2024-01-06",
     status: "complete"
@@ -140,8 +162,10 @@ export const ordersData: Order[] = [
     id: "ORD011",
     customerName: "Robert Clark",
     product: "Fish Burger",
-    category: "Burger",
-    subcategory: "Non-Vegetarian",
+    category: "Non-Veg",
+    subcategory: "Burger",
+    quantity: 1,
+    attribute: "Medium",
     amount: "9.99",
     date: "2024-01-05",
     status: "cancelled"
@@ -149,9 +173,11 @@ export const ordersData: Order[] = [
   {
     id: "ORD012",
     customerName: "Michelle White",
-    product: "Chole Bhature",
-    category: "Punjabi Dishes",
-    subcategory: "Bread & Curry",
+    product: "Fried Rice",
+    category: "Mixed",
+    subcategory: "Chinese",
+    quantity: 2,
+    attribute: "Regular",
     amount: "10.99",
     date: "2024-01-04",
     status: "pending"

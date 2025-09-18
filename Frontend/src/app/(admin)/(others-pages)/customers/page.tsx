@@ -87,9 +87,9 @@ const CustomersPage = () => {
   ]);
 
   const toggleCustomerStatus = (customerId: string) => {
-    setCustomers(prev => 
-      prev.map(customer => 
-        customer.id === customerId 
+    setCustomers(prev =>
+      prev.map(customer =>
+        customer.id === customerId
           ? { ...customer, status: customer.status === "active" ? "inactive" : "active" }
           : customer
       )
@@ -214,7 +214,7 @@ const CustomersPage = () => {
                   Total Order Amount
                 </TableCell>
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  Joined At
+                  ORDER DATE
                 </TableCell>
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                   Status
@@ -227,57 +227,54 @@ const CustomersPage = () => {
 
             <TableBody>
               {filteredCustomers.map((customer, index) => (
-                <TableRow 
-                  key={customer.id} 
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
-                    index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
-                  }`}
+                <TableRow
+                  key={customer.id}
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                    }`}
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <span className="text-sm font-mono font-semibold text-gray-900 dark:text-white">
                       {index + 1}
                     </span>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white font-medium">
                       {customer.name}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {customer.numberOfOrders}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-semibold text-gray-900 dark:text-white">
                       ₹{customer.totalOrderAmount.toLocaleString()}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                       {new Date(customer.joinedAt).toLocaleDateString()}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <button
                       onClick={() => toggleCustomerStatus(customer.id)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                        customer.status === "active" ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
-                      }`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${customer.status === "active" ? "bg-blue-600" : "bg-gray-200 dark:bg-gray-700"
+                        }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          customer.status === "active" ? "translate-x-6" : "translate-x-1"
-                        }`}
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${customer.status === "active" ? "translate-x-6" : "translate-x-1"
+                          }`}
                       />
                     </button>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <Link
                       href={`/customers/${customer.id}`}
@@ -293,7 +290,7 @@ const CustomersPage = () => {
           </Table>
         </div>
       </div>
-      
+
       {filteredCustomers.length === 0 && (
         <div className="text-center py-12">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full dark:bg-gray-800 mb-4">

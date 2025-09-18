@@ -50,7 +50,6 @@ const ordersItems: NavItem[] = [
       { name: "Ongoing Orders", path: "/orders/ongoing", pro: false },
       { name: "Complete Orders", path: "/orders/complete", pro: false },
       { name: "Cancelled Orders", path: "/orders/cancelled", pro: false },
-
     ],
   },
 ];
@@ -64,6 +63,7 @@ const menuItems: NavItem[] = [
       { name: "Item List", path: "/menu/item-list", pro: false },
       { name: "Add Attributes", path: "/menu/add-attributes", pro: false },
       { name: "Add Subcategories", path: "/menu/add-subcategories", pro: false },
+      { name: "Addon Items", path: "/menu/addon-items", pro: false },
     ],
   },
 ];
@@ -106,7 +106,7 @@ const AppSidebar: React.FC = () => {
 
   const renderMenuItems = (
     navItems: NavItem[],
-    menuType: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment"
+    menuType: "main" | "orders" | "menu"  | "customer" | "help" | "payment" | "rbac"
   ) => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
@@ -222,7 +222,7 @@ const AppSidebar: React.FC = () => {
   );
 
   const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment";
+    type: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac";
     index: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
@@ -236,7 +236,7 @@ const AppSidebar: React.FC = () => {
   useEffect(() => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
-    ["main", "orders", "menu", "others", "customer", "payment", "help"].forEach((menuType) => {
+    ["main", "orders", "menu", "others", "customer", "payment", "help", "rbac"].forEach((menuType) => {
       const items = menuType === "main" ? navItems : menuType === "orders" ? ordersItems : menuType === "menu" ? menuItems : menuType === "others" ? othersItems : menuType === "customer" ? [
         {
           name: "Customers",
@@ -262,6 +262,20 @@ const AppSidebar: React.FC = () => {
             { name: "Add Bank Account", path: "/payments/bank-account" }
           ]
         }
+      ] : menuType === "rbac" ? [
+        {
+          name: "Role Management",
+          icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+            </svg>
+          ),
+          subItems: [
+            { name: "Permissions", path: "/rbac/permissions" },
+            { name: "Roles", path: "/rbac/roles" },
+            { name: "Users", path: "/rbac/users" }
+          ]
+        }
       ] : [
         {
           name: "Help & Support",
@@ -280,7 +294,7 @@ const AppSidebar: React.FC = () => {
           nav.subItems.forEach((subItem) => {
             if (isActive(subItem.path)) {
               setOpenSubmenu({
-                type: menuType as "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment",
+                type: menuType as "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac",
                 index,
               });
               submenuMatched = true;
@@ -309,7 +323,7 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment") => {
+  const handleSubmenuToggle = (index: number, menuType: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac") => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&
@@ -467,6 +481,31 @@ const AppSidebar: React.FC = () => {
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
+                  "Role Management"
+                ) : (
+                  <HorizontaLDots />
+                )}
+              </h2>
+              {renderMenuItems([
+                {
+                  name: "Role Management",
+                  icon: (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                    </svg>
+                  ),
+                  path: "/rbac-management"
+                }
+              ], "rbac")}
+            </div>
+            <div className="">
+              <h2
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "justify-start"
+                  }`}
+              >
+                {isExpanded || isHovered || isMobileOpen ? (
                   "Help & Support"
                 ) : (
                   <HorizontaLDots />
@@ -486,7 +525,7 @@ const AppSidebar: React.FC = () => {
                 }
               ], "help")}
             </div>
-            <div className="">
+            {/* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
                     ? "lg:justify-center"
@@ -500,7 +539,7 @@ const AppSidebar: React.FC = () => {
                 )}
               </h2>
               {renderMenuItems(othersItems, "others")}
-            </div>
+            </div> */}
           </div>
         </nav>
         {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}

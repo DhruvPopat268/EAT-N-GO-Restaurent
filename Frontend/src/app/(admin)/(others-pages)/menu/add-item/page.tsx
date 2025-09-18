@@ -9,6 +9,7 @@ const AddItemPage = () => {
     category: "",
     subcategory: "",
     productName: "",
+    description: "",
     productImage: null as File | null,
     attributes: [{ name: "", price: "", currency: "INR" }]
   });
@@ -57,6 +58,7 @@ const AddItemPage = () => {
       category: "",
       subcategory: "",
       productName: "",
+      description: "",
       productImage: null,
       attributes: [{ name: "", price: "", currency: "INR" }]
     });
@@ -219,11 +221,25 @@ const AddItemPage = () => {
                   type="text"
                   value={formData.productName}
                   onChange={(e) => setFormData(prev => ({ ...prev, productName: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2  rounded-lg focus:ring-2 dark:text-white"
                   placeholder="Enter product name"
                   required
                 />
               </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full px-3 py-2"
+                placeholder="Enter product description"
+                rows={3}
+              />
             </div>
 
             {/* Attributes */}
@@ -261,7 +277,7 @@ const AddItemPage = () => {
                       step="0.01"
                       value={attr.price}
                       onChange={(e) => updateAttribute(index, "price", e.target.value)}
-                      className="w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      className="w-1/3 px-3 py-2  dark:text-white"
                       placeholder="0.00"
                       required
                     />

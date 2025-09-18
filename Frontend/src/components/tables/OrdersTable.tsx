@@ -13,6 +13,8 @@ interface Order {
   product: string;
   category: string;
   subcategory: string;
+  quantity: number;
+  attribute: string;
   amount: string;
   date: string;
   status: "pending" | "ongoing" | "complete" | "cancelled";
@@ -37,33 +39,33 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
   // Filter orders based on selected filters and search term
   React.useEffect(() => {
     let filtered = orders;
-    
+
     if (categoryFilter) {
       filtered = filtered.filter(order => order.category === categoryFilter);
     }
-    
+
     if (subcategoryFilter) {
       filtered = filtered.filter(order => order.subcategory === subcategoryFilter);
     }
-    
+
     if (statusFilter) {
       filtered = filtered.filter(order => order.status === statusFilter);
     }
 
     if (searchTerm) {
-      filtered = filtered.filter(order => 
+      filtered = filtered.filter(order =>
         order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.id.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     setFilteredOrders(filtered);
   }, [orders, categoryFilter, subcategoryFilter, statusFilter, searchTerm]);
 
   const getStatusBadge = (status: string) => {
     const baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
-    
+
     switch (status) {
       case "pending":
         return `${baseClasses} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300`;
@@ -101,13 +103,13 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
             />
           </div>
         </div>
-        
+
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
             <FilterListIcon className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
           </div>
-          
+
           {/* Category Filter */}
           <select
             value={categoryFilter}
@@ -115,11 +117,11 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
             className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[120px]"
           >
             <option value="">All Categories</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
+            <option value="Veg">Veg</option>
+            <option value="Non-Veg">Non-Veg</option>
+            <option value="Mixed">Mixed</option>
           </select>
-          
+
           {/* Subcategory Filter */}
           <select
             value={subcategoryFilter}
@@ -127,11 +129,12 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
             className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[140px]"
           >
             <option value="">All Subcategories</option>
-            {subcategories.map(sub => (
-              <option key={sub} value={sub}>{sub}</option>
-            ))}
+            <option value="Pizza">Pizza</option>
+            <option value="Burger">Burger</option>
+            <option value="Punjabi">Punjabi</option>
+            <option value="Chinese">Chinese</option>
           </select>
-          
+
           {/* Status Filter */}
           <select
             value={statusFilter}
@@ -184,6 +187,12 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
                   Category
                 </TableCell>
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  Quantity
+                </TableCell>
+                <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                  Attribute
+                </TableCell>
+                <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                   Amount
                 </TableCell>
                 <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
@@ -200,11 +209,10 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
 
             <TableBody>
               {filteredOrders.map((order, index) => (
-                <TableRow 
-                  key={order.id} 
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
-                    index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
-                  }`}
+                <TableRow
+                  key={order.id}
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'
+                    }`}
                 >
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -213,48 +221,62 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
                       </span>
                     </div>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white font-medium">
                       {order.customerName}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4">
                     <div className="text-sm text-gray-900 dark:text-white">
                       {order.product}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {order.category}
+                        {order.subcategory}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {order.subcategory}
+                        {order.category}
                       </div>
                     </div>
                   </TableCell>
                   
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                      ${order.amount}
+                      {order.quantity}
                     </div>
                   </TableCell>
-                  
+
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900 dark:text-white">
+                      {order.attribute}
+                    </div>
+                  </TableCell>
+
+
+
+                  <TableCell className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      {order.amount}₹
+                    </div>
+                  </TableCell>
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                       {order.date}
                     </div>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <span className={getStatusBadge(order.status)}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </span>
                   </TableCell>
-                  
+
                   <TableCell className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <Link
@@ -279,7 +301,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
           </Table>
         </div>
       </div>
-      
+
       {filteredOrders.length === 0 && (
         <div className="text-center py-12">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full dark:bg-gray-800 mb-4">
