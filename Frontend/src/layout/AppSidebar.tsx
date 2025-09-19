@@ -346,7 +346,7 @@ const AppSidebar: React.FC = () => {
       >
         <Link href="/">
           <Image
-            src="/images/logo/logo.jpg"
+            src="/images/logo/logo.png"
             alt="Logo"
             width={isExpanded || isHovered || isMobileOpen ? 90 : 32}
             height={isExpanded || isHovered || isMobileOpen ? 40 : 32}
