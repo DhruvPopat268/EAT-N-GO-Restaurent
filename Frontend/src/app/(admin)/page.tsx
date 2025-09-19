@@ -8,7 +8,7 @@ import MonthlySalesChart from "@/components/ecommerce/MonthlySalesChart";
 
 export const metadata: Metadata = {
   title:
-    "EAT-N-GO Restaurant Panerl ",
+    "EAT-N-GO Restaurant Panel",
   description: "Restaurant Admin Dashboard for TailAdmin Template",
 };
 
