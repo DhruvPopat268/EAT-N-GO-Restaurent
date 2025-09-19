@@ -14,6 +14,7 @@ import {
   TaskIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
+import { useRouter } from "next/navigation";
 
 type NavItem = {
   name: string;
@@ -93,6 +94,7 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const router = useRouter();
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -355,7 +357,7 @@ const AppSidebar: React.FC = () => {
           />
         </Link>
 
-        <div className="ml-2 font-semibold">EAT-N-GO</div>
+        <div className="ml-2 font-semibold" onClick={() => router.push("/")}>EAT-N-GO</div>
 
       </div>
 
