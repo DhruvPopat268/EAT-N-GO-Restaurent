@@ -357,7 +357,7 @@ const AppSidebar: React.FC = () => {
           />
         </Link>
 
-        <div className="ml-2 font-semibold" onClick={() => router.push("/")}>EAT-N-GO</div>
+        <div className="ml-2 font-semibold cursor-pointer" onClick={() => router.push("/")}>EAT-N-GO</div>
 
       </div>
 
