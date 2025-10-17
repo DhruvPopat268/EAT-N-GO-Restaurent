@@ -13,19 +13,53 @@ export default function SignInForm() {
   const [isChecked, setIsChecked] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
-    setEmail("admin@gmail.com");
-    setPassword("123");
+    setEmail("");
+    setPassword("");
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === "admin@gmail.com" && password === "123") {
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/login`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      // Store token if provided
+      if (data.token) {
+        localStorage.setItem("authToken", data.token);
+      }
+
+      // Redirect to home page
       router.push("/");
+    } catch (err: any) {
+      setError(err.message || "An error occurred during login");
+    } finally {
+      setIsLoading(false);
     }
   };
+
   return (
     <div className="flex flex-col flex-1 lg:w-1/2 w-full">
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
@@ -41,6 +75,11 @@ export default function SignInForm() {
           <div>
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
+                {error && (
+                  <div className="p-3 text-sm rounded-lg bg-error-50 text-error-500 dark:bg-error-900/20">
+                    {error}
+                  </div>
+                )}
                 <div>
                   <Label>
                     Email <span className="text-error-500">*</span>{" "}
@@ -48,8 +87,9 @@ export default function SignInForm() {
                   <Input 
                     placeholder="info@gmail.com" 
                     type="email" 
-                   
+                    value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
                 <div>
@@ -60,8 +100,9 @@ export default function SignInForm() {
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
-                      
+                      value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
                     />
                     <span
                       onClick={() => setShowPassword(!showPassword)}
@@ -90,8 +131,12 @@ export default function SignInForm() {
                   </Link>
                 </div>
                 <div>
-                  <Button className="w-full" size="sm" >
-                    Sign in
+                  <Button 
+                    className="w-full" 
+                    size="sm" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Signing in..." : "Sign in"}
                   </Button>
                 </div>
               </div>

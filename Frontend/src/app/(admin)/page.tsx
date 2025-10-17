@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: "Restaurant Admin Dashboard for TailAdmin Template",
 };
 
+console.log("Rendering Restaurant Dashboard Page");
+
 export default function RestaurantDashboard() {
   return (
     <div className="grid grid-cols-12 gap-4 md:gap-6">

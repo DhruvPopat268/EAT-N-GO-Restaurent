@@ -15,6 +15,8 @@ import {
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import PendingPage from "@/components/waiting/Pending";
 
 type NavItem = {
   name: string;
@@ -30,6 +32,10 @@ const navItems: NavItem[] = [
     path: "/",
   },
 ];
+
+
+
+
 
 const ordersItems: NavItem[] = [
   {
@@ -93,8 +99,10 @@ const othersItems: NavItem[] = [
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+
   const pathname = usePathname();
   const router = useRouter();
+
 
   const renderMenuItems = (
     navItems: NavItem[],
