@@ -7,9 +7,11 @@ import Backdrop from "@/layout/Backdrop";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { useRouter } from "next/navigation";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const router = useRouter();
   const [restaurentStatus, setRestaurentStatus] = useState<string | null>(null);
   const [restaurantData, setRestaurantData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -29,15 +31,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         console.log("Fetched Status Response:", response.data?.data?.status);
         setRestaurentStatus(response.data.data.status);
         setRestaurantData(response.data.data);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching restaurant status:", error);
+        if (error.response?.status === 401) {
+          console.log('401 detected - redirecting to signin');
+          router.push('/signin');
+          return;
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchStatus();
-  }, []);
+  }, [router]);
 
   // Dynamic class for main content margin based on sidebar state
   const mainContentMargin = isMobileOpen
