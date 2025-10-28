@@ -4,7 +4,7 @@ import axios from 'axios';
 let isRedirecting = false;
 
 const handleUnauthorized = () => {
-  if (!isRedirecting) {
+  if (typeof window !== 'undefined' && !isRedirecting) {
     isRedirecting = true;
     localStorage.removeItem('user');
     localStorage.removeItem('isAuthenticated');
@@ -13,21 +13,24 @@ const handleUnauthorized = () => {
   }
 };
 
-// Override fetch to intercept responses
-const originalFetch = window.fetch;
-window.fetch = async (...args) => {
-  try {
-    const response = await originalFetch(...args);
-    
-    if (response.status === 401) {
-      handleUnauthorized();
+// Only run on client side
+if (typeof window !== 'undefined') {
+  // Override fetch to intercept responses
+  const originalFetch = window.fetch;
+  window.fetch = async (...args) => {
+    try {
+      const response = await originalFetch(...args);
+      
+      if (response.status === 401) {
+        handleUnauthorized();
+      }
+      
+      return response;
+    } catch (error) {
+      throw error;
     }
-    
-    return response;
-  } catch (error) {
-    throw error;
-  }
-};
+  };
+}
 
 // Axios response interceptor
 axios.interceptors.response.use(
