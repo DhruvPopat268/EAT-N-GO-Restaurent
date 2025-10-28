@@ -3,6 +3,7 @@ import './globals.css';
 
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import '@/utils/apiInterceptor';
 
 const outfit = Outfit({
   subsets: ["latin"],
