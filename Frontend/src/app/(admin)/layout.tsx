@@ -6,6 +6,7 @@ import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
@@ -14,8 +15,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   
   // Move all useState hooks to the top level
-  const [resubmitData, setResubmitData] = useState({});
-  const [files, setFiles] = useState({});
+  const [resubmitData, setResubmitData] = useState<Record<string, any>>({});
+  const [files, setFiles] = useState<Record<string, File | File[] | null>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       ? "lg:ml-[290px]"
       : "lg:ml-[90px]";
 
-  const getFieldLabel = (field) => {
+  const getFieldLabel = (field: string) => {
     const labels = {
       restaurantName: 'Restaurant Name',
       ownerName: 'Owner Name',
@@ -82,11 +83,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const cuisineTypes = ['Indian', 'Chinese', 'Italian', 'Mexican', 'Thai', 'Japanese', 'American', 'Mediterranean', 'French', 'Korean', 'Vietnamese', 'Lebanese', 'Greek', 'Spanish', 'Turkish', 'Continental', 'Other'];
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: string, value: any) => {
     setResubmitData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileChange = (field, file) => {
+  const handleFileChange = (field: string, file: File | File[] | null) => {
     setFiles(prev => ({ ...prev, [field]: file }));
   };
 
@@ -102,8 +103,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       Object.entries(files).forEach(([key, file]) => {
         if (file) {
           if (Array.isArray(file)) {
-            file.forEach(f => formData.append(key, f));
-          } else {
+            file.forEach((f: File) => formData.append(key, f));
+          } else if (file instanceof File) {
             formData.append(key, file);
           }
         }
@@ -131,7 +132,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   };
 
-  const renderField = (field) => {
+  const renderField = (field: string) => {
     switch (field) {
       case 'restaurantName':
       case 'ownerName':
@@ -277,14 +278,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner size="lg" fullScreen />;
   }
 
   if (restaurentStatus === "pending") {
@@ -365,7 +359,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               disabled={isSubmitting}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-4 px-8 rounded-lg transition duration-200 text-lg"
             >
-              {isSubmitting ? 'Submitting...' : 'Resubmit Application'}
+              {isSubmitting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Submitting...</span>
+                </div>
+              ) : (
+                'Resubmit Application'
+              )}
             </button>
           </div>
         </div>
