@@ -26,10 +26,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       try {
         // Get token from localStorage
         const token = localStorage.getItem('RestaurantToken');
-        console.log('Token from localStorage:', token);
+        // console.log('Token from localStorage:', token);
         
         if (!token) {
-          console.log('No token found, redirecting to signin');
+          // console.log('No token found, redirecting to signin');
           router.push('/signin');
           return;
         }
@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }
           }
         );
-        console.log("Fetched Status Response:", response.data?.data?.status);
+        // console.log("Fetched Status Response:", response.data?.data?.status);
         setRestaurentStatus(response.data.data.status);
         setRestaurantData(response.data.data);
       } catch (error: any) {

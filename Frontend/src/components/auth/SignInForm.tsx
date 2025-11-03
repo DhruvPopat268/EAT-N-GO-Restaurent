@@ -18,6 +18,7 @@ export default function SignInForm() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log(localStorage.getItem("RestaurantToken"));
     setEmail("");
     setPassword("");
   }, []);
