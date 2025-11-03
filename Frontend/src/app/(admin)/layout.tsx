@@ -22,12 +22,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    console.log(document.cookie);
+    console.log('All cookies:', document.cookie);
+    // Check specifically for RestaurantToken
+    const cookies = document.cookie.split(';');
+    const restaurantToken = cookies.find(cookie => cookie.trim().startsWith('RestaurantToken='));
+    console.log('RestaurantToken cookie:', restaurantToken);
     const fetchStatus = async () => {
       try {
+        console.log('Making request to:', `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/status`);
+        
+        // Get token from cookie manually
+        const getCookie = (name: string) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop()?.split(';').shift();
+          return null;
+        };
+        
+        const token = getCookie('RestaurantToken');
+        console.log('Extracted token:', token);
+        
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/status`,
-          { withCredentials: true }
+          { 
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+          }
         );
         console.log("Fetched Status Response:", response.data?.data?.status);
         setRestaurentStatus(response.data.data.status);
