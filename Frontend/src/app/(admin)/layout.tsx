@@ -22,33 +22,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    console.log('All cookies:', document.cookie);
-    // Check specifically for RestaurantToken
-    const cookies = document.cookie.split(';');
-    const restaurantToken = cookies.find(cookie => cookie.trim().startsWith('RestaurantToken='));
-    console.log('RestaurantToken cookie:', restaurantToken);
     const fetchStatus = async () => {
       try {
-        console.log('Making request to:', `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/status`);
+        // Get token from localStorage
+        const token = localStorage.getItem('RestaurantToken');
+        console.log('Token from localStorage:', token);
         
-        // Get token from cookie manually
-        const getCookie = (name: string) => {
-          const value = `; ${document.cookie}`;
-          const parts = value.split(`; ${name}=`);
-          if (parts.length === 2) return parts.pop()?.split(';').shift();
-          return null;
-        };
-        
-        const token = getCookie('RestaurantToken');
-        console.log('Extracted token:', token);
+        if (!token) {
+          console.log('No token found, redirecting to signin');
+          router.push('/signin');
+          return;
+        }
         
         const response = await axios.get(
           `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/status`,
           { 
-            withCredentials: true,
             headers: {
               'Content-Type': 'application/json',
-              ...(token && { 'Authorization': `Bearer ${token}` })
+              'Authorization': `Bearer ${token}`
             }
           }
         );
@@ -58,7 +49,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       } catch (error: any) {
         console.error("Error fetching restaurant status:", error);
         if (error.response?.status === 401) {
-          console.log('401 detected - redirecting to signin');
+          console.log('401 detected - clearing token and redirecting to signin');
+          localStorage.removeItem('RestaurantToken');
           router.push('/signin');
           return;
         }
@@ -141,9 +133,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
       });
 
+      const token = localStorage.getItem('RestaurantToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/resubmit`, {
         method: 'PUT',
-        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
         body: formData
       });
 

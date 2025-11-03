@@ -48,7 +48,7 @@ export default function SignInForm() {
 
       // Store token if provided
       if (data.token) {
-        localStorage.setItem("authToken", data.token);
+        localStorage.setItem("RestaurantToken", data.token);
       }
 
       // Redirect to home page
