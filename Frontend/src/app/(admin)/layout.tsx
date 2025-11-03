@@ -21,6 +21,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [files, setFiles] = useState<Record<string, File | File[] | null>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  console.log(document.cookie);
+
   useEffect(() => {
     const fetchStatus = async () => {
       try {
