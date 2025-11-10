@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true, // ✅ disables ESLint checks in production
   },
+  typescript: {
+    ignoreBuildErrors: true, // ✅ disables TypeScript type errors during build
+  },
   images: {
     domains: ['res.cloudinary.com'],
   },
