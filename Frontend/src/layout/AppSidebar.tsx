@@ -33,10 +33,6 @@ const navItems: NavItem[] = [
   },
 ];
 
-
-
-
-
 const ordersItems: NavItem[] = [
   {
     name: "Orders",
@@ -102,7 +98,6 @@ const AppSidebar: React.FC = () => {
 
   const pathname = usePathname();
   const router = useRouter();
-
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -364,9 +359,7 @@ const AppSidebar: React.FC = () => {
             style={{ display: "block", border: "none", margin: 0, padding: 0 }}
           />
         </Link>
-
         <div className="ml-2 font-semibold cursor-pointer" onClick={() => router.push("/")}>EAT-N-GO</div>
-
       </div>
 
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
@@ -375,7 +368,7 @@ const AppSidebar: React.FC = () => {
             <div>
               {renderMenuItems(navItems, "main")}
             </div>
-            <div className="">
+            {/* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
                   ? "lg:justify-center"
@@ -389,7 +382,7 @@ const AppSidebar: React.FC = () => {
                 )}
               </h2>
               {renderMenuItems(ordersItems, "orders")}
-            </div>
+            </div> */}
             <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
@@ -405,7 +398,7 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(menuItems, "menu")}
             </div>
-            <div className="">
+            {/* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
                   ? "lg:justify-center"
@@ -511,7 +504,7 @@ const AppSidebar: React.FC = () => {
                   ]
                 }
               ], "help")}
-            </div>
+            </div> */}
             {/* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
@@ -534,4 +527,5 @@ const AppSidebar: React.FC = () => {
     </aside>
   );
 };
+
 export default AppSidebar;

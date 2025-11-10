@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true, // ✅ disables ESLint checks in production
   },
+  images: {
+    domains: ['res.cloudinary.com'],
+  },
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
