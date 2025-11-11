@@ -124,6 +124,7 @@ const AddonItemsPage = () => {
 
   const [addonItems, setAddonItems] = useState<AddonItem[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
 
   const { restaurantDetails, loading } = useRestaurantDetails();
   const [subcategories, setSubcategories] = useState<any[]>([]);
@@ -256,9 +257,9 @@ const AddonItemsPage = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     try {
-      const response = await addonItemsApi.delete(id);
+      const response = await addonItemsApi.delete(deleteConfirm.id);
       if (response.success) {
         toast.success('Addon item deleted successfully!');
         fetchData();
@@ -268,6 +269,8 @@ const AddonItemsPage = () => {
     } catch (error) {
       console.error('Error deleting addon item:', error);
       toast.error('Error deleting addon item');
+    } finally {
+      setDeleteConfirm({show: false, id: '', name: ''});
     }
   };
 
@@ -320,6 +323,22 @@ const AddonItemsPage = () => {
     setSubcategoryFilter("");
     setStatusFilter("");
   };
+
+  if (apiLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Addon Items</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage addon items for your menu</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -534,7 +553,7 @@ const AddonItemsPage = () => {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => handleDelete(item._id)}
+                          onClick={() => setDeleteConfirm({show: true, id: item._id, name: item.name})}
                           className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -822,6 +841,32 @@ const AddonItemsPage = () => {
                   {viewingItem.isAvailable ? 'Active' : 'Inactive'}
                 </span>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Delete</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to delete "{deleteConfirm.name}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteConfirm({show: false, id: '', name: ''})}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>

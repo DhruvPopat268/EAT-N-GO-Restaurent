@@ -8,6 +8,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import SearchIcon from '@mui/icons-material/Search';
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { useRouter } from "next/navigation";
+import { toast } from "@/utils/toast";
 import axios from 'axios';
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
@@ -74,6 +75,7 @@ const ItemListPage = () => {
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
 
   useEffect(() => {
     fetchItems();
@@ -92,17 +94,20 @@ const ItemListPage = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     try {
-      const response = await itemsApi.delete(id);
+      const response = await itemsApi.delete(deleteConfirm.id);
       if (response.success) {
+        toast.success('Item deleted successfully!');
         fetchItems();
       } else {
-        alert(response.message || 'Error deleting item');
+        toast.error(response.message || 'Error deleting item');
       }
     } catch (error) {
       console.error('Error deleting item:', error);
-      alert('Error deleting item');
+      toast.error('Error deleting item');
+    } finally {
+      setDeleteConfirm({show: false, id: '', name: ''});
     }
   };
 
@@ -110,13 +115,14 @@ const ItemListPage = () => {
     try {
       const response = await itemsApi.updateStatus(id, isAvailable);
       if (response.success) {
+        toast.success(`Item ${isAvailable ? 'enabled' : 'disabled'} successfully!`);
         fetchItems();
       } else {
-        alert(response.message || 'Error updating status');
+        toast.error(response.message || 'Error updating status');
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Error updating status');
+      toast.error('Error updating status');
     }
   };
 
@@ -148,6 +154,24 @@ const ItemListPage = () => {
     setStatusFilter("");
   };
 
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+            Menu Items
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            View and manage all menu items in your restaurant
+          </p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -424,7 +448,7 @@ const ItemListPage = () => {
                           <EditIcon fontSize="small" />
                         </button>
                         <button
-                          onClick={() => handleDelete(item._id)}
+                          onClick={() => setDeleteConfirm({show: true, id: item._id, name: item.name})}
                           className="flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
                           title="Delete Item"
                         >
@@ -439,6 +463,32 @@ const ItemListPage = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Delete</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to delete "{deleteConfirm.name}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteConfirm({show: false, id: '', name: ''})}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
