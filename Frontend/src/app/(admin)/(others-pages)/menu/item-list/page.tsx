@@ -41,7 +41,7 @@ const itemsApi = {
 
   updateStatus: async (id: string, isAvailable: boolean) => {
     const response = await axios.patch(`${BASE_URL}/api/items/status`, {
-      id,
+      itemId: id,
       isAvailable
     }, {
       headers: {

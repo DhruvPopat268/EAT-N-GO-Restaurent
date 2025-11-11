@@ -57,12 +57,31 @@ const addonItemsApi = {
       data: { id }
     });
     return response.data;
+  },
+
+  updateStatus: async (data: { id: string; status: boolean }) => {
+    const response = await axios.patch(`${BASE_URL}/api/addon-items/status`, data, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      }
+    });
+    return response.data;
   }
 };
 
 const subcategoriesApi = {
   getAll: async () => {
     const response = await axios.get(`${BASE_URL}/api/subcategories`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  }
+};
+
+const attributesApi = {
+  getAll: async () => {
+    const response = await axios.get(`${BASE_URL}/api/attributes`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -128,6 +147,7 @@ const AddonItemsPage = () => {
 
   const { restaurantDetails, loading } = useRestaurantDetails();
   const [subcategories, setSubcategories] = useState<any[]>([]);
+  const [attributes, setAttributes] = useState<any[]>([]);
   
   // Filter subcategories based on selected category
   const filteredSubcategories = subcategories.filter(sub => 
@@ -140,9 +160,10 @@ const AddonItemsPage = () => {
 
   const fetchData = async () => {
     try {
-      const [addonRes, subcategoriesRes] = await Promise.all([
+      const [addonRes, subcategoriesRes, attributesRes] = await Promise.all([
         addonItemsApi.getAll(),
-        subcategoriesApi.getAll()
+        subcategoriesApi.getAll(),
+        attributesApi.getAll()
       ]);
       
       if (addonRes.success) {
@@ -150,6 +171,9 @@ const AddonItemsPage = () => {
       }
       if (subcategoriesRes.success) {
         setSubcategories(subcategoriesRes.data);
+      }
+      if (attributesRes.success) {
+        setAttributes(attributesRes.data.filter((attr: any) => attr.isAvailable));
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -294,14 +318,9 @@ const AddonItemsPage = () => {
   const toggleStatus = async (item: AddonItem) => {
     setUpdatingStatus(item._id);
     try {
-      const response = await addonItemsApi.update({
+      const response = await addonItemsApi.updateStatus({
         id: item._id,
-        name: item.name,
-        category: item.category,
-        subcategory: typeof item.subcategory === 'object' ? item.subcategory._id : item.subcategory,
-        attributes: item.attributes,
-        description: item.description,
-        isAvailable: !item.isAvailable
+        status: !item.isAvailable
       });
       if (response.success) {
         toast.success(`Addon item ${!item.isAvailable ? 'enabled' : 'disabled'} successfully!`);
@@ -352,7 +371,7 @@ const AddonItemsPage = () => {
             setFormData({ name: "", category: restaurantDetails?.foodCategory?.length === 1 ? restaurantDetails.foodCategory[0] : "", subcategory: "", attributes: [], description: "", image: null });
             setShowModal(true);
           }}
-          className="inline-flex items-center px-4 py-2 "
+          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 "
         >
           <Plus className="w-4 h-4 mr-2" />
           Create Addon
@@ -672,13 +691,16 @@ const AddonItemsPage = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Attributes & Prices</label>
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Attribute name"
+                  <select
                     value={currentAttribute}
                     onChange={(e) => setCurrentAttribute(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select Attribute</option>
+                    {attributes.map(attr => (
+                      <option key={attr._id} value={attr.name}>{attr.name}</option>
+                    ))}
+                  </select>
                   <input
                     type="number"
                     placeholder="Price"
@@ -701,7 +723,8 @@ const AddonItemsPage = () => {
                   <button
                     type="button"
                     onClick={addAttribute}
-                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    disabled={!currentAttribute || !currentPrice || formData.attributes.some(attr => attr.name === currentAttribute)}
+                    className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Add
                   </button>

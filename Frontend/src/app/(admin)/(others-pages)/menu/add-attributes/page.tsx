@@ -43,6 +43,16 @@ const attributesApi = {
     return response.data;
   },
 
+  updateStatus: async (data: { id: string; isAvailable: boolean }) => {
+    const response = await axios.patch(`${BASE_URL}/api/attributes/status`, data, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      }
+    });
+    return response.data;
+  },
+
   delete: async (id: string) => {
     const response = await axios.delete(`${BASE_URL}/api/attributes/delete`, {
       headers: {
@@ -56,7 +66,7 @@ const attributesApi = {
 };
 
 interface Attribute {
-  id: string;
+  _id: string;
   name: string;
   isAvailable: boolean;
   createdAt: string;
@@ -116,12 +126,8 @@ const AddAttributesPage = () => {
 
   const handleToggleStatus = async (id: string, newStatus: boolean) => {
     try {
-      const attribute = attributes.find(attr => attr._id === id);
-      if (!attribute) return;
-      
-      const response = await attributesApi.update({
+      const response = await attributesApi.updateStatus({
         id,
-        name: attribute.name,
         isAvailable: newStatus
       });
       
