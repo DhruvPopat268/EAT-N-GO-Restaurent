@@ -260,7 +260,7 @@ const BankAccountPage = () => {
                   value={formData.accountNumber}
                   onChange={handleInputChange}
                   placeholder="Enter account number"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
               </div>
 
@@ -274,7 +274,7 @@ const BankAccountPage = () => {
                   value={formData.ifscCode}
                   onChange={handleInputChange}
                   placeholder="Enter IFSC code"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
               </div>
 
@@ -288,7 +288,7 @@ const BankAccountPage = () => {
                   value={formData.accountHolderName}
                   onChange={handleInputChange}
                   placeholder="Enter account holder name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
               </div>
 
@@ -302,7 +302,7 @@ const BankAccountPage = () => {
                   value={formData.bankName}
                   onChange={handleInputChange}
                   placeholder="Enter bank name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 />
               </div>
 
@@ -314,7 +314,7 @@ const BankAccountPage = () => {
                   name="accountType"
                   value={formData.accountType}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">Select account type</option>
                   <option value="Savings">Savings</option>

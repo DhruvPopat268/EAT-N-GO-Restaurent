@@ -156,7 +156,7 @@ const OrdersPaymentPage = () => {
               placeholder="Search orders or customers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+              className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
             />
           </div>
 
@@ -164,7 +164,7 @@ const OrdersPaymentPage = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[180px]"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white "
           >
             <option value="">Sort By</option>
             <option value="amount-high">Amount (High to Low)</option>
@@ -177,7 +177,7 @@ const OrdersPaymentPage = () => {
           <select
             value={paymentMethodFilter}
             onChange={(e) => setPaymentMethodFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[120px]"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white "
           >
             <option value="">All Methods</option>
             <option value="Cash">Cash</option>

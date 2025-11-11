@@ -7,6 +7,7 @@ import Image from "next/image";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
+import { toast } from "@/utils/toast";
 import axios from 'axios';
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
@@ -63,6 +64,19 @@ const subcategoriesApi = {
       },
       data: { id }
     });
+    return response.data;
+  },
+
+  updateStatus: async (id: string, isAvailable: boolean) => {
+    const response = await axios.patch(`${BASE_URL}/api/subcategories/status`, 
+      { id, isAvailable },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        }
+      }
+    );
     return response.data;
   }
 };
@@ -176,6 +190,7 @@ const AddSubcategoriesPage = () => {
         }
 
         if (response.success) {
+          toast.success(editingId ? 'Subcategory updated successfully!' : 'Subcategory created successfully!');
           fetchSubcategories();
           setFormData({ category: "", subcategoryName: "", subcategoryImage: null, isAvailable: true });
           setEditingId(null);
@@ -183,11 +198,11 @@ const AddSubcategoriesPage = () => {
           setImagePreview(null);
           setIsModalOpen(false);
         } else {
-          alert(response.message || 'Error saving subcategory');
+          toast.error(response.message || 'Error saving subcategory');
         }
       } catch (error) {
         console.error('Error saving subcategory:', error);
-        alert('Error saving subcategory');
+        toast.error('Error saving subcategory');
       } finally {
         setSubmitting(false);
       }
@@ -197,7 +212,7 @@ const AddSubcategoriesPage = () => {
       if (!formData.subcategoryName.trim()) missingFields.push('name');
       if (isImageRequired && !formData.subcategoryImage) missingFields.push('image');
       
-      alert(`Please fill all required fields: ${missingFields.join(', ')}`);
+      toast.warning(`Please fill all required fields: ${missingFields.join(', ')}`);
     }
   };
 
@@ -205,33 +220,33 @@ const AddSubcategoriesPage = () => {
     try {
       const response = await subcategoriesApi.delete(id);
       if (response.success) {
+        toast.success('Subcategory deleted successfully!');
         fetchSubcategories();
       } else {
-        alert(response.message || 'Error deleting subcategory');
+        toast.error(response.message || 'Error deleting subcategory');
       }
     } catch (error) {
       console.error('Error deleting subcategory:', error);
-      alert('Error deleting subcategory');
+      toast.error('Error deleting subcategory');
     }
   };
 
   const handleStatusToggle = async (subcategory: Subcategory) => {
     setUpdatingStatus(subcategory._id);
     try {
-      const response = await subcategoriesApi.update({
-        id: subcategory._id,
-        category: subcategory.category,
-        name: subcategory.name,
-        isAvailable: !subcategory.isAvailable
-      });
+      const response = await subcategoriesApi.updateStatus(
+        subcategory._id,
+        !subcategory.isAvailable
+      );
       if (response.success) {
+        toast.success(`Subcategory ${!subcategory.isAvailable ? 'enabled' : 'disabled'} successfully!`);
         fetchSubcategories();
       } else {
-        alert(response.message || 'Error updating status');
+        toast.error(response.message || 'Error updating status');
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Error updating status');
+      toast.error('Error updating status');
     } finally {
       setUpdatingStatus(null);
     }
@@ -464,7 +479,7 @@ const AddSubcategoriesPage = () => {
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   required
                   disabled={loading || restaurantDetails?.foodCategory?.length === 1}
                 >

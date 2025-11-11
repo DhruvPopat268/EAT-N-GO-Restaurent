@@ -99,7 +99,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
               placeholder="Search orders, customers, products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:ring-blue-400"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:ring-blue-400"
             />
           </div>
         </div>
@@ -114,7 +114,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[120px]"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[120px]"
           >
             <option value="">All Categories</option>
             <option value="Veg">Veg</option>
@@ -126,7 +126,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
           <select
             value={subcategoryFilter}
             onChange={(e) => setSubcategoryFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[140px]"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[140px]"
           >
             <option value="">All Subcategories</option>
             <option value="Pizza">Pizza</option>
@@ -139,7 +139,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[100px]"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[100px]"
           >
             <option value="">All Status</option>
             {statuses.map(status => (
@@ -316,7 +316,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({ orders }) => {
           {(categoryFilter || subcategoryFilter || statusFilter || searchTerm) && (
             <button
               onClick={clearFilters}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center px-4 py-2 "
             >
               Clear all filters
             </button>

@@ -607,7 +607,7 @@ const AddItemPage = () => {
                       name: selectedAttr?.name || ""
                     }));
                   }}
-                  className="w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   disabled={apiLoading}
                 >
                   <option value="">{apiLoading ? 'Loading...' : 'Select Attribute'}</option>

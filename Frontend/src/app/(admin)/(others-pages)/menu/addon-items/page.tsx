@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components
 import Image from "next/image";
 import { Plus, Edit, Trash2, Search, X } from "lucide-react";
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
+import { toast } from "@/utils/toast";
 import axios from 'axios';
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
@@ -177,7 +178,7 @@ const AddonItemsPage = () => {
       if (formData.attributes.length === 0) missingFields.push('attributes');
       if (isImageRequired && !formData.image) missingFields.push('image');
       
-      alert(`Please fill all required fields: ${missingFields.join(', ')}`);
+      toast.warning(`Please fill all required fields: ${missingFields.join(', ')}`);
       return;
     }
 
@@ -200,6 +201,7 @@ const AddonItemsPage = () => {
       }
 
       if (response.success) {
+        toast.success(editingItem ? 'Addon item updated successfully!' : 'Addon item created successfully!');
         fetchData();
         setFormData({ name: "", category: "", subcategory: "", attributes: [], description: "", image: null, isAvailable: true });
         setImagePreview(null);
@@ -208,11 +210,11 @@ const AddonItemsPage = () => {
         setEditingItem(null);
         setShowModal(false);
       } else {
-        alert(response.message || 'Error saving addon item');
+        toast.error(response.message || 'Error saving addon item');
       }
     } catch (error) {
       console.error('Error saving addon item:', error);
-      alert('Error saving addon item');
+      toast.error('Error saving addon item');
     } finally {
       setSubmitting(false);
     }
@@ -258,13 +260,14 @@ const AddonItemsPage = () => {
     try {
       const response = await addonItemsApi.delete(id);
       if (response.success) {
+        toast.success('Addon item deleted successfully!');
         fetchData();
       } else {
-        alert(response.message || 'Error deleting addon item');
+        toast.error(response.message || 'Error deleting addon item');
       }
     } catch (error) {
       console.error('Error deleting addon item:', error);
-      alert('Error deleting addon item');
+      toast.error('Error deleting addon item');
     }
   };
 
@@ -298,13 +301,14 @@ const AddonItemsPage = () => {
         isAvailable: !item.isAvailable
       });
       if (response.success) {
+        toast.success(`Addon item ${!item.isAvailable ? 'enabled' : 'disabled'} successfully!`);
         fetchData();
       } else {
-        alert(response.message || 'Error updating status');
+        toast.error(response.message || 'Error updating status');
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Error updating status');
+      toast.error('Error updating status');
     } finally {
       setUpdatingStatus(null);
     }
@@ -329,7 +333,7 @@ const AddonItemsPage = () => {
             setFormData({ name: "", category: restaurantDetails?.foodCategory?.length === 1 ? restaurantDetails.foodCategory[0] : "", subcategory: "", attributes: [], description: "", image: null });
             setShowModal(true);
           }}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center px-4 py-2 "
         >
           <Plus className="w-4 h-4 mr-2" />
           Create Addon
@@ -346,7 +350,7 @@ const AddonItemsPage = () => {
               placeholder="Search addon items..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg  transition-colors "
             />
           </div>
         </div>
@@ -360,7 +364,7 @@ const AddonItemsPage = () => {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[120px]"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white "
           >
             <option value="">All Categories</option>
             {restaurantDetails?.foodCategory?.map(cat => (
@@ -371,7 +375,7 @@ const AddonItemsPage = () => {
           <select
             value={subcategoryFilter}
             onChange={(e) => setSubcategoryFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[140px]"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[140px]"
           >
             <option value="">All Subcategories</option>
             {subcategories.map(sub => (
@@ -384,7 +388,7 @@ const AddonItemsPage = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[100px]"
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 transition-colors dark:border-gray-700 dark:bg-gray-800 dark:text-white min-w-[100px]"
           >
             <option value="">All Status</option>
             <option value="active">Available</option>
