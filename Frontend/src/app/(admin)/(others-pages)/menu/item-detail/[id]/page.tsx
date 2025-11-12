@@ -136,7 +136,7 @@ const ItemDetailPage = () => {
             {item.images && item.images.length > 0 && (
               <>
                 {/* Main Image */}
-                <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-lg max-w-sm mx-auto">
+                <div className="aspect-square bg-white rounded-2xl overflow-hidden shadow-lg max-w-sm">
                   <Image
                     src={item.images[selectedImage]}
                     alt={item.name}
