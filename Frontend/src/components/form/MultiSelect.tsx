@@ -143,13 +143,24 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                       <div
                         className={`relative flex w-full items-center p-2 pl-2 ${
                           selectedOptions.includes(option.value)
-                            ? "bg-primary/10"
+                            ? "bg-blue-100 dark:bg-blue-900/30"
                             : ""
                         }`}
                       >
-                        <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">
+                        <div className={`mx-2 leading-6 ${
+                          selectedOptions.includes(option.value)
+                            ? "text-blue-800 dark:text-blue-200 font-medium"
+                            : "text-gray-800 dark:text-white/90"
+                        }`}>
                           {option.text}
                         </div>
+                        {selectedOptions.includes(option.value) && (
+                          <div className="ml-auto">
+                            <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
