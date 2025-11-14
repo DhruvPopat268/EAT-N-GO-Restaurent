@@ -34,7 +34,7 @@ const itemsApi = {
         'Content-Type': 'application/json',
         ...getAuthHeaders()
       },
-      data: { id }
+      data: { itemId: id }
     });
     return response.data;
   },

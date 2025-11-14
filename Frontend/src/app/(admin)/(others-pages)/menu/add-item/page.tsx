@@ -40,6 +40,15 @@ const itemsApi = {
     });
     return response.data;
   },
+  bulkImport: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await axios.post(`${BASE_URL}/api/items/bulk-import`, formData, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  },
   getById: async (id: string) => {
     const response = await axios.post(`${BASE_URL}/api/items/detail`, {
       itemId: id
@@ -79,6 +88,7 @@ const AddItemPage = () => {
   
   const [selectedOption, setSelectedOption] = useState<"individual" | "bulk" | null>(isEditMode ? "individual" : null);
   const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [bulkResults, setBulkResults] = useState<any>(null);
   const getDefaultCurrency = (country: string) => {
     const currencyMap: { [key: string]: string } = {
       "India": "INR",
@@ -391,11 +401,32 @@ const AddItemPage = () => {
     }
   };
 
-  const handleBulkUpload = () => {
-    if (bulkFile) {
-      console.log("Uploading file:", bulkFile.name);
-      toast.success("File uploaded successfully!");
-      setBulkFile(null);
+  const handleBulkUpload = async () => {
+    if (!bulkFile) {
+      toast.error('Please select a file first');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await itemsApi.bulkImport(bulkFile);
+      if (response.success) {
+        toast.success(response.message);
+        setBulkFile(null);
+        setBulkResults(response.results);
+        
+        // Show additional toast for errors if any
+        if (response.results?.errors?.length > 0) {
+          toast.error(`${response.results.errors.length} items failed to import. Check details below.`);
+        }
+      } else {
+        toast.error(response.message || 'Error importing file');
+      }
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      toast.error(error.response?.data?.message || 'Error importing file');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -990,8 +1021,8 @@ const AddItemPage = () => {
               Upload Menu (Bulk Import)
             </h2>
             <a
-              href="/sample-menu-template.csv"
-              download="sample-menu-template.csv"
+              href="/files/sample_items (3).xlsx"
+              download="sample_items.xlsx"
               className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -1040,9 +1071,54 @@ const AddItemPage = () => {
             <div className="mt-6">
               <button
                 onClick={handleBulkUpload}
-                className="w-full px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+                disabled={isSubmitting}
+                className="w-full px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Upload File
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Importing...
+                  </>
+                ) : (
+                  'Upload File'
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Import Results */}
+          {bulkResults && (
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+                Import Results:
+              </h4>
+              <div className="space-y-2">
+                {bulkResults.success.length > 0 && (
+                  <div className="text-sm text-green-600 dark:text-green-400">
+                    ✓ {bulkResults.success.length} items imported successfully
+                  </div>
+                )}
+                {bulkResults.errors.length > 0 && (
+                  <div className="text-sm text-red-600 dark:text-red-400">
+                    ✗ {bulkResults.errors.length} errors occurred
+                    <details className="mt-2">
+                      <summary className="cursor-pointer">View errors</summary>
+                      <div className="mt-2 space-y-1 text-xs">
+                        {bulkResults.errors.map((error: any, index: number) => (
+                          <div key={index} className="bg-red-50 dark:bg-red-900/20 p-2 rounded">
+                            Row {error.row}: {error.error}
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setBulkResults(null)}
+                className="mt-3 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                Clear results
               </button>
             </div>
           )}
@@ -1052,9 +1128,12 @@ const AddItemPage = () => {
               File Format Requirements:
             </h4>
             <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-              <li>• Column headers: Product Name, Category, Subcategory, Attributes, Price</li>
-              <li>• Use semicolon (;) to separate multiple attributes</li>
-              <li>• Price should be in decimal format (e.g., 12.99)</li>
+              <li>• Required columns: name, category, subcategory, attributes</li>
+              <li>• Attributes format: "name:price,name:price" (e.g., "Small:10.99,Large:15.99")</li>
+              <li>• Customizations format: "name:option,qty,unit,price;option,qty,unit,price|name:options"</li>
+              <li>• Food types: comma-separated (e.g., "Regular,Jain")</li>
+              <li>• Currency: INR, USD, etc. (optional, defaults to INR)</li>
+              <li>• isAvailable: true/false (optional, defaults to true)</li>
             </ul>
           </div>
         </div>
