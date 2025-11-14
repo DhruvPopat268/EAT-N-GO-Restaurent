@@ -28,11 +28,10 @@ const itemsApi = {
     });
     return response.data;
   },
-  update: async (id: string, data: any, images: File[], allImages: string[]) => {
+  update: async (data: any, newImages: File[], existingImages: string[]) => {
     const formData = new FormData();
-    formData.append('data', JSON.stringify(data));
-    formData.append('images', JSON.stringify(allImages));
-    images.forEach(image => {
+    formData.append('data', JSON.stringify({ ...data, existingImages }));
+    newImages.forEach(image => {
       formData.append('images', image);
     });
 
@@ -105,6 +104,10 @@ const AddItemPage = () => {
     foodTypes: [] as string[],
     customizations: [] as { name: string; options: { label: string; price: number }[] }[]
   });
+
+  // Separate states for managing images in edit mode
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
 
   const [currentAttribute, setCurrentAttribute] = useState({
     attribute: "",
@@ -180,6 +183,7 @@ const AddItemPage = () => {
           setCustomizationsEnabled(true);
         }
         if (item.images && item.images.length > 0) {
+          setExistingImages(item.images);
           setImagePreviews(item.images);
         }
       }
@@ -191,15 +195,19 @@ const AddItemPage = () => {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    const currentImages = formData.productImages;
     
     if (imagePreviews.length + files.length > 5) {
       toast.error('You can only upload up to 5 images');
       return;
     }
     
-    const newImages = [...currentImages, ...files];
-    setFormData(prev => ({ ...prev, productImages: newImages }));
+    if (isEditMode) {
+      // In edit mode, add to newImages state
+      setNewImages(prev => [...prev, ...files]);
+    } else {
+      // In create mode, add to formData.productImages
+      setFormData(prev => ({ ...prev, productImages: [...prev.productImages, ...files] }));
+    }
     
     files.forEach(file => {
       const reader = new FileReader();
@@ -222,19 +230,41 @@ const AddItemPage = () => {
     e.preventDefault();
     if (draggedIndex === null) return;
     
-    const newImages = [...formData.productImages];
     const newPreviews = [...imagePreviews];
-    
-    const draggedImage = newImages[draggedIndex];
     const draggedPreview = newPreviews[draggedIndex];
     
-    newImages.splice(draggedIndex, 1);
     newPreviews.splice(draggedIndex, 1);
-    
-    newImages.splice(dropIndex, 0, draggedImage);
     newPreviews.splice(dropIndex, 0, draggedPreview);
     
-    setFormData(prev => ({ ...prev, productImages: newImages }));
+    if (isEditMode) {
+      // In edit mode, handle both existing and new images
+      const totalExistingCount = existingImages.length;
+      const allImages = [...newImages, ...formData.productImages];
+      
+      if (draggedIndex < totalExistingCount && dropIndex < totalExistingCount) {
+        // Both are existing images
+        const newExisting = [...existingImages];
+        const draggedExisting = newExisting[draggedIndex];
+        newExisting.splice(draggedIndex, 1);
+        newExisting.splice(dropIndex, 0, draggedExisting);
+        setExistingImages(newExisting);
+      } else if (draggedIndex >= totalExistingCount && dropIndex >= totalExistingCount) {
+        // Both are new images
+        const newImagesArray = [...newImages];
+        const draggedNew = newImagesArray[draggedIndex - totalExistingCount];
+        newImagesArray.splice(draggedIndex - totalExistingCount, 1);
+        newImagesArray.splice(dropIndex - totalExistingCount, 0, draggedNew);
+        setNewImages(newImagesArray);
+      }
+    } else {
+      // In create mode, handle productImages
+      const newImagesArray = [...formData.productImages];
+      const draggedImage = newImagesArray[draggedIndex];
+      newImagesArray.splice(draggedIndex, 1);
+      newImagesArray.splice(dropIndex, 0, draggedImage);
+      setFormData(prev => ({ ...prev, productImages: newImagesArray }));
+    }
+    
     setImagePreviews(newPreviews);
     setDraggedIndex(null);
   };
@@ -302,6 +332,8 @@ const AddItemPage = () => {
       price: ""
     });
     setImagePreviews([]);
+    setNewImages([]);
+    setExistingImages([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -336,7 +368,7 @@ const AddItemPage = () => {
       let response;
       if (isEditMode && editId) {
         itemData.itemId = editId;
-        response = await itemsApi.update(editId, itemData, formData.productImages, imagePreviews);
+        response = await itemsApi.update(itemData, newImages, existingImages);
       } else {
         response = await itemsApi.create(itemData, formData.productImages);
       }
@@ -540,10 +572,25 @@ const AddItemPage = () => {
                             <button
                               type="button"
                               onClick={() => {
-                                const newImages = formData.productImages.filter((_, i) => i !== index);
                                 const newPreviews = imagePreviews.filter((_, i) => i !== index);
-                                setFormData(prev => ({ ...prev, productImages: newImages }));
                                 setImagePreviews(newPreviews);
+                                
+                                if (isEditMode) {
+                                  const totalExistingCount = existingImages.length;
+                                  if (index < totalExistingCount) {
+                                    // Remove from existing images
+                                    setExistingImages(prev => prev.filter((_, i) => i !== index));
+                                  } else {
+                                    // Remove from new images
+                                    setNewImages(prev => prev.filter((_, i) => i !== (index - totalExistingCount)));
+                                  }
+                                } else {
+                                  // Remove from productImages in create mode
+                                  setFormData(prev => ({ 
+                                    ...prev, 
+                                    productImages: prev.productImages.filter((_, i) => i !== index) 
+                                  }));
+                                }
                               }}
                               className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
                             >
