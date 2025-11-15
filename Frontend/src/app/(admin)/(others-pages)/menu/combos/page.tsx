@@ -673,8 +673,8 @@ const ComboListPage = () => {
                       <div className="space-y-1">
                         {combo.items.slice(0, 2).map((item, idx) => (
                           <div key={idx} className="text-sm text-gray-600 dark:text-gray-300">
-                            {item.quantity}x {item.itemId.name}
-                            {item.attribute && (
+                            {item.quantity}x {item.itemId?.name || 'Unknown Item'}
+                            {item.attribute?.name && (
                               <span className="text-xs text-gray-400 ml-1">({item.attribute.name})</span>
                             )}
                           </div>
@@ -840,7 +840,7 @@ const ComboListPage = () => {
                               required
                             >
                               <option value="">Select Attribute</option>
-                              {item.availableAttributes?.filter(attr => attr && attr._id).map(attr => (
+                              {item.availableAttributes?.filter(attr => attr && attr._id && attr.name).map(attr => (
                                 <option key={attr._id} value={attr._id}>{attr.name}</option>
                               ))}
                             </select>
@@ -1038,7 +1038,7 @@ const ComboListPage = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600">
-                            {item.itemId.images?.[0] ? (
+                            {item.itemId?.images?.[0] ? (
                               <Image
                                 src={item.itemId.images[0]}
                                 alt={item.itemId.name}
@@ -1054,8 +1054,8 @@ const ComboListPage = () => {
                             )}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-white">{item.itemId.name}</p>
-                            {item.attribute && (
+                            <p className="font-medium text-gray-900 dark:text-white">{item.itemId?.name || 'Unknown Item'}</p>
+                            {item.attribute?.name && (
                               <p className="text-sm text-gray-500 dark:text-gray-400">Attribute: {item.attribute.name}</p>
                             )}
                           </div>
