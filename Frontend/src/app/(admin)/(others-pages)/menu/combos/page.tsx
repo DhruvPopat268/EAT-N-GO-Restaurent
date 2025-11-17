@@ -335,6 +335,11 @@ const ComboListPage = () => {
       return;
     }
 
+    if (comboItems.length < 2) {
+      toast.error('Select min 2 items for create or update');
+      return;
+    }
+
     const hasInvalidItems = comboItems.some(item =>
       !item.attribute || item.quantity < 1
     );
