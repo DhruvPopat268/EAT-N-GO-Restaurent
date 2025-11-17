@@ -77,6 +77,18 @@ const combosApi = {
     return response.data;
   },
 
+  getDetail: async (comboId: string) => {
+    const response = await axios.post(`${BASE_URL}/api/combos/detail`, {
+      comboId
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      }
+    });
+    return response.data;
+  },
+
   getItemAttributes: async (itemId: string) => {
     const response = await axios.post(`${BASE_URL}/api/combos/item-attributes`, {
       itemId
@@ -93,6 +105,15 @@ const combosApi = {
 const itemsApi = {
   getAll: async () => {
     const response = await axios.get(`${BASE_URL}/api/items`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  }
+};
+
+const addonItemsApi = {
+  getAll: async () => {
+    const response = await axios.get(`${BASE_URL}/api/addon-items`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -135,6 +156,7 @@ interface ComboFormData {
     quantity: number;
     attribute?: string;
   }>;
+  addons: string[];
   image?: File;
 }
 
@@ -146,11 +168,12 @@ const ComboListPage = () => {
 
   const [combos, setCombos] = useState<ComboItem[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [addonItems, setAddonItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean, id: string, name: string }>({ show: false, id: '', name: '' });
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState<string | null>(null);
-  
+
   // Form states
   const [showForm, setShowForm] = useState(false);
   const [editingCombo, setEditingCombo] = useState<ComboItem | null>(null);
@@ -159,6 +182,7 @@ const ComboListPage = () => {
     description: '',
     price: '',
     items: [],
+    addons: [],
     image: undefined
   });
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -167,7 +191,7 @@ const ComboListPage = () => {
     quantity: number;
     attribute?: string;
     itemName?: string;
-    availableAttributes?: Array<{_id: string; name: string}>;
+    availableAttributes?: Array<{ _id: string; name: string }>;
   }>>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -181,16 +205,20 @@ const ComboListPage = () => {
 
   const fetchData = async () => {
     try {
-      const [combosRes, itemsRes] = await Promise.all([
+      const [combosRes, itemsRes, addonItemsRes] = await Promise.all([
         combosApi.getAll(),
-        itemsApi.getAll()
+        itemsApi.getAll(),
+        addonItemsApi.getAll()
       ]);
-      
+
       if (combosRes.success) {
         setCombos(combosRes.data);
       }
       if (itemsRes.success) {
         setItems(itemsRes.data.filter((item: Item) => item.attributes.length > 0));
+      }
+      if (addonItemsRes.success) {
+        setAddonItems(addonItemsRes.data);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -214,7 +242,7 @@ const ComboListPage = () => {
 
   const handleItemSelection = async (selectedItemIds: string[]) => {
     setSelectedItems(selectedItemIds);
-    
+
     const newComboItems = [];
     for (const itemId of selectedItemIds) {
       const item = items.find(i => i._id === itemId);
@@ -222,7 +250,7 @@ const ComboListPage = () => {
         try {
           const attributesRes = await combosApi.getItemAttributes(itemId);
           const availableAttributes = attributesRes.success ? attributesRes.data : [];
-          
+
           newComboItems.push({
             itemId,
             quantity: 1,
@@ -244,7 +272,7 @@ const ComboListPage = () => {
   };
 
   const updateComboItem = (index: number, field: string, value: any) => {
-    setComboItems(prev => prev.map((item, i) => 
+    setComboItems(prev => prev.map((item, i) =>
       i === index ? { ...item, [field]: value } : item
     ));
   };
@@ -255,6 +283,7 @@ const ComboListPage = () => {
       description: '',
       price: '',
       items: [],
+      addons: [],
       image: undefined
     });
     setSelectedItems([]);
@@ -263,9 +292,19 @@ const ComboListPage = () => {
     setEditingCombo(null);
   };
 
-  const handleView = (combo: ComboItem) => {
-    setViewingCombo(combo);
-    setShowViewModal(true);
+  const handleView = async (combo: ComboItem) => {
+    try {
+      const response = await combosApi.getDetail(combo._id);
+      if (response.success) {
+        setViewingCombo(response.data);
+        setShowViewModal(true);
+      } else {
+        toast.error('Error loading combo details');
+      }
+    } catch (error) {
+      console.error('Error fetching combo details:', error);
+      toast.error('Error loading combo details');
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -290,16 +329,16 @@ const ComboListPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim() || !formData.price || comboItems.length === 0) {
       toast.error('Please fill all required fields and add at least one item');
       return;
     }
 
-    const hasInvalidItems = comboItems.some(item => 
+    const hasInvalidItems = comboItems.some(item =>
       !item.attribute || item.quantity < 1
     );
-    
+
     if (hasInvalidItems) {
       toast.error('Please select attributes and set quantities for all items');
       return;
@@ -315,14 +354,15 @@ const ComboListPage = () => {
           itemId: item.itemId,
           quantity: item.quantity,
           attribute: item.attribute
-        }))
+        })),
+        addons: formData.addons
       };
 
       if (editingCombo) {
         comboData.comboId = editingCombo._id;
       }
 
-      const response = editingCombo 
+      const response = editingCombo
         ? await combosApi.update(comboData, formData.image)
         : await combosApi.create(comboData, formData.image);
 
@@ -348,26 +388,27 @@ const ComboListPage = () => {
       name: combo.name,
       description: combo.description || '',
       price: combo.price.toString(),
-      items: combo.items.map(item => ({
+      items: combo.items.filter(item => item.itemId && item.itemId._id).map(item => ({
         itemId: item.itemId._id,
         quantity: item.quantity,
-        attribute: item.attribute?._id
+        attribute: item.attribute?._id || undefined
       })),
+      addons: combo.addons || [],
       image: undefined
     });
-    
-    const itemIds = combo.items.map(item => item.itemId._id);
+
+    const itemIds = combo.items.filter(item => item.itemId && item.itemId._id).map(item => item.itemId._id);
     setSelectedItems(itemIds);
-    
-    const comboItemsData = await Promise.all(combo.items.map(async (item) => {
+
+    const comboItemsData = await Promise.all(combo.items.filter(item => item.itemId && item.itemId._id).map(async (item) => {
       try {
         const attributesRes = await combosApi.getItemAttributes(item.itemId._id);
         const availableAttributes = attributesRes.success ? attributesRes.data : [];
-        
+
         return {
           itemId: item.itemId._id,
           quantity: item.quantity,
-          attribute: item.attribute?._id,
+          attribute: item.attribute?._id || undefined,
           itemName: item.itemId.name,
           availableAttributes
         };
@@ -376,18 +417,18 @@ const ComboListPage = () => {
         return {
           itemId: item.itemId._id,
           quantity: item.quantity,
-          attribute: item.attribute?._id,
+          attribute: item.attribute?._id || undefined,
           itemName: item.itemId.name,
           availableAttributes: []
         };
       }
     }));
     setComboItems(comboItemsData);
-    
+
     if (combo.image) {
       setImagePreview(combo.image);
     }
-    
+
     setShowForm(true);
   };
 
@@ -406,7 +447,7 @@ const ComboListPage = () => {
       toast.error('Error deleting combo');
     } finally {
       setDeleteLoading(false);
-      setDeleteConfirm({show: false, id: '', name: ''});
+      setDeleteConfirm({ show: false, id: '', name: '' });
     }
   };
 
@@ -536,7 +577,7 @@ const ComboListPage = () => {
               </div>
             )}
           </div>
-          
+
           <div className="relative">
             <select
               value={statusFilter}
@@ -568,7 +609,7 @@ const ComboListPage = () => {
           )}
         </div>
       </div>
-      
+
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Showing {filteredCombos.length} of {combos.length} combos
@@ -619,11 +660,10 @@ const ComboListPage = () => {
                 {filteredCombos.map((combo, index) => (
                   <TableRow
                     key={combo._id}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
-                      index % 2 === 0
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${index % 2 === 0
                         ? "bg-white dark:bg-gray-900"
                         : "bg-gray-50/50 dark:bg-gray-800/20"
-                    }`}
+                      }`}
                   >
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-mono font-semibold text-gray-900 dark:text-white">
@@ -657,8 +697,8 @@ const ComboListPage = () => {
                         </div>
                         {combo.description && (
                           <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            {combo.description.length > 50 
-                              ? `${combo.description.substring(0, 50)}...` 
+                            {combo.description.length > 50
+                              ? `${combo.description.substring(0, 50)}...`
                               : combo.description
                             }
                           </div>
@@ -711,11 +751,10 @@ const ComboListPage = () => {
                           )}
                         </label>
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            combo.isAvailable
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${combo.isAvailable
                               ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                               : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                          }`}
+                            }`}
                         >
                           {combo.isAvailable ? "Available" : "Unavailable"}
                         </span>
@@ -741,7 +780,7 @@ const ComboListPage = () => {
                         </button>
 
                         <button
-                          onClick={() => setDeleteConfirm({show: true, id: combo._id, name: combo.name})}
+                          onClick={() => setDeleteConfirm({ show: true, id: combo._id, name: combo.name })}
                           className="flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
                           title="Delete Combo"
                         >
@@ -811,6 +850,8 @@ const ComboListPage = () => {
                 />
               </div>
 
+
+
               {comboItems.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
@@ -828,7 +869,7 @@ const ComboListPage = () => {
                               {item.itemName}
                             </div>
                           </div>
-                          
+
                           <div>
                             <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                               Attribute *
@@ -845,7 +886,7 @@ const ComboListPage = () => {
                               ))}
                             </select>
                           </div>
-                          
+
                           <div>
                             <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
                               Quantity *
@@ -865,6 +906,24 @@ const ComboListPage = () => {
                   </div>
                 </div>
               )}
+
+              <div>
+                <MultiSelect
+                  label="Addons"
+                  options={addonItems
+                    .filter(addon => addon.isAvailable)
+                    .map(addon => ({
+                      value: addon._id,
+                      text: addon.name,
+                      selected: formData.addons.includes(addon._id)
+                    }))
+                  }
+                  defaultSelected={formData.addons}
+                  onChange={(selectedIds) => {
+                    setFormData(prev => ({ ...prev, addons: selectedIds }));
+                  }}
+                />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -991,11 +1050,10 @@ const ComboListPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        viewingCombo.isAvailable
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${viewingCombo.isAvailable
                           ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                           : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                      }`}>
+                        }`}>
                         {viewingCombo.isAvailable ? "Available" : "Unavailable"}
                       </span>
                     </div>
@@ -1068,6 +1126,49 @@ const ComboListPage = () => {
                   ))}
                 </div>
               </div>
+
+              {viewingCombo.addons && viewingCombo.addons.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Addons ({viewingCombo.addons.length})</h3>
+                  <div className="space-y-3">
+                    {viewingCombo.addons.map((addon, index) => (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 relative rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600">
+                              {addon.image ? (
+                                <Image
+                                  src={addon.image}
+                                  alt={addon.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">{addon.name}</p>
+                              {addon.description && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{addon.description}</p>
+                              )}
+                              {addon.attributes && addon.attributes.length > 0 && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {addon.attributes.map((attr, i) => `${attr.name}: ${addon.currency} ${attr.price}`).join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1075,7 +1176,7 @@ const ComboListPage = () => {
 
       <ConfirmationModal
         isOpen={deleteConfirm.show}
-        onClose={() => setDeleteConfirm({show: false, id: '', name: ''})}
+        onClose={() => setDeleteConfirm({ show: false, id: '', name: '' })}
         onConfirm={handleDelete}
         title="Delete Combo"
         message={`Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`}

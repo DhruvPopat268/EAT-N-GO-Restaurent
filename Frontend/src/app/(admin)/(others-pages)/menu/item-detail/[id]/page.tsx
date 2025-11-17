@@ -55,6 +55,19 @@ interface ItemDetail {
       price: number;
     }[];
   }[];
+  addons: {
+    _id: string;
+    name: string;
+    description: string;
+    image: string;
+    category: string;
+    attributes: {
+      name: string;
+      price: number;
+    }[];
+    currency: string;
+    isAvailable: boolean;
+  }[];
   currency: string;
   isAvailable: boolean;
   createdAt: string;
@@ -245,6 +258,59 @@ const ItemDetailPage = () => {
             )}
           </div>
         </div>
+
+        {/* Addons */}
+        {item.addons && item.addons.length > 0 && (
+          <div className="mt-8">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Available Addons</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {item.addons.map((addon) => (
+                  <div key={addon._id} className="border border-gray-200 dark:border-gray-600 rounded-xl p-5">
+                    <div className="flex items-start gap-4 mb-4">
+                      {addon.image && (
+                        <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                          <Image
+                            src={addon.image}
+                            alt={addon.name}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{addon.name}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{addon.category}</p>
+                        {addon.description && (
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{addon.description}</p>
+                        )}
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full mt-2 ${
+                          addon.isAvailable 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                        }`}>
+                          {addon.isAvailable ? 'Available' : 'Unavailable'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Pricing Options:</h4>
+                      {addon.attributes.map((attr, attrIndex) => (
+                        <div key={attrIndex} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <span className="font-medium text-gray-900 dark:text-white">{attr.name}</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {addon.currency === 'INR' ? '₹' : '$'}{attr.price}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Customizations */}
         {item.customizations && item.customizations.length > 0 && (

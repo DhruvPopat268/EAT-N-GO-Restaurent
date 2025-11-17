@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { toast } from "@/utils/toast";
+import MultiSelect from "@/components/form/MultiSelect";
 import axios from 'axios';
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
@@ -80,6 +81,16 @@ const attributesApi = {
   }
 };
 
+const addonItemsApi = {
+  getAll: async () => {
+    const response = await axios.get(`${BASE_URL}/api/addon-items`, {
+      headers: getAuthHeaders()
+    });
+    console.log('Addon Items Response:', response.data?.data); // Debug log
+    return response.data;
+  }
+};
+
 const AddItemPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -112,7 +123,8 @@ const AddItemPage = () => {
     isAvailable: true,
     attributes: [] as { attribute: string; price: number; name?: string }[],
     foodTypes: [] as string[],
-    customizations: [] as { name: string; options: { label: string; price: number }[] }[]
+    customizations: [] as { name: string; MaxSelection: number; options: { label: string; price: number }[] }[],
+    addons: [] as string[]
   });
 
   // Separate states for managing images in edit mode
@@ -128,13 +140,16 @@ const AddItemPage = () => {
   const [customizationsEnabled, setCustomizationsEnabled] = useState(false);
   const [currentCustomization, setCurrentCustomization] = useState({
     name: "",
+    MaxSelection: "",
     options: [] as { label: string; price: number }[]
   });
   const [currentOption, setCurrentOption] = useState({ label: "", quantity: "", unit: "unit", price: "" });
+  const [editingOptionIndex, setEditingOptionIndex] = useState<number | null>(null);
 
   const { restaurantDetails, loading } = useRestaurantDetails();
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [attributeOptions, setAttributeOptions] = useState<any[]>([]);
+  const [addonItems, setAddonItems] = useState<any[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -150,9 +165,10 @@ const AddItemPage = () => {
 
   const fetchData = async () => {
     try {
-      const [subcategoriesRes, attributesRes] = await Promise.all([
+      const [subcategoriesRes, attributesRes, addonItemsRes] = await Promise.all([
         subcategoriesApi.getAll(),
-        attributesApi.getAll()
+        attributesApi.getAll(),
+        addonItemsApi.getAll()
       ]);
 
       if (subcategoriesRes.success) {
@@ -160,6 +176,10 @@ const AddItemPage = () => {
       }
       if (attributesRes.success) {
         setAttributeOptions(attributesRes.data);
+      }
+      if (addonItemsRes.success) {
+        console.log('Fetched Addon Items:', addonItemsRes.data); // Debug log
+        setAddonItems(addonItemsRes.data);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -173,6 +193,9 @@ const AddItemPage = () => {
       const response = await itemsApi.getById(itemId);
       if (response.success) {
         const item = response.data;
+        console.log('Item addons:', item.addons); // Debug log
+        const selectedAddonIds = item.addons ? item.addons.map((addon: any) => addon._id) : [];
+        console.log('Selected addon IDs:', selectedAddonIds); // Debug log
         setEditItem(item);
         setFormData({
           category: item.category,
@@ -187,7 +210,8 @@ const AddItemPage = () => {
             name: attr.attribute.name
           })),
           foodTypes: item.foodTypes || [],
-          customizations: item.customizations || []
+          customizations: item.customizations || [],
+          addons: selectedAddonIds
         });
         if (item.customizations && item.customizations.length > 0) {
           setCustomizationsEnabled(true);
@@ -334,7 +358,8 @@ const AddItemPage = () => {
       isAvailable: true,
       attributes: [],
       foodTypes: [],
-      customizations: []
+      customizations: [],
+      addons: []
     });
     setCurrentAttribute({
       attribute: "",
@@ -358,6 +383,14 @@ const AddItemPage = () => {
       return;
     }
 
+    // Validate MaxSelection for customizations
+    for (const customization of formData.customizations) {
+      if (customization.MaxSelection !== -1 && customization.MaxSelection <= 0) {
+        toast.error('MaxSelection must be -1 or a number greater than 0');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const itemData = {
@@ -372,7 +405,8 @@ const AddItemPage = () => {
           price: attr.price
         })),
         foodTypes: formData.foodTypes,
-        customizations: formData.customizations
+        customizations: formData.customizations,
+        addons: formData.addons
       };
 
       let response;
@@ -730,7 +764,7 @@ const AddItemPage = () => {
                       <div className="flex items-center gap-4">
                         <span className="font-medium text-gray-900 dark:text-white">{attr.name}</span>
                         <span className="text-gray-600 dark:text-gray-300">
-                          {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'} {attr.price}
+                          {attr.price} {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'} 
                         </span>
                       </div>
                       <button
@@ -775,6 +809,26 @@ const AddItemPage = () => {
               </div>
             </div>
 
+            {/* Addons */}
+            <div>
+              <MultiSelect
+                label="Addons"
+                options={addonItems
+                  .filter(addon => addon.isAvailable)
+                  .map(addon => ({
+                    value: addon._id,
+                    text: addon.name,
+                    selected: formData.addons.includes(addon._id)
+                  }))
+                }
+                defaultSelected={formData.addons}
+                onChange={(selectedIds) => {
+                  setFormData(prev => ({ ...prev, addons: selectedIds }));
+                }}
+                disabled={apiLoading}
+              />
+            </div>
+
             {/* Customizations Toggle */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -796,13 +850,23 @@ const AddItemPage = () => {
                 <div className="space-y-4 p-4 border border-gray-200 rounded-lg dark:border-gray-600">
                   {/* Add Customization */}
                   <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={currentCustomization.name}
-                      onChange={(e) => setCurrentCustomization(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      placeholder="Customization name (e.g., Breads)"
-                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        type="text"
+                        value={currentCustomization.name}
+                        onChange={(e) => setCurrentCustomization(prev => ({ ...prev, name: e.target.value }))}
+                        className="px-3 py-2 border border-gray-300 rounded-lg"
+                        placeholder="Customization name (e.g., Breads)"
+                      />
+                      <input
+                        type="number"
+                        value={currentCustomization.MaxSelection}
+                        onChange={(e) => setCurrentCustomization(prev => ({ ...prev, MaxSelection: e.target.value }))}
+                        className="px-3 py-2 border border-gray-300 rounded-lg"
+                        placeholder="Max selections (e.g., 2) ( -1 for unlimited )"
+                        min="-1"
+                      />
+                    </div>
                     
                     {/* Add Options */}
                     <div className="space-y-3">
@@ -837,7 +901,7 @@ const AddItemPage = () => {
                           value={currentOption.price}
                           onChange={(e) => setCurrentOption(prev => ({ ...prev, price: e.target.value }))}
                           className="w-24 px-3 py-2 border border-gray-300 rounded-lg"
-                          placeholder="0.00"
+                          placeholder="Price"
                         />
                         <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 flex items-center">
                           <span className="text-sm text-gray-600 dark:text-gray-300">
@@ -848,22 +912,57 @@ const AddItemPage = () => {
                           type="button"
                           onClick={() => {
                             if (currentOption.label) {
-                              setCurrentCustomization(prev => ({
-                                ...prev,
-                                options: [...prev.options, { 
-                                  label: currentOption.label, 
-                                  quantity: parseFloat(currentOption.quantity) || 0,
-                                  unit: currentOption.unit,
-                                  price: parseFloat(currentOption.price) || 0 
-                                }]
-                              }));
+                              if (editingOptionIndex !== null) {
+                                // Update existing option
+                                setCurrentCustomization(prev => ({
+                                  ...prev,
+                                  options: prev.options.map((opt, i) => 
+                                    i === editingOptionIndex 
+                                      ? {
+                                          label: currentOption.label,
+                                          quantity: parseFloat(currentOption.quantity) || 0,
+                                          unit: currentOption.unit,
+                                          price: parseFloat(currentOption.price) || 0
+                                        }
+                                      : opt
+                                  )
+                                }));
+                                setEditingOptionIndex(null);
+                              } else {
+                                // Add new option
+                                setCurrentCustomization(prev => ({
+                                  ...prev,
+                                  options: [...prev.options, { 
+                                    label: currentOption.label, 
+                                    quantity: parseFloat(currentOption.quantity) || 0,
+                                    unit: currentOption.unit,
+                                    price: parseFloat(currentOption.price) || 0 
+                                  }]
+                                }));
+                              }
                               setCurrentOption({ label: "", quantity: "", unit: "unit", price: "" });
                             }
                           }}
-                          className="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700"
+                          className={`px-3 py-2 text-white text-sm rounded-lg ${
+                            editingOptionIndex !== null 
+                              ? "bg-blue-600 hover:bg-blue-700" 
+                              : "bg-green-600 hover:bg-green-700"
+                          }`}
                         >
-                          Add Option
+                          {editingOptionIndex !== null ? "Update Option" : "Add Option"}
                         </button>
+                        {editingOptionIndex !== null && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCurrentOption({ label: "", quantity: "", unit: "unit", price: "" });
+                              setEditingOptionIndex(null);
+                            }}
+                            className="px-3 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                        )}
                       </div>
 
 
@@ -874,36 +973,57 @@ const AddItemPage = () => {
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Options:</p>
                         {currentCustomization.options.map((option, index) => (
-                          <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                            <div className="text-sm">
-                              <span>{option.label}</span>
-                              {option.quantity > 0 && option.unit && (
-                                <span className="text-gray-500 ml-2">({option.quantity} {option.unit})</span>
-                              )}
+                            <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-2 rounded">
+                              <div className="text-sm">
+                                <span>{option.label}</span>
+                                {option.quantity > 0 && option.unit && (
+                                  <span className="text-gray-500 ml-2">({option.quantity} {option.unit})</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {option.price > 0 && (
+                                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                                    {option.price} {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'} 
+                                  </span>
+                                )}
+                                {option.price === 0 && (
+                                  <span className="text-sm text-green-600 dark:text-green-400">Free</span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentOption({
+                                      label: option.label,
+                                      quantity: option.quantity?.toString() || "",
+                                      unit: option.unit || "unit",
+                                      price: option.price?.toString() || ""
+                                    });
+                                    setEditingOptionIndex(index);
+                                  }}
+                                  className="text-blue-600 hover:bg-blue-100 rounded p-1"
+                                  title="Edit option"
+                                >
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentCustomization(prev => ({
+                                      ...prev,
+                                      options: prev.options.filter((_, i) => i !== index)
+                                    }));
+                                  }}
+                                  className="text-red-600 hover:bg-red-100 rounded p-1"
+                                  title="Delete option"
+                                >
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {option.price > 0 && (
-                                <span className="text-sm text-gray-600 dark:text-gray-300">
-                                  {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'} {option.price}
-                                </span>
-                              )}
-                              {option.price === 0 && (
-                                <span className="text-sm text-green-600 dark:text-green-400">Free</span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCurrentCustomization(prev => ({
-                                    ...prev,
-                                    options: prev.options.filter((_, i) => i !== index)
-                                  }));
-                                }}
-                                className="text-red-600 hover:bg-red-100 rounded p-1"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          </div>
                         ))}
                       </div>
                     )}
@@ -915,10 +1035,14 @@ const AddItemPage = () => {
                           if (currentCustomization.name && currentCustomization.options.length > 0) {
                             setFormData(prev => ({
                               ...prev,
-                              customizations: [...prev.customizations, currentCustomization]
+                              customizations: [...prev.customizations, {
+                                name: currentCustomization.name,
+                                MaxSelection: parseInt(currentCustomization.MaxSelection) || 0,
+                                options: currentCustomization.options
+                              }]
                             }));
                           }
-                          setCurrentCustomization({ name: "", options: [] });
+                          setCurrentCustomization({ name: "", MaxSelection: "", options: [] });
                         }}
                         className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700"
                       >
@@ -934,19 +1058,49 @@ const AddItemPage = () => {
                       {formData.customizations.map((custom, index) => (
                         <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-gray-900 dark:text-white">{custom.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  customizations: prev.customizations.filter((_, i) => i !== index)
-                                }));
-                              }}
-                              className="text-red-600 hover:bg-red-100 rounded p-1"
-                            >
-                              ×
-                            </button>
+                            <div>
+                              <span className="font-medium text-gray-900 dark:text-white">{custom.name}</span>
+                              {custom.MaxSelection !== undefined && custom.MaxSelection !== null && (
+                                <span className="text-xs text-gray-500 ml-2">(Max: {custom.MaxSelection === -1 ? 'Unlimited' : custom.MaxSelection})</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCurrentCustomization({
+                                    name: custom.name,
+                                    MaxSelection: custom.MaxSelection?.toString() || "",
+                                    options: custom.options
+                                  });
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    customizations: prev.customizations.filter((_, i) => i !== index)
+                                  }));
+                                }}
+                                className="text-blue-600 hover:bg-blue-100 rounded p-1"
+                                title="Edit customization"
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    customizations: prev.customizations.filter((_, i) => i !== index)
+                                  }));
+                                }}
+                                className="text-red-600 hover:bg-red-100 rounded p-1"
+                                title="Delete customization"
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                           <div className="space-y-1">
                             {custom.options.map((option, optIndex) => (
