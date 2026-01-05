@@ -453,7 +453,7 @@ const AppSidebar: React.FC = () => {
                   ]
                 }
               ], "payment")}
-            </div>
+            </div> */
             <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
@@ -479,7 +479,7 @@ const AppSidebar: React.FC = () => {
                 }
               ], "rbac")}
             </div>
-            <div className="">
+           /* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
                   ? "lg:justify-center"

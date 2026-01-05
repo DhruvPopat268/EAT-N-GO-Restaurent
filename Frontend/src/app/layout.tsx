@@ -5,6 +5,7 @@ import './globals.css';
 
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import ToastProvider from '@/components/common/ToastProvider';
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <SidebarProvider>
             {children}
+            <ToastProvider />
           </SidebarProvider>
         </ThemeProvider>
       </body>
