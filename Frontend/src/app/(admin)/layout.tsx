@@ -4,12 +4,20 @@ import { useSidebar } from "@/context/SidebarContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAuthPage = pathname?.includes('/signin') || pathname?.includes('/signup');
+  
+  if (isAuthPage) {
+    return <>{children}</>;
+  }
+  
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
   const router = useRouter();
   const [restaurentStatus, setRestaurentStatus] = useState<string | null>(null);
@@ -20,16 +28,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [resubmitData, setResubmitData] = useState<Record<string, any>>({});
   const [files, setFiles] = useState<Record<string, File | File[] | null>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mapCenter, setMapCenter] = useState({ lat: 23.0225, lng: 72.5714 });
+  const [markerPosition, setMarkerPosition] = useState(null);
+  const autocompleteRef = useRef(null);
 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        // Get token from localStorage
         const token = localStorage.getItem('RestaurantToken');
-        // console.log('Token from localStorage:', token);
         
         if (!token) {
-          // console.log('No token found, redirecting to signin');
           router.push('/signin');
           return;
         }
@@ -43,13 +51,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             }
           }
         );
-        // console.log("Fetched Status Response:", response.data?.data?.status);
+        
         setRestaurentStatus(response.data.data.status);
         setRestaurantData(response.data.data);
       } catch (error: any) {
         console.error("Error fetching restaurant status:", error);
         if (error.response?.status === 401) {
-          console.log('401 detected - clearing token and redirecting to signin');
           localStorage.removeItem('RestaurantToken');
           router.push('/signin');
           return;
@@ -92,7 +99,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       panCard: 'PAN Card',
       bankStatement: 'Bank Statement',
       foodLicense: 'Food License',
-      restaurantImages: 'Restaurant Images'
+      restaurantImages: 'Restaurant Images',
+      addressInfo: 'Address Information'
     };
     return labels[field] || field;
   };
@@ -100,6 +108,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const formFieldSections = {
     'Basic Information': ['restaurantName', 'ownerName', 'foodCategory', 'cuisineTypes'],
     'Contact Details': ['email', 'phone', 'address', 'city', 'state', 'country', 'pincode'],
+    'Address Information': ['addressInfo'],
     'Business Details': ['licenseNumber', 'gstNumber', 'bankAccount', 'ifscCode', 'description'],
     'Documents': ['businessLicense', 'gstCertificate', 'panCard', 'bankStatement', 'foodLicense', 'restaurantImages']
   };
@@ -112,6 +121,106 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleFileChange = (field: string, file: File | File[] | null) => {
     setFiles(prev => ({ ...prev, [field]: file }));
+  };
+
+  const handlePlaceSelect = (autocomplete: google.maps.places.Autocomplete) => {
+    const place = autocomplete.getPlace();
+    console.log('Selected place:', place);
+    
+    if (place && place.geometry) {
+      const location = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng()
+      };
+      
+      console.log('Location:', location);
+      setMapCenter(location);
+      setMarkerPosition(location);
+      
+      const addressComponents = place.address_components || [];
+      let city = '', state = '', country = '', pincode = '';
+      
+      addressComponents.forEach(component => {
+        const types = component.types;
+        
+        // For city - check multiple type possibilities
+        if (types.includes('locality') || types.includes('administrative_area_level_2') || types.includes('sublocality_level_1')) {
+          if (!city) city = component.long_name;
+        }
+        // For state
+        if (types.includes('administrative_area_level_1')) {
+          state = component.long_name;
+        }
+        // For country
+        if (types.includes('country')) {
+          country = component.long_name;
+        }
+        // For pincode
+        if (types.includes('postal_code')) {
+          pincode = component.long_name;
+        }
+      });
+      
+      console.log('Parsed address:', { city, state, country, pincode });
+      
+      // Get the full formatted address
+      const fullAddress = place.formatted_address || place.name || '';
+      
+      // Update all fields including the search location
+      setResubmitData(prev => ({
+        ...prev,
+        searchLocation: fullAddress,  // Add this to store the search location
+        address: fullAddress,
+        city: city,
+        state: state,
+        country: country,
+        pincode: pincode,
+        latitude: location.lat,
+        longitude: location.lng
+      }));
+    }
+  };
+
+  const handleMapClick = async (event) => {
+    const lat = event.latLng.lat();
+    const lng = event.latLng.lng();
+    const location = { lat, lng };
+    
+    setMarkerPosition(location);
+    
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+      );
+      const data = await response.json();
+      
+      if (data.results[0]) {
+        const result = data.results[0];
+        const addressComponents = result.address_components;
+        let city = '', state = '', country = '', pincode = '';
+        
+        addressComponents.forEach(component => {
+          const types = component.types;
+          if (types.includes('locality')) city = component.long_name;
+          if (types.includes('administrative_area_level_1')) state = component.long_name;
+          if (types.includes('country')) country = component.long_name;
+          if (types.includes('postal_code')) pincode = component.long_name;
+        });
+        
+        setResubmitData(prev => ({
+          ...prev,
+          address: result.formatted_address,
+          city: city,
+          state: state,
+          country: country,
+          pincode: pincode,
+          latitude: lat,
+          longitude: lng
+        }));
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+    }
   };
 
   const handleSubmit = async () => {
@@ -174,6 +283,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <input
             type="text"
             placeholder={getFieldLabel(field)}
+            value={resubmitData[field] || ''}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             onChange={(e) => handleInputChange(field, e.target.value)}
           />
@@ -184,6 +294,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <textarea
             placeholder={getFieldLabel(field)}
             rows={3}
+            value={resubmitData[field] || ''}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             onChange={(e) => handleInputChange(field, e.target.value)}
           />
@@ -193,6 +304,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return (
           <select
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={resubmitData[field] || ''}
             onChange={(e) => handleInputChange(field, e.target.value)}
           >
             <option value="">Select Food Category</option>
@@ -204,51 +316,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       case 'city':
         return (
-          <select
+          <input
+            type="text"
+            value={resubmitData.city || ''}
+            onChange={(e) => handleInputChange('city', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            onChange={(e) => handleInputChange(field, e.target.value)}
-          >
-            <option value="">Select City</option>
-            <option value="Mumbai">Mumbai</option>
-            <option value="Delhi">Delhi</option>
-            <option value="Bangalore">Bangalore</option>
-            <option value="Chennai">Chennai</option>
-            <option value="Kolkata">Kolkata</option>
-            <option value="Hyderabad">Hyderabad</option>
-            <option value="Pune">Pune</option>
-          </select>
+            placeholder="Vadodara"
+          />
         );
 
       case 'state':
         return (
-          <select
+          <input
+            type="text"
+            value={resubmitData.state || ''}
+            onChange={(e) => handleInputChange('state', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            onChange={(e) => handleInputChange(field, e.target.value)}
-          >
-            <option value="">Select State</option>
-            <option value="Maharashtra">Maharashtra</option>
-            <option value="Delhi">Delhi</option>
-            <option value="Karnataka">Karnataka</option>
-            <option value="Tamil Nadu">Tamil Nadu</option>
-            <option value="West Bengal">West Bengal</option>
-            <option value="Telangana">Telangana</option>
-            <option value="Gujarat">Gujarat</option>
-            <option value="Rajasthan">Rajasthan</option>
-          </select>
+            placeholder="Gujarat"
+          />
         );
 
       case 'country':
         return (
-          <select
+          <input
+            type="text"
+            value={resubmitData.country || ''}
+            onChange={(e) => handleInputChange('country', e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            onChange={(e) => handleInputChange(field, e.target.value)}
-          >
-            <option value="">Select Country</option>
-            <option value="India">India</option>
-            <option value="United States">United States</option>
-            <option value="United Kingdom">United Kingdom</option>
-            <option value="Canada">Canada</option>
-          </select>
+            placeholder="India"
+          />
         );
 
       case 'cuisineTypes':
@@ -259,6 +355,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <input
                   type="checkbox"
                   className="rounded"
+                  checked={(resubmitData.cuisineTypes || []).includes(cuisine)}
                   onChange={(e) => {
                     const current = resubmitData.cuisineTypes || [];
                     const updated = e.target.checked
@@ -296,6 +393,132 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             onChange={(e) => handleFileChange(field, e.target.files ? Array.from(e.target.files) : [])}
           />
+        );
+
+      case 'addressInfo':
+        return (
+          <LoadScript
+            googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+            libraries={['places']}
+          >
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search Location *</label>
+                <input
+                  ref={(ref) => {
+                    autocompleteRef.current = ref;
+                    if (ref && window.google?.maps?.places) {
+                      const autocomplete = new window.google.maps.places.Autocomplete(ref, {
+                        types: ['establishment', 'geocode'],
+                        componentRestrictions: { country: 'in' }
+                      });
+                      autocomplete.addListener('place_changed', () => handlePlaceSelect(autocomplete));
+                    }
+                  }}
+                  type="text"
+                  value={resubmitData.searchLocation || ''}
+                  onChange={(e) => handleInputChange('searchLocation', e.target.value)}
+                  placeholder="Start typing to search for your restaurant location"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">Start typing to search for your restaurant location</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                  <input
+                    type="text"
+                    value={resubmitData.city || ''}
+                    readOnly
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    placeholder="Vadodara"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">State *</label>
+                  <input
+                    type="text"
+                    value={resubmitData.state || ''}
+                    readOnly
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    placeholder="Gujarat"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+                  <input
+                    type="text"
+                    value={resubmitData.country || ''}
+                    readOnly
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    placeholder="India"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
+                <input
+                  type="text"
+                  value={resubmitData.pincode || ''}
+                  readOnly
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                  placeholder="391101"
+                />
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Restaurant Location</h3>
+                <p className="text-sm text-gray-600 mb-4">Click on the map or drag the marker to adjust your exact location</p>
+                <div className="h-80 w-full border border-gray-300 rounded-lg overflow-hidden">
+                  <GoogleMap
+                    mapContainerStyle={{ width: '100%', height: '100%' }}
+                    center={mapCenter}
+                    zoom={15}
+                    onClick={handleMapClick}
+                    options={{
+                      streetViewControl: false,
+                      mapTypeControl: false,
+                      fullscreenControl: true,
+                      zoomControl: true
+                    }}
+                  >
+                    {markerPosition && (
+                      <Marker
+                        position={markerPosition}
+                        draggable={true}
+                        onDragEnd={handleMapClick}
+                      />
+                    )}
+                  </GoogleMap>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+                  <input
+                    type="text"
+                    value={resubmitData.latitude || ''}
+                    readOnly
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    placeholder="22.3147489084207775"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+                  <input
+                    type="text"
+                    value={resubmitData.longitude || ''}
+                    readOnly
+                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    placeholder="73.1203701259033334"
+                  />
+                </div>
+              </div>
+            </div>
+          </LoadScript>
         );
 
       default:
@@ -364,7 +587,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </span>
                   </h3>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     {sectionRejectedFields.map((field) => (
                       <div key={field} className="space-y-2">
                         <label className="block text-sm font-medium text-gray-700">
