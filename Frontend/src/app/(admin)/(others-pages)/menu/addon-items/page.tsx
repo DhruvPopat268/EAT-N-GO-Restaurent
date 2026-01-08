@@ -93,7 +93,7 @@ interface AddonItem {
   name: string;
   category: string;
   subcategory: string | { _id: string; name: string; category: string };
-  attributes: { name: string; price: string; currency?: string }[];
+  attributes: { attribute: string; price: string }[];
   description: string;
   image: string | null;
   isAvailable: boolean;
@@ -112,7 +112,7 @@ const AddonItemsPage = () => {
     name: "",
     category: "",
     subcategory: "",
-    attributes: [] as { name: string; price: string }[],
+    attributes: [] as { attribute: string; price: string }[],
     description: "",
     image: null as File | null,
     isAvailable: true
@@ -213,8 +213,12 @@ const AddonItemsPage = () => {
         name: formData.name,
         category: formData.category,
         subcategory: formData.subcategory,
-        attributes: formData.attributes,
+        attributes: formData.attributes.map(attr => ({
+          attribute: attr.attribute,
+          price: parseFloat(attr.price)
+        })),
         description: formData.description,
+        currency: currentCurrency,
         isAvailable: formData.isAvailable
       };
 
@@ -272,7 +276,10 @@ const AddonItemsPage = () => {
       name: item.name,
       category: item.category,
       subcategory: subcategoryId,
-      attributes: item.attributes,
+      attributes: item.attributes.map(attr => ({
+        attribute: attr.name, // Convert name back to attribute for editing
+        price: attr.price
+      })),
       description: item.description,
       image: null,
       isAvailable: item.isAvailable
@@ -299,8 +306,9 @@ const AddonItemsPage = () => {
   };
 
   const addAttribute = () => {
-    if (currentAttribute.trim() && currentPrice.trim() && !formData.attributes.some(attr => attr.name === currentAttribute.trim())) {
-      setFormData(prev => ({ ...prev, attributes: [...prev.attributes, { name: currentAttribute.trim(), price: currentPrice.trim(), currency: currentCurrency }] }));
+    const selectedAttr = attributes.find(attr => attr.name === currentAttribute.trim());
+    if (selectedAttr && currentPrice.trim() && !formData.attributes.some(attr => attr.attribute === selectedAttr._id)) {
+      setFormData(prev => ({ ...prev, attributes: [...prev.attributes, { attribute: selectedAttr._id, price: currentPrice.trim() }] }));
       setCurrentAttribute("");
       setCurrentPrice("");
     }
@@ -723,7 +731,10 @@ const AddonItemsPage = () => {
                   <button
                     type="button"
                     onClick={addAttribute}
-                    disabled={!currentAttribute || !currentPrice || formData.attributes.some(attr => attr.name === currentAttribute)}
+                    disabled={!currentAttribute || !currentPrice || formData.attributes.some(attr => {
+                      const selectedAttr = attributes.find(a => a.name === currentAttribute);
+                      return selectedAttr && attr.attribute === selectedAttr._id;
+                    })}
                     className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Add
@@ -731,18 +742,21 @@ const AddonItemsPage = () => {
                 </div>
                 {formData.attributes.length > 0 && (
                   <div className="space-y-2 mt-2">
-                    {formData.attributes.map((attr, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                        <span className="text-sm font-medium">{attr.name} - {attr.currency || 'INR'} {attr.price}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeAttribute(index)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
+                    {formData.attributes.map((attr, index) => {
+                      const attributeData = attributes.find(a => a._id === attr.attribute);
+                      return (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                          <span className="text-sm font-medium">{attributeData?.name || 'Unknown'} - {currentCurrency} {attr.price}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeAttribute(index)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
