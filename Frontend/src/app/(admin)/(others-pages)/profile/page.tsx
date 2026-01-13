@@ -22,6 +22,7 @@ interface RestaurantData {
       openTime?: string;
       closeTime?: string;
     };
+    facilities?: string[];
   };
   contactDetails: {
     email: string;
@@ -108,6 +109,15 @@ export default function Profile() {
       ? currentCuisines.filter(c => c !== cuisine)
       : [...currentCuisines, cuisine];
     handleInputChange('basicInfo', 'cuisineTypes', updatedCuisines);
+  };
+
+  const handleFacilityChange = (facility: string) => {
+    if (!formData) return;
+    const currentFacilities = formData.basicInfo.facilities || [];
+    const updatedFacilities = currentFacilities.includes(facility)
+      ? currentFacilities.filter(f => f !== facility)
+      : [...currentFacilities, facility];
+    handleInputChange('basicInfo', 'facilities', updatedFacilities);
   };
 
   const handleImageUpload = (files: FileList | null) => {
@@ -531,6 +541,64 @@ export default function Profile() {
                   />
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">{data.businessDetails.description}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Facilities */}
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-semibold mb-3">Restaurant Facilities</h4>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Available Facilities</label>
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Add facility (e.g., WiFi, Parking, AC)"
+                      className="w-full p-2 border rounded"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          const facility = e.currentTarget.value.trim();
+                          if (facility && !data.basicInfo.facilities?.includes(facility)) {
+                            handleFacilityChange(facility);
+                            e.currentTarget.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {data.basicInfo.facilities?.map((facility, index) => (
+                        <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {facility}
+                          <button
+                            onClick={() => {
+                              const updatedFacilities = data.basicInfo.facilities?.filter(f => f !== facility) || [];
+                              handleInputChange('basicInfo', 'facilities', updatedFacilities);
+                            }}
+                            className="ml-1 text-blue-600 hover:text-blue-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2 bg-gray-50 rounded">
+                    {data.basicInfo.facilities?.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {data.basicInfo.facilities.map((facility, index) => (
+                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {facility}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      'No facilities added'
+                    )}
+                  </div>
                 )}
               </div>
             </div>

@@ -2,25 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
 import Image from "next/image";
-import { Plus, Edit, Trash2, Search, X } from "lucide-react";
+import { Plus, Edit, Trash2, Search, X, Eye } from "lucide-react";
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { toast } from "@/utils/toast";
-import axios from 'axios';
-
-const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('RestaurantToken');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
-};
+import axiosInstance from '@/utils/axiosConfig';
 
 const addonItemsApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/addon-items`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/addon-items');
     return response.data;
   },
 
@@ -29,9 +18,7 @@ const addonItemsApi = {
     formData.append('data', JSON.stringify(data));
     formData.append('image', image);
 
-    const response = await axios.post(`${BASE_URL}/api/addon-items`, formData, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.post('/api/addon-items', formData);
     return response.data;
   },
 
@@ -42,48 +29,33 @@ const addonItemsApi = {
       formData.append('image', image);
     }
 
-    const response = await axios.put(`${BASE_URL}/api/addon-items/update`, formData, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.put('/api/addon-items/update', formData);
     return response.data;
   },
 
   delete: async (id: string) => {
-    const response = await axios.delete(`${BASE_URL}/api/addon-items/delete`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
+    const response = await axiosInstance.delete('/api/addon-items/delete', {
       data: { id }
     });
     return response.data;
   },
 
   updateStatus: async (data: { id: string; status: boolean }) => {
-    const response = await axios.patch(`${BASE_URL}/api/addon-items/status`, data, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
-    });
+    const response = await axiosInstance.patch('/api/addon-items/status', data);
     return response.data;
   }
 };
 
 const subcategoriesApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/subcategories`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/subcategories');
     return response.data;
   }
 };
 
 const attributesApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/attributes`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/attributes');
     return response.data;
   }
 };
@@ -93,10 +65,14 @@ interface AddonItem {
   name: string;
   category: string;
   subcategory: string | { _id: string; name: string; category: string };
-  attributes: { name: string; price: string; currency?: string }[];
+  attributes: Array<{
+    attribute: { _id: string; name: string };
+    price: number;
+  }>;
   description: string;
   image: string | null;
   isAvailable: boolean;
+  currency: string;
   createdAt: string;
 }
 
@@ -209,11 +185,20 @@ const AddonItemsPage = () => {
 
     setSubmitting(true);
     try {
+      // Map form attributes to API format
+      const apiAttributes = formData.attributes.map(attr => {
+        const attributeObj = attributes.find(a => a.name === attr.name);
+        return {
+          attribute: attributeObj?._id || attr.name, // Send attribute ID if found, fallback to name
+          price: parseFloat(attr.price)
+        };
+      });
+
       const addonData = {
         name: formData.name,
         category: formData.category,
         subcategory: formData.subcategory,
-        attributes: formData.attributes,
+        attributes: apiAttributes,
         description: formData.description,
         isAvailable: formData.isAvailable
       };
@@ -268,12 +253,19 @@ const AddonItemsPage = () => {
     // Find subcategory ID from name or object
     const subcategoryId = typeof item.subcategory === 'object' ? item.subcategory._id : item.subcategory;
     
+    // Map attributes from API response format to form format
+    const mappedAttributes = item.attributes.map(attr => ({
+      name: attr.attribute.name,
+      price: attr.price.toString(),
+      currency: item.currency
+    }));
+    
     setFormData({
       name: item.name,
       category: item.category,
       subcategory: subcategoryId,
-      attributes: item.attributes,
-      description: item.description,
+      attributes: mappedAttributes,
+      description: item.description || '',
       image: null,
       isAvailable: item.isAvailable
     });
@@ -456,11 +448,11 @@ const AddonItemsPage = () => {
           <div>
             {/* Table Header - Always visible */}
             <div className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-[80px_1fr_120px_150px_100px_120px] gap-4 px-6 py-3">
+              <div className="grid grid-cols-[80px_1fr_120px_200px_100px_120px] gap-4 px-6 py-3">
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Image</div>
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Name</div>
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Category</div>
-                <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Attribute</div>
+                <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Attributes & Prices</div>
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</div>
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</div>
               </div>
@@ -484,7 +476,7 @@ const AddonItemsPage = () => {
                   <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Image</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Name</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Category</TableCell>
-                  <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Attribute</TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Attributes & Prices</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</TableCell>
                 </TableRow>
@@ -516,17 +508,17 @@ const AddonItemsPage = () => {
                       <div className="text-xs text-gray-500 dark:text-gray-400">{item.category}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {item.attributes.slice(0, 2).map((attr, index) => (
-                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            {attr.name}
-                          </span>
+                      <div className="space-y-1">
+                        {item.attributes.map((attr, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-2 py-1 rounded text-xs">
+                            <span className="text-gray-700 dark:text-gray-300">
+                              {attr.attribute.name}
+                            </span>
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {item.currency} {attr.price}
+                            </span>
+                          </div>
                         ))}
-                        {item.attributes.length > 2 && (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                            +{item.attributes.length - 2} more
-                          </span>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell className="px-6 py-4">
@@ -849,8 +841,8 @@ const AddonItemsPage = () => {
                 <div className="space-y-2">
                   {viewingItem.attributes.map((attr, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">{attr.name}</span>
-                      <span className="text-sm font-semibold text-green-600 dark:text-green-400">{attr.currency || 'INR'} {attr.price}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{attr.attribute.name}</span>
+                      <span className="text-sm font-semibold text-green-600 dark:text-green-400">{viewingItem.currency} {attr.price}</span>
                     </div>
                   ))}
                 </div>

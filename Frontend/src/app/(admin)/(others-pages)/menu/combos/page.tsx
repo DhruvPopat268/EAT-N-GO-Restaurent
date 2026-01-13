@@ -10,22 +10,13 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/utils/toast";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import MultiSelect from "@/components/form/MultiSelect";
-import axios from 'axios';
+import axiosInstance from '@/utils/axiosConfig';
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('RestaurantToken');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
-};
-
 const combosApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/combos`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/combos');
     return response.data;
   },
 
@@ -35,9 +26,7 @@ const combosApi = {
     if (image) {
       formData.append('image', image);
     }
-    const response = await axios.post(`${BASE_URL}/api/combos/add`, formData, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.post('/api/combos/add', formData);
     return response.data;
   },
 
@@ -47,56 +36,35 @@ const combosApi = {
     if (image) {
       formData.append('image', image);
     }
-    const response = await axios.put(`${BASE_URL}/api/combos/update`, formData, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.put('/api/combos/update', formData);
     return response.data;
   },
 
   delete: async (comboId: string) => {
-    const response = await axios.delete(`${BASE_URL}/api/combos/delete`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
+    const response = await axiosInstance.delete('/api/combos/delete', {
       data: { comboId }
     });
     return response.data;
   },
 
   updateStatus: async (comboId: string, isAvailable: boolean) => {
-    const response = await axios.patch(`${BASE_URL}/api/combos/status`, {
+    const response = await axiosInstance.patch('/api/combos/status', {
       comboId,
       isAvailable
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
     });
     return response.data;
   },
 
   getDetail: async (comboId: string) => {
-    const response = await axios.post(`${BASE_URL}/api/combos/detail`, {
+    const response = await axiosInstance.post('/api/combos/detail', {
       comboId
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
     });
     return response.data;
   },
 
   getItemAttributes: async (itemId: string) => {
-    const response = await axios.post(`${BASE_URL}/api/combos/item-attributes`, {
+    const response = await axiosInstance.post('/api/combos/item-attributes', {
       itemId
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
     });
     return response.data;
   }
@@ -104,18 +72,14 @@ const combosApi = {
 
 const itemsApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/items`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/items');
     return response.data;
   }
 };
 
 const addonItemsApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/addon-items`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/addon-items');
     return response.data;
   }
 };

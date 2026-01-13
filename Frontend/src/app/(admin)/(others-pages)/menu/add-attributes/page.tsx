@@ -4,62 +4,33 @@ import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { toast } from "@/utils/toast";
-import axios from 'axios';
-
-const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('RestaurantToken');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
-};
+import axiosInstance from '@/utils/axiosConfig';
 
 const attributesApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/attributes`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/attributes', { withCredentials: true });
     return response.data;
   },
 
   create: async (data: { name: string }) => {
-    const response = await axios.post(`${BASE_URL}/api/attributes`, data, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
-    });
+    const response = await axiosInstance.post('/api/attributes', data, { withCredentials: true });
     return response.data;
   },
 
   update: async (data: { id: string; name: string; isAvailable: boolean }) => {
-    const response = await axios.put(`${BASE_URL}/api/attributes/update`, data, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
-    });
+    const response = await axiosInstance.put('/api/attributes/update', data, { withCredentials: true });
     return response.data;
   },
 
   updateStatus: async (data: { id: string; isAvailable: boolean }) => {
-    const response = await axios.patch(`${BASE_URL}/api/attributes/status`, data, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
-    });
+    const response = await axiosInstance.patch('/api/attributes/status', data, { withCredentials: true });
     return response.data;
   },
 
   delete: async (id: string) => {
-    const response = await axios.delete(`${BASE_URL}/api/attributes/delete`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
-      data: { id }
+    const response = await axiosInstance.delete('/api/attributes/delete', {
+      data: { id },
+      withCredentials: true
     });
     return response.data;
   }

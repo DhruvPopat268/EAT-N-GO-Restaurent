@@ -3,26 +3,12 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import axios from 'axios';
-
-const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('RestaurantToken');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
-};
+import axiosInstance from '@/utils/axiosConfig';
 
 const itemDetailApi = {
   getDetail: async (itemId: string) => {
-    const response = await axios.post(`${BASE_URL}/api/items/detail`, {
+    const response = await axiosInstance.post('/api/items/detail', {
       itemId
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
     });
     return response.data;
   }

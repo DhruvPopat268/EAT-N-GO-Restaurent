@@ -9,31 +9,16 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { useRouter } from "next/navigation";
 import { toast } from "@/utils/toast";
-import axios from 'axios';
-
-const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('RestaurantToken');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
-};
+import axiosInstance from '@/utils/axiosConfig';
 
 const itemsApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/items`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/items');
     return response.data;
   },
 
   delete: async (id: string) => {
-    const response = await axios.delete(`${BASE_URL}/api/items/delete`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
+    const response = await axiosInstance.delete('/api/items/delete', {
       data: { itemId: id }
     });
     return response.data;
@@ -44,12 +29,7 @@ const itemsApi = {
     if (isPopular !== undefined) {
       payload.isPopular = isPopular;
     }
-    const response = await axios.patch(`${BASE_URL}/api/items/status`, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
-    });
+    const response = await axiosInstance.patch('/api/items/status', payload);
     return response.data;
   }
 };

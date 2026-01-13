@@ -5,16 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { toast } from "@/utils/toast";
 import MultiSelect from "@/components/form/MultiSelect";
-import axios from 'axios';
-
-const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('RestaurantToken');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
-};
+import axiosInstance from '@/utils/axiosConfig';
 
 const itemsApi = {
   create: async (data: any, images: File[]) => {
@@ -24,9 +15,7 @@ const itemsApi = {
       formData.append('images', image);
     });
 
-    const response = await axios.post(`${BASE_URL}/api/items`, formData, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.post('/api/items', formData);
     return response.data;
   },
   update: async (data: any, newImages: File[], existingImages: string[]) => {
@@ -36,28 +25,19 @@ const itemsApi = {
       formData.append('images', image);
     });
 
-    const response = await axios.put(`${BASE_URL}/api/items/update`, formData, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.put('/api/items/update', formData);
     return response.data;
   },
   bulkImport: async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await axios.post(`${BASE_URL}/api/items/bulk-import`, formData, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.post('/api/items/bulk-import', formData);
     return response.data;
   },
   getById: async (id: string) => {
-    const response = await axios.post(`${BASE_URL}/api/items/detail`, {
+    const response = await axiosInstance.post('/api/items/detail', {
       itemId: id
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
     });
     return response.data;
   }
@@ -65,27 +45,21 @@ const itemsApi = {
 
 const subcategoriesApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/subcategories`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/subcategories');
     return response.data;
   }
 };
 
 const attributesApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/attributes`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/attributes');
     return response.data;
   }
 };
 
 const addonItemsApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/addon-items`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/addon-items');
     console.log('Addon Items Response:', response.data?.data); // Debug log
     return response.data;
   }
