@@ -1,6 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Plus, Edit, Trash2, Users, Key, Shield, Mail, Phone } from "lucide-react";
+import { permissionService, Permission, CreatePermissionData } from "@/services/permissionService";
+import { toast } from "react-hot-toast";
 
 const RBACManagementPage = () => {
   const [activeTab, setActiveTab] = useState("permissions");
@@ -8,19 +10,19 @@ const RBACManagementPage = () => {
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Form states
-  const [permissionForm, setPermissionForm] = useState({ name: "", description: "" });
+  const [permissionForm, setPermissionForm] = useState<CreatePermissionData>({
+    name: "",
+    description: "",
+    module: "",
+    action: ""
+  });
   const [roleForm, setRoleForm] = useState({ name: "", description: "", permissions: [] });
   const [userForm, setUserForm] = useState({ name: "", email: "", phone: "", role: "Viewer", status: "Active" });
 
-  const [permissions, setPermissions] = useState([
-    { id: 1, name: "read", description: "View and read data", createdDate: "2024-01-15" },
-    { id: 2, name: "user_edit", description: "Edit user information", createdDate: "2024-01-15" },
-    { id: 3, name: "user_delete", description: "Delete users", createdDate: "2024-01-15" },
-    { id: 4, name: "restaurant_manage", description: "Manage restaurants", createdDate: "2024-01-16" },
-    { id: 5, name: "payment_approve", description: "Approve payments", createdDate: "2024-01-16" },
-  ]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
 
   const [roles, setRoles] = useState([
     {
@@ -82,6 +84,64 @@ const RBACManagementPage = () => {
     }
   ]);
 
+  useEffect(() => {
+    fetchPermissions();
+  }, []);
+
+  const fetchPermissions = async () => {
+    try {
+      setLoading(true);
+      const data = await permissionService.getPermissions();
+      setPermissions(data);
+    } catch (error) {
+      toast.error('Failed to fetch permissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddPermission = async () => {
+    try {
+      if (editingItem) {
+        const updated = await permissionService.updatePermission(editingItem._id, permissionForm);
+        setPermissions(prev => prev.map(p => p._id === editingItem._id ? updated : p));
+        toast.success('Permission updated successfully');
+      } else {
+        const newPermission = await permissionService.createPermission(permissionForm);
+        setPermissions(prev => [newPermission, ...prev]);
+        toast.success('Permission created successfully');
+      }
+      setShowPermissionModal(false);
+      setPermissionForm({ name: "", description: "", module: "", action: "" });
+      setEditingItem(null);
+    } catch (error) {
+      toast.error('Failed to save permission');
+    }
+  };
+
+  const handleEditPermission = (permission: Permission) => {
+    setEditingItem(permission);
+    setPermissionForm({
+      name: permission.name,
+      description: permission.description,
+      module: permission.module,
+      action: permission.action
+    });
+    setShowPermissionModal(true);
+  };
+
+  const handleDeletePermission = async (id: string) => {
+    if (confirm('Are you sure you want to delete this permission?')) {
+      try {
+        await permissionService.deletePermission(id);
+        setPermissions(prev => prev.filter(p => p._id !== id));
+        toast.success('Permission deleted successfully');
+      } catch (error) {
+        toast.error('Failed to delete permission');
+      }
+    }
+  };
+
   const getCurrentDate = () => {
     return new Date().toISOString().split('T')[0];
   };
@@ -102,30 +162,6 @@ const RBACManagementPage = () => {
         return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Modal handlers
-  const handleAddPermission = () => {
-    if (permissionForm.name && permissionForm.description) {
-      if (editingItem) {
-        setPermissions(permissions.map(p => 
-          p.id === editingItem.id 
-            ? { ...p, name: permissionForm.name, description: permissionForm.description }
-            : p
-        ));
-      } else {
-        const newPermission = {
-          id: Math.max(...permissions.map(p => p.id)) + 1,
-          name: permissionForm.name,
-          description: permissionForm.description,
-          createdDate: getCurrentDate()
-        };
-        setPermissions([...permissions, newPermission]);
-      }
-      setPermissionForm({ name: "", description: "" });
-      setEditingItem(null);
-      setShowPermissionModal(false);
     }
   };
 
@@ -175,7 +211,6 @@ const RBACManagementPage = () => {
         };
         setUsers([...users, newUser]);
         
-        // Update role user count
         setRoles(roles.map(role => 
           role.name === userForm.role 
             ? { ...role, users: role.users + 1 }
@@ -197,12 +232,6 @@ const RBACManagementPage = () => {
     }));
   };
 
-  const handleEditPermission = (permission) => {
-    setEditingItem(permission);
-    setPermissionForm({ name: permission.name, description: permission.description });
-    setShowPermissionModal(true);
-  };
-
   const handleEditRole = (role) => {
     setEditingItem(role);
     setRoleForm({ name: role.name, description: role.description, permissions: role.permissions });
@@ -215,7 +244,6 @@ const RBACManagementPage = () => {
     setShowUserModal(true);
   };
 
-  // Modal component
   const Modal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
 
@@ -267,6 +295,9 @@ const RBACManagementPage = () => {
                       Description
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Module
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -275,39 +306,61 @@ const RBACManagementPage = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {permissions.map((permission) => (
-                    <tr key={permission.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="p-2 bg-blue-100 rounded-lg mr-3">
-                            <Key className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {permission.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {permission.description}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {permission.createdDate}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => handleEditPermission(permission)}
-                            className="text-blue-600 hover:text-blue-900 p-1 transition-colors"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button className="text-red-600 hover:text-red-900 p-1 transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                        Loading permissions...
                       </td>
                     </tr>
-                  ))}
+                  ) : permissions.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                        No permissions found
+                      </td>
+                    </tr>
+                  ) : (
+                    permissions.map((permission) => (
+                      <tr key={permission._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                              <Key className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                              {permission.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {permission.description}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                            {permission.module}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(permission.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => handleEditPermission(permission)}
+                              className="text-blue-600 hover:text-blue-900 p-1 transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeletePermission(permission._id)}
+                              className="text-red-600 hover:text-red-900 p-1 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -578,7 +631,7 @@ const RBACManagementPage = () => {
         isOpen={showPermissionModal}
         onClose={() => {
           setShowPermissionModal(false);
-          setPermissionForm({ name: "", description: "" });
+          setPermissionForm({ name: "", description: "", module: "", action: "" });
           setEditingItem(null);
         }}
         title={editingItem ? "Edit Permission" : "Add New Permission"}
@@ -602,11 +655,29 @@ const RBACManagementPage = () => {
               rows={3}
             />
           </div>
+          <div>
+            <input
+              type="text"
+              placeholder="Module (e.g., Orders, Menu, Analytics)"
+              value={permissionForm.module}
+              onChange={(e) => setPermissionForm(prev => ({ ...prev, module: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <input
+              type="text"
+              placeholder="Action (e.g., create, read, update, delete)"
+              value={permissionForm.action}
+              onChange={(e) => setPermissionForm(prev => ({ ...prev, action: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
           <div className="flex justify-end gap-3 pt-4">
             <button
               onClick={() => {
                 setShowPermissionModal(false);
-                setPermissionForm({ name: "", description: "" });
+                setPermissionForm({ name: "", description: "", module: "", action: "" });
                 setEditingItem(null);
               }}
               className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -615,7 +686,7 @@ const RBACManagementPage = () => {
             </button>
             <button
               onClick={handleAddPermission}
-              disabled={!permissionForm.name || !permissionForm.description}
+              disabled={!permissionForm.name || !permissionForm.description || !permissionForm.module || !permissionForm.action}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               {editingItem ? "Update" : "Create"}
@@ -657,7 +728,7 @@ const RBACManagementPage = () => {
             <h3 className="text-sm font-medium text-gray-900 mb-3">Select Permissions</h3>
             <div className="space-y-3 max-h-48 overflow-y-auto">
               {permissions.map((permission) => (
-                <label key={permission.id} className="flex items-start gap-3 cursor-pointer">
+                <label key={permission._id} className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={roleForm.permissions.includes(permission.name)}

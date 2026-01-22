@@ -8,22 +8,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { toast } from "@/utils/toast";
-import axios from 'axios';
-
-const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('RestaurantToken');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
-};
+import axiosInstance from '@/utils/axiosConfig';
 
 const subcategoriesApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/subcategories`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/subcategories');
     return response.data;
   },
 
@@ -34,9 +23,7 @@ const subcategoriesApi = {
     formData.append('image', data.image);
     formData.append('isAvailable', (data.isAvailable ?? true).toString());
 
-    const response = await axios.post(`${BASE_URL}/api/subcategories`, formData, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.post('/api/subcategories', formData);
     return response.data;
   },
 
@@ -50,32 +37,20 @@ const subcategoriesApi = {
     }
     formData.append('isAvailable', (data.isAvailable ?? true).toString());
 
-    const response = await axios.put(`${BASE_URL}/api/subcategories/update`, formData, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.put('/api/subcategories/update', formData);
     return response.data;
   },
 
   delete: async (id: string) => {
-    const response = await axios.delete(`${BASE_URL}/api/subcategories/delete`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
+    const response = await axiosInstance.delete('/api/subcategories/delete', {
       data: { id }
     });
     return response.data;
   },
 
   updateStatus: async (id: string, isAvailable: boolean) => {
-    const response = await axios.patch(`${BASE_URL}/api/subcategories/status`, 
-      { id, isAvailable },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        }
-      }
+    const response = await axiosInstance.patch('/api/subcategories/status', 
+      { id, isAvailable }
     );
     return response.data;
   }

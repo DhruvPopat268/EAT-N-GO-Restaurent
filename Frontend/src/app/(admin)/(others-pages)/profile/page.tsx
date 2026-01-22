@@ -17,6 +17,12 @@ interface RestaurantData {
     ownerName: string;
     foodCategory: string;
     cuisineTypes: string[];
+    otherCuisine?: string;
+    operatingHours: {
+      openTime?: string;
+      closeTime?: string;
+    };
+    facilities?: string[];
   };
   contactDetails: {
     email: string;
@@ -35,6 +41,7 @@ interface RestaurantData {
     description: string;
   };
   documents: {
+    primaryImage?: string;
     restaurantImages: string[];
   };
 }
@@ -46,6 +53,8 @@ export default function Profile() {
   const [formData, setFormData] = useState<RestaurantData | null>(null);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [primaryImageIndex, setPrimaryImageIndex] = useState<number>(-1);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -82,7 +91,7 @@ export default function Profile() {
     fetchRestaurantDetails();
   }, [router]);
 
-  const handleInputChange = (section: keyof RestaurantData, field: string, value: string | string[]) => {
+  const handleInputChange = (section: keyof RestaurantData, field: string, value: string | string[] | object) => {
     if (!formData) return;
     setFormData({
       ...formData,
@@ -102,6 +111,15 @@ export default function Profile() {
     handleInputChange('basicInfo', 'cuisineTypes', updatedCuisines);
   };
 
+  const handleFacilityChange = (facility: string) => {
+    if (!formData) return;
+    const currentFacilities = formData.basicInfo.facilities || [];
+    const updatedFacilities = currentFacilities.includes(facility)
+      ? currentFacilities.filter(f => f !== facility)
+      : [...currentFacilities, facility];
+    handleInputChange('basicInfo', 'facilities', updatedFacilities);
+  };
+
   const handleImageUpload = (files: FileList | null) => {
     if (files) {
       const existingCount = formData?.documents?.restaurantImages?.length || 0;
@@ -116,6 +134,81 @@ export default function Profile() {
     }
   };
 
+  const setPrimaryImage = (imageUrl: string, index: number) => {
+    if (!formData) return;
+    
+    // If setting an existing gallery image as primary
+    if (index >= 0) {
+      const updatedImages = [...formData.documents.restaurantImages];
+      updatedImages.splice(index, 1); // Remove from gallery
+      
+      setFormData({
+        ...formData,
+        documents: {
+          ...formData.documents,
+          primaryImage: imageUrl,
+          restaurantImages: updatedImages
+        }
+      });
+    } else {
+      // Setting primary image directly
+      setFormData({
+        ...formData,
+        documents: {
+          ...formData.documents,
+          primaryImage: imageUrl
+        }
+      });
+    }
+  };
+
+  const removePrimaryImage = () => {
+    if (!formData) return;
+    setFormData({
+      ...formData,
+      documents: {
+        ...formData.documents,
+        primaryImage: undefined
+      }
+    });
+  };
+  const moveImage = (fromIndex: number, toIndex: number) => {
+    if (!formData) return;
+    const updatedImages = [...formData.documents.restaurantImages];
+    const [movedImage] = updatedImages.splice(fromIndex, 1);
+    updatedImages.splice(toIndex, 0, movedImage);
+    
+    setFormData({
+      ...formData,
+      documents: {
+        ...formData.documents,
+        restaurantImages: updatedImages
+      }
+    });
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex !== null && draggedIndex !== dropIndex) {
+      moveImage(draggedIndex, dropIndex);
+    }
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   const removeImage = (index: number) => {
     if (!formData) return;
     const updatedImages = formData.documents.restaurantImages.filter((_, i) => i !== index);
@@ -127,6 +220,7 @@ export default function Profile() {
       }
     });
   };
+
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('RestaurantToken');
@@ -137,7 +231,12 @@ export default function Profile() {
       updateFormData.append('contactDetails', JSON.stringify(formData?.contactDetails));
       updateFormData.append('businessDetails', JSON.stringify(formData?.businessDetails));
       
-      // Add existing images as URLs
+      // Add primary image if exists
+      if (formData?.documents?.primaryImage) {
+        updateFormData.append('primaryImage', formData.documents.primaryImage);
+      }
+      
+      // Add existing gallery images as URLs
       (formData?.documents?.restaurantImages || []).forEach(imageUrl => {
         updateFormData.append('restaurantImages', imageUrl);
       });
@@ -264,6 +363,58 @@ export default function Profile() {
                   </div>
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">{data.basicInfo.cuisineTypes?.join(', ') || 'No cuisine types selected'}</p>
+                )}
+              </div>
+              {data.basicInfo.cuisineTypes?.includes('Other') && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Other Cuisine</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={data.basicInfo.otherCuisine || ''}
+                      onChange={(e) => handleInputChange('basicInfo', 'otherCuisine', e.target.value)}
+                      className="w-full p-2 border rounded"
+                      placeholder="Specify other cuisine type"
+                    />
+                  ) : (
+                    <p className="p-2 bg-gray-50 rounded">{data.basicInfo.otherCuisine || 'Not specified'}</p>
+                  )}
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium mb-1">Opening Time</label>
+                {isEditing ? (
+                  <input
+                    type="time"
+                    value={data.basicInfo.operatingHours?.openTime || ''}
+                    onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
+                      ...data.basicInfo.operatingHours,
+                      openTime: e.target.value
+                    })}
+                    className="w-full p-2 border rounded"
+                  />
+                ) : (
+                  <p className="p-2 bg-gray-50 rounded">
+                    {data.basicInfo.operatingHours?.openTime || 'Not set'}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Closing Time</label>
+                {isEditing ? (
+                  <input
+                    type="time"
+                    value={data.basicInfo.operatingHours?.closeTime || ''}
+                    onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
+                      ...data.basicInfo.operatingHours,
+                      closeTime: e.target.value
+                    })}
+                    className="w-full p-2 border rounded"
+                  />
+                ) : (
+                  <p className="p-2 bg-gray-50 rounded">
+                    {data.basicInfo.operatingHours?.closeTime || 'Not set'}
+                  </p>
                 )}
               </div>
             </div>
@@ -395,49 +546,168 @@ export default function Profile() {
             </div>
           </div>
 
+          {/* Facilities */}
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-semibold mb-3">Restaurant Facilities</h4>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Available Facilities</label>
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Add facility (e.g., WiFi, Parking, AC)"
+                      className="w-full p-2 border rounded"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          const facility = e.currentTarget.value.trim();
+                          if (facility && !data.basicInfo.facilities?.includes(facility)) {
+                            handleFacilityChange(facility);
+                            e.currentTarget.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      {data.basicInfo.facilities?.map((facility, index) => (
+                        <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {facility}
+                          <button
+                            onClick={() => {
+                              const updatedFacilities = data.basicInfo.facilities?.filter(f => f !== facility) || [];
+                              handleInputChange('basicInfo', 'facilities', updatedFacilities);
+                            }}
+                            className="ml-1 text-blue-600 hover:text-blue-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2 bg-gray-50 rounded">
+                    {data.basicInfo.facilities?.length ? (
+                      <div className="flex flex-wrap gap-2">
+                        {data.basicInfo.facilities.map((facility, index) => (
+                          <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {facility}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      'No facilities added'
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Restaurant Images */}
           <div className="p-4 border rounded-lg">
             <h4 className="font-semibold mb-3">Restaurant Images</h4>
-            {isEditing && (
-              <div className="mb-4">
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e.target.files)}
-                  className="w-full p-2 border rounded"
-                />
-                {newImages.length > 0 && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    {newImages.length} new image(s) selected
-                  </p>
-                )}
-                {isImageLimitExceeded && (
-                  <p className="text-sm text-red-600 mt-2">
-                    Error: Only 10 restaurant images are allowed. Current total: {totalImages}
-                  </p>
-                )}
-              </div>
-            )}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {data.documents.restaurantImages.map((image, index) => (
-                <div key={index} className="relative">
+            
+            {/* Primary Image Section */}
+            <div className="mb-6">
+              <h5 className="font-medium mb-2">Primary Image</h5>
+              {data.documents.primaryImage ? (
+                <div className="relative inline-block">
                   <img
-                    src={image}
-                    alt={`Restaurant ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                    onClick={() => setPreviewImage(image)}
+                    src={data.documents.primaryImage}
+                    alt="Primary Restaurant Image"
+                    className="w-48 h-32 object-cover rounded-lg cursor-pointer hover:opacity-80 border-2 border-blue-500"
+                    onClick={() => setPreviewImage(data.documents.primaryImage!)}
                   />
+                  <div className="absolute top-1 left-1 bg-blue-500 text-white px-2 py-1 rounded text-xs font-medium">
+                    PRIMARY
+                  </div>
                   {isEditing && (
                     <button
-                      onClick={() => removeImage(index)}
+                      onClick={removePrimaryImage}
                       className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
                     >
                       ×
                     </button>
                   )}
                 </div>
-              ))}
+              ) : (
+                <div className="w-48 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
+                  No primary image set
+                </div>
+              )}
+            </div>
+
+            {/* Gallery Images Section */}
+            <div>
+              <h5 className="font-medium mb-2">Gallery Images</h5>
+              {isEditing && (
+                <div className="mb-4">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e.target.files)}
+                    className="w-full p-2 border rounded"
+                  />
+                  {newImages.length > 0 && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {newImages.length} new image(s) selected
+                    </p>
+                  )}
+                  {isImageLimitExceeded && (
+                    <p className="text-sm text-red-600 mt-2">
+                      Error: Only 10 restaurant images are allowed. Current total: {totalImages}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500 mt-2">
+                    💡 Drag and drop images to reorder them
+                  </p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {data.documents.restaurantImages.map((image, index) => (
+                  <div 
+                    key={index} 
+                    className={`relative ${
+                      isEditing ? 'cursor-move' : ''
+                    } ${
+                      draggedIndex === index ? 'opacity-50' : ''
+                    }`}
+                    draggable={isEditing}
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <img
+                      src={image}
+                      alt={`Restaurant ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-80"
+                      onClick={() => setPreviewImage(image)}
+                    />
+                    {isEditing && (
+                      <>
+                        <div className="absolute top-1 left-1 bg-gray-800 text-white rounded px-1 py-0.5 text-xs">
+                          {index + 1}
+                        </div>
+                        <button
+                          onClick={() => setPrimaryImage(image, index)}
+                          className="absolute bottom-1 left-1 bg-blue-500 text-white rounded px-2 py-1 text-xs hover:bg-blue-600"
+                        >
+                          Set Primary
+                        </button>
+                        <button
+                          onClick={() => removeImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          ×
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

@@ -9,46 +9,27 @@ import SearchIcon from '@mui/icons-material/Search';
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { useRouter } from "next/navigation";
 import { toast } from "@/utils/toast";
-import axios from 'axios';
-
-const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('RestaurantToken');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
-};
+import axiosInstance from '@/utils/axiosConfig';
 
 const itemsApi = {
   getAll: async () => {
-    const response = await axios.get(`${BASE_URL}/api/items`, {
-      headers: getAuthHeaders()
-    });
+    const response = await axiosInstance.get('/api/items');
     return response.data;
   },
 
   delete: async (id: string) => {
-    const response = await axios.delete(`${BASE_URL}/api/items/delete`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
+    const response = await axiosInstance.delete('/api/items/delete', {
       data: { itemId: id }
     });
     return response.data;
   },
 
-  updateStatus: async (id: string, isAvailable: boolean) => {
-    const response = await axios.patch(`${BASE_URL}/api/items/status`, {
-      itemId: id,
-      isAvailable
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      }
-    });
+  updateStatus: async (id: string, isAvailable: boolean, isPopular?: boolean) => {
+    const payload: any = { itemId: id, isAvailable };
+    if (isPopular !== undefined) {
+      payload.isPopular = isPopular;
+    }
+    const response = await axiosInstance.patch('/api/items/status', payload);
     return response.data;
   }
 };
@@ -64,6 +45,7 @@ interface MenuItem {
   images: string[];
   createdAt: string;
   isAvailable: boolean;
+  isPopular: boolean;
 }
 
 const ItemListPage = () => {
@@ -111,18 +93,19 @@ const ItemListPage = () => {
     }
   };
 
-  const handleToggleStatus = async (id: string, isAvailable: boolean) => {
+  const handleTogglePopular = async (id: string, isPopular: boolean) => {
     try {
-      const response = await itemsApi.updateStatus(id, isAvailable);
+      const currentItem = menuItems.find(item => item._id === id);
+      const response = await itemsApi.updateStatus(id, currentItem?.isAvailable || false, isPopular);
       if (response.success) {
-        toast.success(`Item ${isAvailable ? 'enabled' : 'disabled'} successfully!`);
+        toast.success(`Item ${isPopular ? 'marked as popular' : 'unmarked as popular'} successfully!`);
         fetchItems();
       } else {
-        toast.error(response.message || 'Error updating status');
+        toast.error(response.message || 'Error updating popular status');
       }
     } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Error updating status');
+      console.error('Error updating popular status:', error);
+      toast.error('Error updating popular status');
     }
   };
 
@@ -153,7 +136,6 @@ const ItemListPage = () => {
     setSubcategoryFilter("");
     setStatusFilter("");
   };
-
 
   if (loading) {
     return (
@@ -269,7 +251,7 @@ const ItemListPage = () => {
           <div>
             {/* Empty State Header */}
             <div className="border-b border-gray-200 dark:border-gray-700">
-              <div className="grid grid-cols-[80px_1fr_120px_100px_120px_100px_120px] gap-4 px-6 py-3">
+              <div className="grid grid-cols-[80px_1fr_120px_100px_120px_100px_120px_100px_120px] gap-4 px-6 py-3">
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Id</div>
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Image</div>
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Item Name</div>
@@ -277,6 +259,7 @@ const ItemListPage = () => {
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Attributes</div>
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Price</div>
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</div>
+                <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Popular</div>
                 <div className="text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</div>
               </div>
             </div>
@@ -320,6 +303,9 @@ const ItemListPage = () => {
               
                   <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Status
+                  </TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                    Popular
                   </TableCell>
                   <TableCell isHeader className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Actions
@@ -427,6 +413,29 @@ const ItemListPage = () => {
                           }`}
                         >
                           {item.isAvailable ? 'Available' : 'Unavailable'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={item.isPopular || false}
+                            onChange={() => handleTogglePopular(item._id, !item.isPopular)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-500"></div>
+                        </label>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            item.isPopular
+                              ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+                              : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
+                          }`}
+                        >
+                          {item.isPopular ? 'Popular' : 'Regular'}
                         </span>
                       </div>
                     </TableCell>
