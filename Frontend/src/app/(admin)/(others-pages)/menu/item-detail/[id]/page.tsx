@@ -44,11 +44,14 @@ interface ItemDetail {
   addons: {
     _id: string;
     name: string;
-    description: string;
+    description?: string;
     image: string;
     category: string;
     attributes: {
-      name: string;
+      attribute: {
+        _id: string;
+        name: string;
+      };
       price: number;
     }[];
     currency: string;
@@ -284,7 +287,7 @@ const ItemDetailPage = () => {
                       <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Pricing Options:</h4>
                       {addon.attributes.map((attr, attrIndex) => (
                         <div key={attrIndex} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <span className="font-medium text-gray-900 dark:text-white">{attr.name}</span>
+                          <span className="font-medium text-gray-900 dark:text-white">{attr.attribute.name}</span>
                           <span className="font-semibold text-gray-900 dark:text-white">
                             {addon.currency === 'INR' ? '₹' : '$'}{attr.price}
                           </span>
