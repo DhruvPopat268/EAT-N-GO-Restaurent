@@ -8,10 +8,22 @@ import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
 
 const ordersApi = {
-  getCompleted: async (page: number = 1, limit: number = 10) => {
-    const response = await axiosInstance.get(`/api/restaurants/orders/completed?page=${page}&limit=${limit}`);
+  getConfirmed: async (page: number = 1, limit: number = 10) => {
+    const response = await axiosInstance.get(`/api/restaurants/orders/confirmed?page=${page}&limit=${limit}`);
+    return response.data;
+  },
+
+  updateToPreparing: async (orderId: string) => {
+    const response = await axiosInstance.patch(`/api/restaurants/orders/preparing/${orderId}`);
     return response.data;
   }
+};
+
+const getNextStatuses = (currentStatus: string) => {
+  if (currentStatus === 'confirmed') {
+    return ['confirmed', 'preparing'];
+  }
+  return [currentStatus];
 };
 
 interface Order {
@@ -45,7 +57,7 @@ interface PaginationInfo {
   totalPages: number;
 }
 
-const CompletedOrdersPage = () => {
+const ConfirmedOrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -54,6 +66,8 @@ const CompletedOrdersPage = () => {
     totalCount: 0,
     totalPages: 0
   });
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [statusConfirm, setStatusConfirm] = useState<{show: boolean, orderId: string, orderNo: string, currentStatus: string, newStatus: string}>({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
 
   useEffect(() => {
     fetchOrders(1);
@@ -62,7 +76,7 @@ const CompletedOrdersPage = () => {
   const fetchOrders = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
       setApiLoading(true);
-      const response = await ordersApi.getCompleted(page, limit);
+      const response = await ordersApi.getConfirmed(page, limit);
       if (response.success) {
         setOrders(response.data);
         setPagination(response.pagination);
@@ -83,15 +97,45 @@ const CompletedOrdersPage = () => {
     fetchOrders(1, limit);
   };
 
+  const handleStatusChange = (orderId: string, orderNo: string, currentStatus: string, newStatus: string) => {
+    setStatusConfirm({
+      show: true,
+      orderId,
+      orderNo,
+      currentStatus,
+      newStatus
+    });
+  };
+
+  const confirmStatusUpdate = async () => {
+    setUpdatingStatus(statusConfirm.orderId);
+    try {
+      const response = await ordersApi.updateToPreparing(statusConfirm.orderId);
+      
+      if (response.success) {
+        toast.success(`Order status updated to ${statusConfirm.newStatus}`);
+        fetchOrders();
+      } else {
+        toast.error(response.message || 'Error updating status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Error updating status');
+    } finally {
+      setUpdatingStatus(null);
+      setStatusConfirm({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
+    }
+  };
+
   if (apiLoading) {
     return (
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            Completed Orders
+            Confirmed Orders
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            View completed orders
+            View and manage confirmed orders
           </p>
         </div>
         <div className="flex items-center justify-center py-12">
@@ -105,10 +149,10 @@ const CompletedOrdersPage = () => {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Completed Orders
+          Confirmed Orders
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          View completed orders
+          View and manage confirmed orders
         </p>
       </div>
 
@@ -134,8 +178,8 @@ const CompletedOrdersPage = () => {
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
         {orders.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No completed orders found</h3>
-            <p className="text-gray-500 dark:text-gray-400">No completed orders available at the moment.</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No confirmed orders found</h3>
+            <p className="text-gray-500 dark:text-gray-400">No confirmed orders available at the moment.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -148,6 +192,7 @@ const CompletedOrdersPage = () => {
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Payment Method</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Total Amount</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Update Status To</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</TableCell>
                 </TableRow>
               </TableHeader>
@@ -193,9 +238,23 @@ const CompletedOrdersPage = () => {
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 capitalize">
+                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 capitalize">
                         {order.status}
                       </span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                      <select
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order._id, order.orderNo, order.status, e.target.value)}
+                        disabled={updatingStatus === order._id}
+                        className="px-3 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      >
+                        {getNextStatuses(order.status).map(status => (
+                          <option key={status} value={status} className="capitalize">
+                            {status}
+                          </option>
+                        ))}
+                      </select>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <Link
@@ -223,8 +282,40 @@ const CompletedOrdersPage = () => {
           />
         </div>
       )}
+
+      {statusConfirm.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Status Update</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to update status from <span className="font-semibold capitalize">{statusConfirm.currentStatus}</span> to <span className="font-semibold capitalize">{statusConfirm.newStatus}</span> for order #{statusConfirm.orderNo}?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setStatusConfirm({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''})}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmStatusUpdate}
+                disabled={updatingStatus === statusConfirm.orderId}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {updatingStatus === statusConfirm.orderId && (
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                Update Status
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default CompletedOrdersPage;
+export default ConfirmedOrdersPage;

@@ -5,6 +5,20 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+// Request interceptor - add auth token
+axiosInstance.interceptors.request.use(
+  (config) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('RestaurantToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Response interceptor - handle 401 errors
 axiosInstance.interceptors.response.use(
   (response) => response,

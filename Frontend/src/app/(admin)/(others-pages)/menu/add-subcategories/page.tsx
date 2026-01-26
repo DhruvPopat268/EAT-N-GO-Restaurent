@@ -9,10 +9,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
+import Pagination from '@/components/tables/Pagination';
 
 const subcategoriesApi = {
-  getAll: async () => {
-    const response = await axiosInstance.get('/api/subcategories');
+  getAll: async (page: number = 1, limit: number = 10) => {
+    const response = await axiosInstance.get(`/api/subcategories?page=${page}&limit=${limit}`);
     return response.data;
   },
 
@@ -57,13 +58,20 @@ const subcategoriesApi = {
 };
 
 interface Subcategory {
-  id: string;
+  _id: string;
   name: string;
   category: string;
   image: string | null;
   isAvailable: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
 }
 
 const AddSubcategoriesPage = () => {
@@ -80,6 +88,12 @@ const AddSubcategoriesPage = () => {
   
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 0
+  });
   const [submitting, setSubmitting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
@@ -87,20 +101,30 @@ const AddSubcategoriesPage = () => {
   const { restaurantDetails, loading } = useRestaurantDetails();
 
   useEffect(() => {
-    fetchSubcategories();
+    fetchSubcategories(1);
   }, []);
 
-  const fetchSubcategories = async () => {
+  const fetchSubcategories = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
-      const response = await subcategoriesApi.getAll();
+      setApiLoading(true);
+      const response = await subcategoriesApi.getAll(page, limit);
       if (response.success) {
         setSubcategories(response.data);
+        setPagination(response.pagination);
       }
     } catch (error) {
       console.error('Error fetching subcategories:', error);
     } finally {
       setApiLoading(false);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    fetchSubcategories(page, pagination.limit);
+  };
+
+  const handleLimitChange = (limit: number) => {
+    fetchSubcategories(1, limit);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -278,11 +302,24 @@ const AddSubcategoriesPage = () => {
         </button>
       </div>
 
-      {/* Results Count */}
+      {/* Results Count and Records Per Page */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          {apiLoading ? 'Loading...' : `Showing ${subcategories.length} subcategories`}
+          {apiLoading ? 'Loading...' : `Showing ${subcategories.length} of ${pagination.totalCount} subcategories`}
         </p>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600 dark:text-gray-400">Records per page:</label>
+          <select
+            value={pagination.limit}
+            onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+            className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
       </div>
 
       {/* Delete Confirmation Modal */}
@@ -470,6 +507,17 @@ const AddSubcategoriesPage = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center mt-6">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       {/* Modal */}
       {isModalOpen && (

@@ -11,12 +11,13 @@ import { toast } from "@/utils/toast";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import MultiSelect from "@/components/form/MultiSelect";
 import axiosInstance from '@/utils/axiosConfig';
+import Pagination from '@/components/tables/Pagination';
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 const combosApi = {
-  getAll: async () => {
-    const response = await axiosInstance.get('/api/combos');
+  getAll: async (page: number = 1, limit: number = 10) => {
+    const response = await axiosInstance.get(`/api/combos?page=${page}&limit=${limit}`);
     return response.data;
   },
 
@@ -101,6 +102,13 @@ interface ComboItem {
   createdAt: string;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 interface Item {
   _id: string;
   name: string;
@@ -134,6 +142,12 @@ const ComboListPage = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [addonItems, setAddonItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 0
+  });
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean, id: string, name: string }>({ show: false, id: '', name: '' });
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState<string | null>(null);
@@ -170,13 +184,14 @@ const ComboListPage = () => {
   const fetchData = async () => {
     try {
       const [combosRes, itemsRes, addonItemsRes] = await Promise.all([
-        combosApi.getAll(),
+        combosApi.getAll(1, pagination.limit),
         itemsApi.getAll(),
         addonItemsApi.getAll()
       ]);
 
       if (combosRes.success) {
         setCombos(combosRes.data);
+        setPagination(combosRes.pagination);
       }
       if (itemsRes.success) {
         setItems(itemsRes.data.filter((item: Item) => item.attributes.length > 0));
@@ -192,16 +207,21 @@ const ComboListPage = () => {
     }
   };
 
-  const fetchCombos = async () => {
+  const fetchCombos = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
-      const response = await combosApi.getAll();
+      const response = await combosApi.getAll(page, limit);
       if (response.success) {
         setCombos(response.data);
+        setPagination(response.pagination);
       }
     } catch (error) {
       console.error('Error fetching combos:', error);
       toast.error('Error loading combos');
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    fetchCombos(page, pagination.limit);
   };
 
   const handleItemSelection = async (selectedItemIds: string[]) => {
@@ -328,7 +348,7 @@ const ComboListPage = () => {
         toast.success(`Combo ${editingCombo ? 'updated' : 'created'} successfully!`);
         setShowForm(false);
         resetForm();
-        fetchCombos();
+        fetchCombos(pagination.page, pagination.limit);
       } else {
         toast.error(response.message || `Error ${editingCombo ? 'updating' : 'creating'} combo`);
       }
@@ -396,7 +416,7 @@ const ComboListPage = () => {
       const response = await combosApi.delete(deleteConfirm.id);
       if (response.success) {
         toast.success('Combo deleted successfully!');
-        fetchCombos();
+        fetchCombos(pagination.page, pagination.limit);
       } else {
         toast.error(response.message || 'Error deleting combo');
       }
@@ -415,7 +435,7 @@ const ComboListPage = () => {
       const response = await combosApi.updateStatus(id, isAvailable);
       if (response.success) {
         toast.success(`Combo ${isAvailable ? 'enabled' : 'disabled'} successfully!`);
-        fetchCombos();
+        fetchCombos(pagination.page, pagination.limit);
       } else {
         toast.error(response.message || 'Error updating status');
       }
@@ -568,10 +588,32 @@ const ComboListPage = () => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Showing {filteredCombos.length} of {combos.length} combos
-        </p>
+      {/* Table Controls - Above Table */}
+      <div className="flex justify-between items-center">
+        {pagination.totalCount > 0 && (
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of {pagination.totalCount} combos
+          </p>
+        )}
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
+          <select
+            value={pagination.limit}
+            onChange={(e) => {
+              const newLimit = parseInt(e.target.value);
+              setPagination(prev => ({ ...prev, limit: newLimit }));
+              fetchCombos(1, newLimit);
+            }}
+            className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-sm text-gray-600 dark:text-gray-400">entries</span>
+        </div>
       </div>
 
       {/* Table */}
@@ -753,6 +795,17 @@ const ComboListPage = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6 flex justify-end">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       {/* Combo Form Modal */}
       {showForm && (

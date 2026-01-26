@@ -4,6 +4,7 @@ import { useSidebar } from "@/context/SidebarContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
+import ToastProvider from "@/components/common/ToastProvider";
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
@@ -639,6 +640,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Page Content */}
         <div className="p-4 mx-auto  md:p-6">{children}</div>
       </div>
+      
+      {/* Toast Provider */}
+      <ToastProvider />
     </div>
   );
 }
