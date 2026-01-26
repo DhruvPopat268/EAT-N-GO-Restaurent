@@ -246,9 +246,10 @@ const AllOrdersPage = () => {
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order No</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">User Info</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order Type</TableCell>
+                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Waiting Time</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Payment Method</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Total Amount</TableCell>
-                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Waiting Time</TableCell>
+                 
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Update Status To</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Created At</TableCell>
@@ -287,6 +288,11 @@ const AllOrdersPage = () => {
                         </div>
                       )}
                     </TableCell>
+                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        {order.waitingTime ? `${order.waitingTime} min` : '-'}
+                      </span>
+                    </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm text-gray-900 dark:text-white capitalize">
                         {order.paymentMethod}
@@ -297,11 +303,7 @@ const AllOrdersPage = () => {
                         ₹{order.totalAmount}
                       </span>
                     </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        {order.waitingTime ? `${order.waitingTime} min` : '-'}
-                      </span>
-                    </TableCell>
+                   
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                         order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
