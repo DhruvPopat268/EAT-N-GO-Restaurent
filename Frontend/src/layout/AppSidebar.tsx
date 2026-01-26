@@ -39,8 +39,11 @@ const ordersItems: NavItem[] = [
     icon: <TaskIcon />,
     subItems: [
       { name: "All Orders", path: "/orders/all", pro: false },
-      { name: "Pending Orders", path: "/orders/pending", pro: false },
-      { name: "Ongoing Orders", path: "/orders/ongoing", pro: false },
+      { name: "Waiting Orders", path: "/orders/waiting", pro: false },
+      { name: "Confirmed Orders", path: "/orders/confirmed", pro: false },
+      { name: "Preparing Orders", path: "/orders/preparing", pro: false },
+      { name: "Ready Orders", path: "/orders/ready", pro: false },
+      { name: "Served Orders", path: "/orders/served", pro: false },
       { name: "Complete Orders", path: "/orders/complete", pro: false },
       { name: "Cancelled Orders", path: "/orders/cancelled", pro: false },
     ],
@@ -413,6 +416,7 @@ const AppSidebar: React.FC = () => {
                     { name: "All", path: "/order-requests/all" },
                     { name: "Pending", path: "/order-requests/pending" },
                     { name: "Confirmed", path: "/order-requests/confirmed" },
+                    { name: "Completed", path: "/order-requests/completed" },
                     { name: "Rejected", path: "/order-requests/rejected" },
                     { name: "Waiting", path: "/order-requests/waiting" },
                     { name: "Reason Management", path: "/order-requests/reason-management" }

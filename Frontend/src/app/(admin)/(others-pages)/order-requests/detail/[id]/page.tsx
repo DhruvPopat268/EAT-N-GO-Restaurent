@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Image from 'next/image';
+import { ArrowLeft } from 'lucide-react';
 
 interface Reason {
   _id: string;
@@ -183,9 +184,9 @@ export default function OrderRequestDetail() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Order Not Found</h1>
           <button
             onClick={() => router.back()}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:hover:bg-gray-800 mx-auto"
           >
-            Go Back
+            <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -198,9 +199,9 @@ export default function OrderRequestDetail() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+            className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:hover:bg-gray-800"
           >
-            Back
+            <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Request #{order.orderRequestNo}</h1>

@@ -1,0 +1,301 @@
+{
+    "success": true,
+    "message": "All orders retrieved successfully",
+    "data": [
+        {
+            "eatTimings": {
+                "startTime": "19:00",
+                "endTime": "23:05"
+            },
+            "_id": "6973728d365707b8f605671d",
+            "userId": {
+                "_id": "691741c36d4378c3f202c3ae",
+                "phone": "+919157193754",
+                "fullName": "Dhruv Thakkar"
+            },
+            "restaurantId": "69009336cda4b52998ffb143",
+            "orderRequestId": "6973726e365707b8f6056642",
+            "items": [
+                {
+                    "itemId": {
+                        "_id": "6964c0cd2aea3079c29509d3",
+                        "category": "Veg",
+                        "subcategory": {
+                            "_id": "6911732c02b7b1e2d647fbcf",
+                            "name": "Pizza"
+                        },
+                        "name": "Paneer Spice Supreme",
+                        "description": "Makhni Gravy, Paneer, Red Onion, Red & Green Pepper",
+                        "images": [
+                            "https://res.cloudinary.com/dwcnwtka5/image/upload/v1768210636/item-images/ic3cksd1def0dtkywtpm.jpg",
+                            "https://res.cloudinary.com/dwcnwtka5/image/upload/v1768210636/item-images/ljb90b6ipryrk6pneiep.jpg"
+                        ],
+                        "attributes": [
+                            {
+                                "attribute": "69119f68d05399cada2b739b",
+                                "price": 400
+                            },
+                            {
+                                "attribute": "69118c7a02b7b1e2d647fede",
+                                "price": 250
+                            }
+                        ],
+                        "foodTypes": [
+                            "Regular",
+                            "Jain",
+                            "Swaminarayan"
+                        ],
+                        "customizations": [
+                            {
+                                "name": "Paner & Vegitable",
+                                "MaxSelection": -1,
+                                "options": [
+                                    {
+                                        "label": "Extra Panner",
+                                        "quantity": 1,
+                                        "unit": "unit",
+                                        "price": 30,
+                                        "_id": "6964c3e12aea3079c2950aab"
+                                    },
+                                    {
+                                        "label": "Extra Vegitable",
+                                        "quantity": 1,
+                                        "unit": "unit",
+                                        "price": 20,
+                                        "_id": "6964c3e12aea3079c2950aac"
+                                    }
+                                ],
+                                "_id": "6964c3e12aea3079c2950aaa"
+                            }
+                        ],
+                        "addons": [
+                            {
+                                "_id": "6964c1fe2aea3079c2950a53",
+                                "category": "Veg",
+                                "name": "French Fries",
+                                "attributes": [
+                                    {
+                                        "attribute": "695e6a71cebfbe0abf9a7999",
+                                        "price": 120
+                                    }
+                                ],
+                                "currency": "INR",
+                                "isAvailable": true
+                            },
+                            {
+                                "_id": "695e6ab6cebfbe0abf9a79c4",
+                                "category": "Veg",
+                                "name": "COCO COLA",
+                                "description": "",
+                                "attributes": [
+                                    {
+                                        "attribute": "69148e69eea90848edd33568",
+                                        "price": 20
+                                    },
+                                    {
+                                        "attribute": "695e6a71cebfbe0abf9a7999",
+                                        "price": 50
+                                    }
+                                ],
+                                "currency": "INR",
+                                "isAvailable": true
+                            },
+                            {
+                                "_id": "6964c1b42aea3079c2950a3e",
+                                "category": "Veg",
+                                "name": "Chips",
+                                "attributes": [
+                                    {
+                                        "attribute": "695e6a71cebfbe0abf9a7999",
+                                        "price": 250
+                                    }
+                                ],
+                                "currency": "INR",
+                                "isAvailable": true
+                            }
+                        ],
+                        "currency": "INR",
+                        "isAvailable": true,
+                        "isPopular": true
+                    },
+                    "quantity": 4,
+                    "selectedAttribute": {
+                        "_id": "69119f68d05399cada2b739b",
+                        "name": "Medium Size"
+                    },
+                    "selectedFoodType": "Regular",
+                    "selectedCustomizations": [
+                        {
+                            "customizationId": "6964c3e12aea3079c2950aaa",
+                            "selectedOptions": [
+                                {
+                                    "optionId": "6964c3e12aea3079c2950aab",
+                                    "quantity": 4,
+                                    "optionName": "Extra Panner",
+                                    "optionPrice": 30,
+                                    "optionUnit": "unit"
+                                }
+                            ],
+                            "customizationName": "Paner & Vegitable"
+                        }
+                    ],
+                    "selectedAddons": [],
+                    "_id": "697371fc365707b8f60565db",
+                    "itemTotal": 2080,
+                    "customizationTotal": 120,
+                    "addonsTotal": 0
+                },
+                {
+                    "itemId": {
+                        "_id": "695e6b15cebfbe0abf9a79f9",
+                        "category": "Veg",
+                        "subcategory": {
+                            "_id": "69148dedeea90848edd33547",
+                            "name": "Bevrages"
+                        },
+                        "name": "Burger",
+                        "description": "1 Cheese burger",
+                        "images": [
+                            "https://res.cloudinary.com/dwcnwtka5/image/upload/v1768228524/item-images/nvzcbylyadreb83f6gao.webp"
+                        ],
+                        "attributes": [
+                            {
+                                "attribute": "69118c7a02b7b1e2d647fede",
+                                "price": 120
+                            },
+                            {
+                                "attribute": "69119f68d05399cada2b739b",
+                                "price": 200
+                            }
+                        ],
+                        "foodTypes": [
+                            "Regular"
+                        ],
+                        "customizations": [],
+                        "addons": [
+                            {
+                                "_id": "6964c1b42aea3079c2950a3e",
+                                "category": "Veg",
+                                "name": "Chips",
+                                "attributes": [
+                                    {
+                                        "attribute": "695e6a71cebfbe0abf9a7999",
+                                        "price": 250
+                                    }
+                                ],
+                                "currency": "INR",
+                                "isAvailable": true
+                            },
+                            {
+                                "_id": "695e6ab6cebfbe0abf9a79c4",
+                                "category": "Veg",
+                                "name": "COCO COLA",
+                                "description": "",
+                                "attributes": [
+                                    {
+                                        "attribute": "69148e69eea90848edd33568",
+                                        "price": 20
+                                    },
+                                    {
+                                        "attribute": "695e6a71cebfbe0abf9a7999",
+                                        "price": 50
+                                    }
+                                ],
+                                "currency": "INR",
+                                "isAvailable": true
+                            },
+                            {
+                                "_id": "6964c1fe2aea3079c2950a53",
+                                "category": "Veg",
+                                "name": "French Fries",
+                                "attributes": [
+                                    {
+                                        "attribute": "695e6a71cebfbe0abf9a7999",
+                                        "price": 120
+                                    }
+                                ],
+                                "currency": "INR",
+                                "isAvailable": true
+                            }
+                        ],
+                        "currency": "INR",
+                        "isAvailable": true,
+                        "isPopular": true
+                    },
+                    "quantity": 2,
+                    "selectedAttribute": {
+                        "_id": "69118c7a02b7b1e2d647fede",
+                        "name": "Small Size"
+                    },
+                    "selectedFoodType": "Regular",
+                    "selectedCustomizations": [],
+                    "selectedAddons": [
+                        {
+                            "addonId": {
+                                "_id": "695e6ab6cebfbe0abf9a79c4",
+                                "category": "Veg",
+                                "name": "COCO COLA",
+                                "description": "",
+                                "attributes": [
+                                    {
+                                        "attribute": {
+                                            "_id": "69148e69eea90848edd33568",
+                                            "restaurantId": "69009336cda4b52998ffb143",
+                                            "name": "100ML",
+                                            "isAvailable": true,
+                                            "createdAt": "2025-11-12T13:40:57.779Z",
+                                            "updatedAt": "2025-11-12T13:40:57.779Z",
+                                            "__v": 0
+                                        },
+                                        "price": 20
+                                    },
+                                    {
+                                        "attribute": {
+                                            "_id": "695e6a71cebfbe0abf9a7999",
+                                            "restaurantId": "69009336cda4b52998ffb143",
+                                            "name": "500ML",
+                                            "isAvailable": true,
+                                            "createdAt": "2026-01-07T14:15:13.534Z",
+                                            "updatedAt": "2026-01-07T14:15:13.534Z",
+                                            "__v": 0
+                                        },
+                                        "price": 50
+                                    }
+                                ],
+                                "currency": "INR",
+                                "isAvailable": true
+                            },
+                            "selectedAttribute": {
+                                "_id": "69148e69eea90848edd33568",
+                                "name": "100ML"
+                            },
+                            "quantity": 2,
+                            "addonTotal": 40
+                        }
+                    ],
+                    "_id": "6973722e365707b8f6056605",
+                    "itemTotal": 320,
+                    "customizationTotal": 0,
+                    "addonsTotal": 40
+                }
+            ],
+            "orderType": "dine-in",
+            "numberOfGuests": 4,
+            "dineInstructions": "Please arrange a table near the window. We have one child with us.",
+            "paymentMethod": "pay_at_restaurant",
+            "totalAmount": 2400,
+            "status": "confirmed",
+            "createdAt": "2026-01-23T13:07:25.589Z",
+            "updatedAt": "2026-01-23T13:07:25.589Z",
+            "orderNo": 2,
+            "__v": 0,
+            "orderTotal": 2400
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "limit": 20,
+        "totalCount": 1,
+        "totalPages": 1
+    }
+}

@@ -8,35 +8,22 @@ import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
 
 const ordersApi = {
-  getAll: async (page: number = 1, limit: number = 10) => {
-    const response = await axiosInstance.get(`/api/restaurants/orders/all?page=${page}&limit=${limit}`);
+  getWaiting: async (page: number = 1, limit: number = 10) => {
+    const response = await axiosInstance.get(`/api/restaurants/orders/waiting?page=${page}&limit=${limit}`);
     return response.data;
   },
 
-  updateToPreparing: async (orderId: string) => {
-    const response = await axiosInstance.patch(`/api/restaurants/orders/preparing/${orderId}`);
-    return response.data;
-  },
-
-  updateToReady: async (orderId: string) => {
-    const response = await axiosInstance.patch(`/api/restaurants/orders/ready/${orderId}`);
-    return response.data;
-  },
-
-  updateToServed: async (orderId: string) => {
-    const response = await axiosInstance.patch(`/api/restaurants/orders/served/${orderId}`);
-    return response.data;
-  },
-
-  updateToCompleted: async (orderId: string) => {
-    const response = await axiosInstance.patch(`/api/restaurants/orders/completed/${orderId}`);
-    return response.data;
-  },
-
-  cancelOrder: async (orderId: string) => {
-    const response = await axiosInstance.patch(`/api/restaurants/orders/cancel/${orderId}`);
+  updateToConfirmed: async (orderId: string) => {
+    const response = await axiosInstance.patch(`/api/restaurants/orders/confirm/${orderId}`);
     return response.data;
   }
+};
+
+const getNextStatuses = (currentStatus: string) => {
+  if (currentStatus === 'waiting') {
+    return ['waiting', 'confirmed'];
+  }
+  return [currentStatus];
 };
 
 interface Order {
@@ -71,20 +58,7 @@ interface PaginationInfo {
   totalPages: number;
 }
 
-const getAvailableStatuses = (currentStatus: string, orderType: string) => {
-  const baseStatuses = ['confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
-  
-  // Only show 'served' for dine-in orders
-  if (orderType === 'dine-in') {
-    return ['confirmed', 'preparing', 'ready', 'served', 'completed', 'cancelled'];
-  }
-  
-  return baseStatuses;
-};
-
-const statusOptions = ['confirmed', 'preparing', 'ready', 'served', 'completed', 'cancelled', 'refunded'];
-
-const AllOrdersPage = () => {
+const WaitingOrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -95,8 +69,6 @@ const AllOrdersPage = () => {
   });
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [statusConfirm, setStatusConfirm] = useState<{show: boolean, orderId: string, orderNo: string, currentStatus: string, newStatus: string}>({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
-  const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
-  const [showViewModal, setShowViewModal] = useState(false);
 
   useEffect(() => {
     fetchOrders(1);
@@ -105,7 +77,7 @@ const AllOrdersPage = () => {
   const fetchOrders = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
       setApiLoading(true);
-      const response = await ordersApi.getAll(page, limit);
+      const response = await ordersApi.getWaiting(page, limit);
       if (response.success) {
         setOrders(response.data);
         setPagination(response.pagination);
@@ -139,28 +111,7 @@ const AllOrdersPage = () => {
   const confirmStatusUpdate = async () => {
     setUpdatingStatus(statusConfirm.orderId);
     try {
-      let response;
-      const { newStatus, orderId } = statusConfirm;
-      
-      switch (newStatus) {
-        case 'preparing':
-          response = await ordersApi.updateToPreparing(orderId);
-          break;
-        case 'ready':
-          response = await ordersApi.updateToReady(orderId);
-          break;
-        case 'served':
-          response = await ordersApi.updateToServed(orderId);
-          break;
-        case 'completed':
-          response = await ordersApi.updateToCompleted(orderId);
-          break;
-        case 'cancelled':
-          response = await ordersApi.cancelOrder(orderId);
-          break;
-        default:
-          throw new Error('Invalid status update');
-      }
+      const response = await ordersApi.updateToConfirmed(statusConfirm.orderId);
       
       if (response.success) {
         toast.success(`Order status updated to ${statusConfirm.newStatus}`);
@@ -177,20 +128,15 @@ const AllOrdersPage = () => {
     }
   };
 
-  const handleView = (order: Order) => {
-    setViewingOrder(order);
-    setShowViewModal(true);
-  };
-
   if (apiLoading) {
     return (
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            All Orders
+            Waiting Orders
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            View and manage all orders from your restaurant
+            View and manage waiting orders
           </p>
         </div>
         <div className="flex items-center justify-center py-12">
@@ -204,14 +150,13 @@ const AllOrdersPage = () => {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          All Orders
+          Waiting Orders
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          View and manage all orders from your restaurant
+          View and manage waiting orders
         </p>
       </div>
 
-      {/* Results Count and Records Per Page */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Showing {orders.length} of {pagination.totalCount} orders
@@ -231,12 +176,11 @@ const AllOrdersPage = () => {
         </div>
       </div>
 
-      {/* Orders Table */}
       <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
         {orders.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No orders found</h3>
-            <p className="text-gray-500 dark:text-gray-400">No orders available at the moment.</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No waiting orders found</h3>
+            <p className="text-gray-500 dark:text-gray-400">No waiting orders available at the moment.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -251,8 +195,6 @@ const AllOrdersPage = () => {
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Waiting Time</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Update Status To</TableCell>
-                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Created At</TableCell>
-                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Updated At</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</TableCell>
                 </TableRow>
               </TableHeader>
@@ -303,16 +245,7 @@ const AllOrdersPage = () => {
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'preparing' ? 'bg-yellow-100 text-yellow-800' :
-                        order.status === 'ready' ? 'bg-purple-100 text-purple-800' :
-                        order.status === 'served' ? 'bg-indigo-100 text-indigo-800' :
-                        order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        order.status === 'refunded' ? 'bg-gray-100 text-gray-800' :
-                        'bg-gray-100 text-gray-800'
-                      } capitalize`}>
+                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 capitalize">
                         {order.status}
                       </span>
                     </TableCell>
@@ -323,28 +256,12 @@ const AllOrdersPage = () => {
                         disabled={updatingStatus === order._id}
                         className="px-3 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       >
-                        {getAvailableStatuses(order.status, order.orderType).map(status => (
+                        {getNextStatuses(order.status).map(status => (
                           <option key={status} value={status} className="capitalize">
                             {status}
                           </option>
                         ))}
                       </select>
-                    </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(order.createdAt).toLocaleTimeString()}
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {new Date(order.updatedAt).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(order.updatedAt).toLocaleTimeString()}
-                      </div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <Link
@@ -363,7 +280,6 @@ const AllOrdersPage = () => {
         )}
       </div>
 
-      {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex justify-center mt-6">
           <Pagination
@@ -374,7 +290,6 @@ const AllOrdersPage = () => {
         </div>
       )}
 
-      {/* Status Confirmation Modal */}
       {statusConfirm.show && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
@@ -406,81 +321,8 @@ const AllOrdersPage = () => {
           </div>
         </div>
       )}
-
-      {/* View Order Modal */}
-      {showViewModal && viewingOrder && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Order Details</h3>
-              <button
-                onClick={() => setShowViewModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Order No</label>
-                  <p className="text-sm font-mono font-semibold text-gray-900 dark:text-white">#{viewingOrder.orderNo}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
-                  <p className={`text-sm font-medium capitalize px-2 py-1 rounded-full inline-block ${
-                    viewingOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                    viewingOrder.status === 'preparing' ? 'bg-yellow-100 text-yellow-800' :
-                    viewingOrder.status === 'ready' ? 'bg-purple-100 text-purple-800' :
-                    viewingOrder.status === 'served' ? 'bg-indigo-100 text-indigo-800' :
-                    viewingOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    viewingOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    viewingOrder.status === 'refunded' ? 'bg-gray-100 text-gray-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>{viewingOrder.status}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Customer</label>
-                  <p className="text-sm text-gray-900 dark:text-white">{viewingOrder.userId?.fullName || 'N/A'}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{viewingOrder.userId?.phone || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Order Type</label>
-                  <p className="text-sm text-gray-900 dark:text-white capitalize">{viewingOrder.orderType}</p>
-                  {viewingOrder.eatTimings && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Eat Timings: {viewingOrder.eatTimings.startTime} - {viewingOrder.eatTimings.endTime}</p>
-                  )}
-                  {viewingOrder.takeawayTimings && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Takeaway Timings: {viewingOrder.takeawayTimings.startTime} - {viewingOrder.takeawayTimings.endTime}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Payment Method</label>
-                  <p className="text-sm text-gray-900 dark:text-white capitalize">{viewingOrder.paymentMethod}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Amount</label>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">₹{viewingOrder.totalAmount}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Created At</label>
-                  <p className="text-sm text-gray-900 dark:text-white">{new Date(viewingOrder.createdAt).toLocaleDateString()}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(viewingOrder.createdAt).toLocaleTimeString()}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Updated At</label>
-                  <p className="text-sm text-gray-900 dark:text-white">{new Date(viewingOrder.updatedAt).toLocaleDateString()}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(viewingOrder.updatedAt).toLocaleTimeString()}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default AllOrdersPage;
+export default WaitingOrdersPage;
