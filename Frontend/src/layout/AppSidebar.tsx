@@ -233,7 +233,25 @@ const AppSidebar: React.FC = () => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
     ["main", "orders", "menu", "others", "customer", "payment", "help", "rbac"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : menuType === "orders" ? ordersItems : menuType === "menu" ? menuItems : menuType === "others" ? othersItems : menuType === "customer" ? [
+      const items = menuType === "main" ? navItems : menuType === "orders" ? [
+        {
+          name: "Order Requests",
+          icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+            </svg>
+          ),
+          subItems: [
+            { name: "All", path: "/order-requests/all" },
+            { name: "Pending", path: "/order-requests/pending" },
+            { name: "Confirmed", path: "/order-requests/confirmed" },
+            { name: "Rejected", path: "/order-requests/rejected" },
+            { name: "Waiting", path: "/order-requests/waiting" },
+            { name: "Reason Management", path: "/order-requests/reason-management" }
+          ]
+        },
+        ...ordersItems
+      ] : menuType === "menu" ? menuItems : menuType === "others" ? othersItems : menuType === "customer" ? [
         {
           name: "Customers",
           icon: (
@@ -369,12 +387,13 @@ const AppSidebar: React.FC = () => {
             <div>
               {renderMenuItems(navItems, "main")}
             </div>
-            {/* <div className="">
+            <div className="">
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "justify-start"
-                  }`}
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                  !isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "justify-start"
+                }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Orders Management"
@@ -382,8 +401,26 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(ordersItems, "orders")}
-            </div> */}
+              {renderMenuItems([
+                {
+                  name: "Order Requests",
+                  icon: (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                    </svg>
+                  ),
+                  subItems: [
+                    { name: "All", path: "/order-requests/all" },
+                    { name: "Pending", path: "/order-requests/pending" },
+                    { name: "Confirmed", path: "/order-requests/confirmed" },
+                    { name: "Rejected", path: "/order-requests/rejected" },
+                    { name: "Waiting", path: "/order-requests/waiting" },
+                    { name: "Reason Management", path: "/order-requests/reason-management" }
+                  ]
+                },
+                ...ordersItems
+              ], "orders")}
+            </div> 
             <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
