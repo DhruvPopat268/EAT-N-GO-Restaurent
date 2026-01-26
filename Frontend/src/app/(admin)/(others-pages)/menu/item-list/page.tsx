@@ -10,10 +10,11 @@ import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { useRouter } from "next/navigation";
 import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
+import Pagination from '@/components/tables/Pagination';
 
 const itemsApi = {
-  getAll: async () => {
-    const response = await axiosInstance.get('/api/items');
+  getAll: async (page: number = 1, limit: number = 10) => {
+    const response = await axiosInstance.get(`/api/items?page=${page}&limit=${limit}`);
     return response.data;
   },
 
@@ -48,6 +49,13 @@ interface MenuItem {
   isPopular: boolean;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 const ItemListPage = () => {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,17 +65,25 @@ const ItemListPage = () => {
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 0
+  });
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
 
   useEffect(() => {
-    fetchItems();
+    fetchItems(1);
   }, []);
 
-  const fetchItems = async () => {
+  const fetchItems = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
-      const response = await itemsApi.getAll();
+      setLoading(true);
+      const response = await itemsApi.getAll(page, limit);
       if (response.success) {
         setMenuItems(response.data);
+        setPagination(response.pagination);
       }
     } catch (error) {
       console.error('Error fetching items:', error);
@@ -76,12 +92,16 @@ const ItemListPage = () => {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    fetchItems(page, pagination.limit);
+  };
+
   const handleDelete = async () => {
     try {
       const response = await itemsApi.delete(deleteConfirm.id);
       if (response.success) {
         toast.success('Item deleted successfully!');
-        fetchItems();
+        fetchItems(pagination.page, pagination.limit);
       } else {
         toast.error(response.message || 'Error deleting item');
       }
@@ -99,13 +119,29 @@ const ItemListPage = () => {
       const response = await itemsApi.updateStatus(id, currentItem?.isAvailable || false, isPopular);
       if (response.success) {
         toast.success(`Item ${isPopular ? 'marked as popular' : 'unmarked as popular'} successfully!`);
-        fetchItems();
+        fetchItems(pagination.page, pagination.limit);
       } else {
         toast.error(response.message || 'Error updating popular status');
       }
     } catch (error) {
       console.error('Error updating popular status:', error);
       toast.error('Error updating popular status');
+    }
+  };
+
+  const handleToggleStatus = async (id: string, isAvailable: boolean) => {
+    try {
+      const currentItem = menuItems.find(item => item._id === id);
+      const response = await itemsApi.updateStatus(id, isAvailable, currentItem?.isPopular);
+      if (response.success) {
+        toast.success(`Item ${isAvailable ? 'marked as available' : 'marked as unavailable'} successfully!`);
+        fetchItems(pagination.page, pagination.limit);
+      } else {
+        toast.error(response.message || 'Error updating status');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Error updating status');
     }
   };
 
@@ -167,82 +203,99 @@ const ItemListPage = () => {
       </div>
 
       {/* Filters */}
-      
-        <div className="flex items-center justify-between">
-          {/* Search */}
-          <div className="w-[30%] relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <SearchIcon className="h-4 w-4 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search menu items..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg  "
-            />
-          </div>
-
-          {/* Filters on the right */}
-          <div className="flex gap-4">
-            {/* Category Filter */}
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg  "
-            >
-              <option value="">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            
-            {/* Subcategory Filter */}
-            <select
-              value={subcategoryFilter}
-              onChange={(e) => setSubcategoryFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg  "
-            >
-              <option value="">All Subcategories</option>
-              {subcategories.map(sub => (
-                <option key={sub} value={sub}>{sub}</option>
-              ))}
-            </select>
-            
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg "
-            >
-              <option value="">All Status</option>
-              {statuses.map(status => (
-                <option key={status} value={status}>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </option>
-              ))}
-            </select>
-
-            {/* Clear Filters Button */}
-            {(categoryFilter || subcategoryFilter || statusFilter || searchTerm) && (
-              <button
-                onClick={clearFilters}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-      
-      {/* Results Count */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          {loading ? 'Loading...' : `Showing ${filteredItems.length} of ${filteredByRestaurantCategory.length} items`}
-          {restaurantDetails?.foodCategory && (
-            <span className="ml-2 text-blue-600">({restaurantDetails.foodCategory.join(', ')} categories)</span>
+        {/* Search */}
+        <div className="w-[30%] relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <SearchIcon className="h-4 w-4 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search menu items..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg"
+          />
+        </div>
+
+        {/* Filters on the right */}
+        <div className="flex gap-4">
+          {/* Category Filter */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg"
+          >
+            <option value="">All Categories</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          
+          {/* Subcategory Filter */}
+          <select
+            value={subcategoryFilter}
+            onChange={(e) => setSubcategoryFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg"
+          >
+            <option value="">All Subcategories</option>
+            {subcategories.map(sub => (
+              <option key={sub} value={sub}>{sub}</option>
+            ))}
+          </select>
+          
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg"
+          >
+            <option value="">All Status</option>
+            {statuses.map(status => (
+              <option key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </option>
+            ))}
+          </select>
+
+          {/* Clear Filters Button */}
+          {(categoryFilter || subcategoryFilter || statusFilter || searchTerm) && (
+            <button
+              onClick={clearFilters}
+              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors dark:border-gray-700 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+            >
+              Clear
+            </button>
           )}
-        </p>
+        </div>
+      </div>
+
+      {/* Table Controls - Above Table */}
+      <div className="flex justify-between items-center">
+        {pagination.totalCount > 0 && (
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of {pagination.totalCount} items
+          </p>
+        )}
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
+          <select
+            value={pagination.limit}
+            onChange={(e) => {
+              const newLimit = parseInt(e.target.value);
+              setPagination(prev => ({ ...prev, limit: newLimit }));
+              fetchItems(1, newLimit);
+            }}
+            className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-sm text-gray-600 dark:text-gray-400">entries</span>
+        </div>
       </div>
 
       {/* Table */}
@@ -392,8 +445,6 @@ const ItemListPage = () => {
                       </div>
                     </TableCell>
                     
-                   
-                    
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <label className="relative inline-flex items-center cursor-pointer">
@@ -472,6 +523,17 @@ const ItemListPage = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6 flex justify-end">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm.show && (

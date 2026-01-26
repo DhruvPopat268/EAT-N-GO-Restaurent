@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
+import Pagination from '@/components/tables/Pagination';
 
 interface OrderRequest {
   _id: string;
@@ -28,19 +29,34 @@ interface OrderRequest {
   createdAt: string;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 export default function WaitingOrderRequests() {
   const [orders, setOrders] = useState<OrderRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 0
+  });
   const router = useRouter();
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(1);
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
-      const response = await axiosInstance.get('/api/restaurants/order-requests/waiting');
+      setLoading(true);
+      const response = await axiosInstance.get(`/api/restaurants/order-requests/waiting?page=${page}&limit=${limit}`);
       setOrders(response.data.data);
+      setPagination(response.data.pagination);
     } catch (error) {
       toast.error('Failed to fetch waiting orders');
     } finally {
@@ -48,12 +64,16 @@ export default function WaitingOrderRequests() {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    fetchOrders(page, pagination.limit);
+  };
+
       const updateOrderStatus = async (orderId: string, action: string) => {
     try {
       const payload = { orderReqId: orderId };
       await axiosInstance.patch(`/api/restaurants/order-requests/${action}`, payload);
       toast.success(`Order ${action} successfully`);
-      fetchOrders();
+      fetchOrders(pagination.page, pagination.limit);
     } catch (error) {
       toast.error(`Failed to ${action} order`);
     }
@@ -72,6 +92,34 @@ export default function WaitingOrderRequests() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Waiting Order Requests</h1>
         <p className="text-gray-600 dark:text-gray-400">Orders in waiting status</p>
+      </div>
+
+      {/* Controls */}
+      <div className="mb-4 flex justify-between items-center">
+        {pagination.totalCount > 0 && (
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of {pagination.totalCount} orders
+          </p>
+        )}
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
+          <select
+            value={pagination.limit}
+            onChange={(e) => {
+              const newLimit = parseInt(e.target.value);
+              setPagination(prev => ({ ...prev, limit: newLimit }));
+              fetchOrders(1, newLimit);
+            }}
+            className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-sm text-gray-600 dark:text-gray-400">entries</span>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
@@ -176,6 +224,17 @@ export default function WaitingOrderRequests() {
           </div>
         )}
       </div>
+      
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6 flex justify-end">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
     </div>
   );
 }

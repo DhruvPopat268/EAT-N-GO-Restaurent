@@ -5,10 +5,11 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
+import Pagination from '@/components/tables/Pagination';
 
 const attributesApi = {
-  getAll: async () => {
-    const response = await axiosInstance.get('/api/attributes', { withCredentials: true });
+  getAll: async (page: number = 1, limit: number = 10) => {
+    const response = await axiosInstance.get(`/api/attributes?page=${page}&limit=${limit}`, { withCredentials: true });
     return response.data;
   },
 
@@ -43,6 +44,13 @@ interface Attribute {
   createdAt: string;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 const AddAttributesPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [attributeName, setAttributeName] = useState("");
@@ -50,25 +58,37 @@ const AddAttributesPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [attributes, setAttributes] = useState<Attribute[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 0
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
 
   useEffect(() => {
-    fetchAttributes();
+    fetchAttributes(1);
   }, []);
 
-  const fetchAttributes = async () => {
+  const fetchAttributes = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
-      const response = await attributesApi.getAll();
+      setLoading(true);
+      const response = await attributesApi.getAll(page, limit);
       if (response.success) {
         setAttributes(response.data);
+        setPagination(response.pagination);
       }
     } catch (error) {
       console.error('Error fetching attributes:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    fetchAttributes(page, pagination.limit);
   };
 
   const handleEdit = (attribute: Attribute) => {
@@ -83,7 +103,7 @@ const AddAttributesPage = () => {
       const response = await attributesApi.delete(deleteConfirm.id);
       if (response.success) {
         toast.success('Attribute deleted successfully!');
-        fetchAttributes();
+        fetchAttributes(pagination.page, pagination.limit);
       } else {
         toast.error(response.message || 'Error deleting attribute');
       }
@@ -104,7 +124,7 @@ const AddAttributesPage = () => {
       
       if (response.success) {
         toast.success(`Attribute ${newStatus ? 'enabled' : 'disabled'} successfully!`);
-        fetchAttributes();
+        fetchAttributes(pagination.page, pagination.limit);
       } else {
         toast.error(response.message || 'Error updating status');
       }
@@ -134,7 +154,7 @@ const AddAttributesPage = () => {
 
         if (response.success) {
           toast.success(editingId ? 'Attribute updated successfully!' : 'Attribute created successfully!');
-          fetchAttributes();
+          fetchAttributes(pagination.page, pagination.limit);
           setAttributeName("");
           setIsAvailable(true);
           setEditingId(null);
@@ -245,11 +265,32 @@ const AddAttributesPage = () => {
         </select>
       </div>
 
-      {/* Results Count */}
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          {loading ? 'Loading...' : `Showing ${filteredAttributes.length} of ${attributes.length} attributes`}
-        </p>
+      {/* Table Controls - Above Table */}
+      <div className="flex justify-between items-center mb-4">
+        {pagination.totalCount > 0 && (
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of {pagination.totalCount} attributes
+          </p>
+        )}
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
+          <select
+            value={pagination.limit}
+            onChange={(e) => {
+              const newLimit = parseInt(e.target.value);
+              setPagination(prev => ({ ...prev, limit: newLimit }));
+              fetchAttributes(1, newLimit);
+            }}
+            className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-sm text-gray-600 dark:text-gray-400">entries</span>
+        </div>
       </div>
 
       {/* Table */}
@@ -359,6 +400,17 @@ const AddAttributesPage = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="mt-6 flex justify-end">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       {/* Modal */}
       {isModalOpen && (

@@ -6,10 +6,11 @@ import { Plus, Edit, Trash2, Search, X, Eye } from "lucide-react";
 import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
+import Pagination from '@/components/tables/Pagination';
 
 const addonItemsApi = {
-  getAll: async () => {
-    const response = await axiosInstance.get('/api/addon-items');
+  getAll: async (page: number = 1, limit: number = 10) => {
+    const response = await axiosInstance.get(`/api/addon-items?page=${page}&limit=${limit}`);
     return response.data;
   },
 
@@ -76,6 +77,13 @@ interface AddonItem {
   createdAt: string;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 const AddonItemsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<AddonItem | null>(null);
@@ -119,6 +127,12 @@ const AddonItemsPage = () => {
 
   const [addonItems, setAddonItems] = useState<AddonItem[]>([]);
   const [apiLoading, setApiLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 0
+  });
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
 
   const { restaurantDetails, loading } = useRestaurantDetails();
@@ -131,19 +145,21 @@ const AddonItemsPage = () => {
   );
 
   useEffect(() => {
-    fetchData();
+    fetchData(1);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
+      setApiLoading(true);
       const [addonRes, subcategoriesRes, attributesRes] = await Promise.all([
-        addonItemsApi.getAll(),
+        addonItemsApi.getAll(page, limit),
         subcategoriesApi.getAll(),
         attributesApi.getAll()
       ]);
       
       if (addonRes.success) {
         setAddonItems(addonRes.data);
+        setPagination(addonRes.pagination);
       }
       if (subcategoriesRes.success) {
         setSubcategories(subcategoriesRes.data);
@@ -156,6 +172,14 @@ const AddonItemsPage = () => {
     } finally {
       setApiLoading(false);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    fetchData(page, pagination.limit);
+  };
+
+  const handleLimitChange = (limit: number) => {
+    fetchData(1, limit);
   };
 
   const filteredItems = addonItems.filter(item => {
@@ -436,10 +460,24 @@ const AddonItemsPage = () => {
         </div>
       </div>
 
+      {/* Results Count and Records Per Page */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          {apiLoading ? 'Loading...' : `Showing ${filteredItems.length} of ${addonItems.length} items`}
+          {apiLoading ? 'Loading...' : `Showing ${filteredItems.length} of ${pagination.totalCount} items`}
         </p>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600 dark:text-gray-400">Records per page:</label>
+          <select
+            value={pagination.limit}
+            onChange={(e) => handleLimitChange(parseInt(e.target.value))}
+            className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
       </div>
 
       {/* Table */}
@@ -578,6 +616,17 @@ const AddonItemsPage = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center mt-6">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
