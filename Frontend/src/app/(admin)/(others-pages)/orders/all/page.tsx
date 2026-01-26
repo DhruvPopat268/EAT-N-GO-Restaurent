@@ -72,6 +72,14 @@ interface PaginationInfo {
 }
 
 const getAvailableStatuses = (currentStatus: string, orderType: string) => {
+  if (currentStatus === 'ready') {
+    if (orderType === 'dine-in') {
+      return ['ready', 'served'];
+    } else {
+      return ['ready', 'completed'];
+    }
+  }
+  
   const baseStatuses = ['confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
   
   // Only show 'served' for dine-in orders

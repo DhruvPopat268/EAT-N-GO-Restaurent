@@ -27,7 +27,7 @@ const ordersApi = {
 const getNextStatuses = (currentStatus: string, orderType: string) => {
   if (currentStatus === 'ready') {
     if (orderType === 'dine-in') {
-      return ['ready', 'served', 'completed'];
+      return ['ready', 'served'];
     } else {
       return ['ready', 'completed'];
     }
