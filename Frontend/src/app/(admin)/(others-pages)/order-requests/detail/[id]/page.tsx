@@ -24,7 +24,7 @@ interface OrderDetail {
   status: string;
   numberOfGuests?: number;
   dineInstructions?: string;
-  eatTimings: {
+  eatTimings?: {
     startTime: string;
     endTime: string;
   };
@@ -260,10 +260,17 @@ export default function OrderRequestDetail() {
                 </div>
               )}
               
-              <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Eat Timings</label>
-                <p className="text-gray-900 dark:text-white">{order.eatTimings.startTime} - {order.eatTimings.endTime}</p>
-              </div>
+              {order.eatTimings ? (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Eat Timings</label>
+                  <p className="text-gray-900 dark:text-white">{order.eatTimings.startTime} - {order.eatTimings.endTime}</p>
+                </div>
+              ) : order.orderType === 'takeaway' ? (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Order Type</label>
+                  <p className="text-gray-900 dark:text-white">Takeaway Order</p>
+                </div>
+              ) : null}
               
               {order.dineInstructions && (
                 <div>
