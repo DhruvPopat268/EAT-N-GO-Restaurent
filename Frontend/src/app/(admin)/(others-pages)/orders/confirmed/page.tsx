@@ -38,6 +38,8 @@ interface Order {
   paymentMethod: string;
   totalAmount: number;
   status: string;
+  items: any[];
+  waitingTime?: number;
   eatTimings?: {
     startTime: string;
     endTime: string;
@@ -189,10 +191,14 @@ const ConfirmedOrdersPage = () => {
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order No</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">User Info</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order Type</TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Items Count</TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Waiting Time</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Payment Method</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Total Amount</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Update Status To</TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Created At</TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Updated At</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</TableCell>
                 </TableRow>
               </TableHeader>
@@ -228,6 +234,16 @@ const ConfirmedOrdersPage = () => {
                       )}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        {order.items?.length || 0}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        {order.waitingTime ? `${order.waitingTime} min` : '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm text-gray-900 dark:text-white capitalize">
                         {order.paymentMethod}
                       </span>
@@ -255,6 +271,22 @@ const ConfirmedOrdersPage = () => {
                           </option>
                         ))}
                       </select>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(order.createdAt).toLocaleTimeString()}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {new Date(order.updatedAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(order.updatedAt).toLocaleTimeString()}
+                      </div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <Link

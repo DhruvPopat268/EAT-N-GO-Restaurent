@@ -2,7 +2,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
+import MapLocationSelector from "@/components/common/MapLocationSelector";
+import TimePicker from "@/components/common/TimePicker";
 
 const cuisineTypes = [
   'Indian', 'Chinese', 'Italian', 'Mexican', 'Thai', 'Japanese', 'American', 'Mediterranean',
@@ -32,6 +35,8 @@ interface RestaurantData {
     state: string;
     country: string;
     pincode: string;
+    latitude?: string;
+    longitude?: string;
   };
   businessDetails: {
     licenseNumber: string;
@@ -280,9 +285,17 @@ export default function Profile() {
     <div>
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
         <div className="flex justify-between items-center mb-5 lg:mb-7">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Restaurant Profile
-          </h3>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:hover:bg-gray-800"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+              Restaurant Profile
+            </h3>
+          </div>
           <button
             onClick={() => isEditing ? handleSave() : setIsEditing(true)}
             disabled={isEditing && isImageLimitExceeded}
@@ -384,14 +397,13 @@ export default function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-1">Opening Time</label>
                 {isEditing ? (
-                  <input
-                    type="time"
+                  <TimePicker
                     value={data.basicInfo.operatingHours?.openTime || ''}
-                    onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
+                    onChange={(time) => handleInputChange('basicInfo', 'operatingHours', {
                       ...data.basicInfo.operatingHours,
-                      openTime: e.target.value
+                      openTime: time
                     })}
-                    className="w-full p-2 border rounded"
+                    placeholder="Select opening time"
                   />
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">
@@ -402,14 +414,13 @@ export default function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-1">Closing Time</label>
                 {isEditing ? (
-                  <input
-                    type="time"
+                  <TimePicker
                     value={data.basicInfo.operatingHours?.closeTime || ''}
-                    onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
+                    onChange={(time) => handleInputChange('basicInfo', 'operatingHours', {
                       ...data.basicInfo.operatingHours,
-                      closeTime: e.target.value
+                      closeTime: time
                     })}
-                    className="w-full p-2 border rounded"
+                    placeholder="Select closing time"
                   />
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">
@@ -423,7 +434,7 @@ export default function Profile() {
           {/* Contact Details */}
           <div className="p-4 border rounded-lg">
             <h4 className="font-semibold mb-3">Contact Details</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
                 <label className="block text-sm font-medium mb-1">Email</label>
                 {isEditing ? (
@@ -450,27 +461,40 @@ export default function Profile() {
                   <p className="p-2 bg-gray-50 rounded">{data.contactDetails.phone}</p>
                 )}
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1">Address</label>
-                {isEditing ? (
-                  <textarea
-                    value={data.contactDetails.address}
-                    onChange={(e) => handleInputChange('contactDetails', 'address', e.target.value)}
-                    className="w-full p-2 border rounded"
-                    rows={2}
-                  />
-                ) : (
-                  <p className="p-2 bg-gray-50 rounded">{data.contactDetails.address}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">City</label>
-                <p className="p-2 bg-gray-50 rounded">{data.contactDetails.city}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">State</label>
-                <p className="p-2 bg-gray-50 rounded">{data.contactDetails.state}</p>
-              </div>
+            </div>
+            
+            {/* Location Section */}
+            <div className="border-t pt-4">
+              <h5 className="font-medium mb-3">Restaurant Location</h5>
+              <MapLocationSelector
+                initialLocation={{
+                  address: data.contactDetails.address,
+                  city: data.contactDetails.city,
+                  state: data.contactDetails.state,
+                  country: data.contactDetails.country,
+                  pincode: data.contactDetails.pincode,
+                  latitude: data.contactDetails.latitude || '21.1702',
+                  longitude: data.contactDetails.longitude || '72.8311'
+                }}
+                onLocationChange={(location) => {
+                  if (isEditing) {
+                    setFormData({
+                      ...formData!,
+                      contactDetails: {
+                        ...formData!.contactDetails,
+                        address: location.address,
+                        city: location.city,
+                        state: location.state,
+                        country: location.country,
+                        pincode: location.pincode,
+                        latitude: location.latitude,
+                        longitude: location.longitude
+                      }
+                    });
+                  }
+                }}
+                isEditing={isEditing}
+              />
             </div>
           </div>
 

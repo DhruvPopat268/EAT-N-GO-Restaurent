@@ -12,6 +12,11 @@ const orderDetailApi = {
     return response.data;
   },
 
+  updateToConfirmed: async (orderId: string) => {
+    const response = await axiosInstance.patch(`/api/restaurants/orders/confirm/${orderId}`);
+    return response.data;
+  },
+
   updateToPreparing: async (orderId: string) => {
     const response = await axiosInstance.patch(`/api/restaurants/orders/preparing/${orderId}`);
     return response.data;
@@ -39,21 +44,22 @@ const orderDetailApi = {
 };
 
 const getAvailableStatuses = (currentStatus: string, orderType: string) => {
-  if (currentStatus === 'ready') {
-    if (orderType === 'dine-in') {
-      return ['ready', 'served'];
-    } else {
-      return ['ready', 'completed'];
-    }
+  const statusFlow = {
+    'waiting': 'confirmed',
+    'confirmed': 'preparing',
+    'preparing': 'ready',
+    'ready': orderType === 'dine-in' ? 'served' : 'completed',
+    'served': 'completed'
+  };
+  
+  const nextStatus = statusFlow[currentStatus as keyof typeof statusFlow];
+  
+  if (nextStatus) {
+    return [currentStatus, nextStatus];
   }
   
-  const baseStatuses = ['confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
-  
-  if (orderType === 'dine-in') {
-    return ['confirmed', 'preparing', 'ready', 'served', 'completed', 'cancelled'];
-  }
-  
-  return baseStatuses;
+  // For final statuses (completed, cancelled, refunded), show only current
+  return [currentStatus];
 };
 
 interface OrderDetail {
@@ -70,6 +76,7 @@ interface OrderDetail {
   paymentMethod: string;
   totalAmount: number;
   status: string;
+  waitingTime?: number;
   eatTimings?: {
     startTime: string;
     endTime: string;
@@ -193,7 +200,7 @@ const OrderDetailPage = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/')}
             className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:hover:bg-gray-800"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -276,6 +283,13 @@ const OrderDetailPage = () => {
                     Takeaway Timings: {order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Waiting Time</label>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {order.waitingTime ? `${order.waitingTime} minutes` : 'Not specified'}
+                </p>
               </div>
 
               {order.dineInstructions && (
@@ -439,6 +453,9 @@ const OrderDetailPage = () => {
                     const { newStatus } = statusConfirm;
                     
                     switch (newStatus) {
+                      case 'confirmed':
+                        response = await orderDetailApi.updateToConfirmed(order._id);
+                        break;
                       case 'preparing':
                         response = await orderDetailApi.updateToPreparing(order._id);
                         break;
