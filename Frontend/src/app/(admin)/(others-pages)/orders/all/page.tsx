@@ -13,6 +13,11 @@ const ordersApi = {
     return response.data;
   },
 
+  updateToConfirmed: async (orderId: string) => {
+    const response = await axiosInstance.patch(`/api/restaurants/orders/confirm/${orderId}`);
+    return response.data;
+  },
+
   updateToPreparing: async (orderId: string) => {
     const response = await axiosInstance.patch(`/api/restaurants/orders/preparing/${orderId}`);
     return response.data;
@@ -51,6 +56,7 @@ interface Order {
   paymentMethod: string;
   totalAmount: number;
   status: string;
+  items: any[];
   waitingTime?: number;
   eatTimings?: {
     startTime: string;
@@ -72,22 +78,22 @@ interface PaginationInfo {
 }
 
 const getAvailableStatuses = (currentStatus: string, orderType: string) => {
-  if (currentStatus === 'ready') {
-    if (orderType === 'dine-in') {
-      return ['ready', 'served'];
-    } else {
-      return ['ready', 'completed'];
-    }
+  const statusFlow = {
+    'waiting': 'confirmed',
+    'confirmed': 'preparing',
+    'preparing': 'ready',
+    'ready': orderType === 'dine-in' ? 'served' : 'completed',
+    'served': 'completed'
+  };
+  
+  const nextStatus = statusFlow[currentStatus as keyof typeof statusFlow];
+  
+  if (nextStatus) {
+    return [currentStatus, nextStatus];
   }
   
-  const baseStatuses = ['confirmed', 'preparing', 'ready', 'completed', 'cancelled'];
-  
-  // Only show 'served' for dine-in orders
-  if (orderType === 'dine-in') {
-    return ['confirmed', 'preparing', 'ready', 'served', 'completed', 'cancelled'];
-  }
-  
-  return baseStatuses;
+  // For final statuses (completed, cancelled, refunded), show only current
+  return [currentStatus];
 };
 
 const statusOptions = ['confirmed', 'preparing', 'ready', 'served', 'completed', 'cancelled', 'refunded'];
@@ -151,6 +157,9 @@ const AllOrdersPage = () => {
       const { newStatus, orderId } = statusConfirm;
       
       switch (newStatus) {
+        case 'confirmed':
+          response = await ordersApi.updateToConfirmed(orderId);
+          break;
         case 'preparing':
           response = await ordersApi.updateToPreparing(orderId);
           break;
@@ -254,6 +263,7 @@ const AllOrdersPage = () => {
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order No</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">User Info</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order Type</TableCell>
+                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Items Count</TableCell>
                    <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Waiting Time</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Payment Method</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Total Amount</TableCell>
@@ -295,6 +305,11 @@ const AllOrdersPage = () => {
                           Takeaway: {order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}
                         </div>
                       )}
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        {order.items?.length || 0}
+                      </span>
                     </TableCell>
                      <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm text-gray-900 dark:text-white">

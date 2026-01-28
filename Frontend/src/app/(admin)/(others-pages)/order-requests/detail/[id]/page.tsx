@@ -218,7 +218,7 @@ export default function OrderRequestDetail() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Req Information</h2>
             
             <div className="space-y-3">
               <div>
