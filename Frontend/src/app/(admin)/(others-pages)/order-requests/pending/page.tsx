@@ -57,16 +57,30 @@ export default function PendingOrderRequests() {
   const [selectedReason, setSelectedReason] = useState('');
   const [waitingMinutes, setWaitingMinutes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [search, setSearch] = useState('');
+  const [orderTypeFilter, setOrderTypeFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const router = useRouter();
 
   useEffect(() => {
     fetchOrders(1);
-  }, []);
+  }, [search, orderTypeFilter, startDate, endDate]);
 
   const fetchOrders = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/api/restaurants/order-requests/pending?page=${page}&limit=${limit}`);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString()
+      });
+      
+      if (search) params.append('search', search);
+      if (orderTypeFilter) params.append('orderType', orderTypeFilter);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      
+      const response = await axiosInstance.get(`/api/restaurants/order-requests/pending?${params.toString()}`);
       setOrders(response.data.data);
       setPagination(response.data.pagination);
     } catch (error) {
@@ -159,6 +173,86 @@ export default function PendingOrderRequests() {
         <p className="text-gray-600 dark:text-gray-400">Orders waiting for approval</p>
       </div>
 
+      {/* Filters */}
+      <div className="mb-6">
+        <div className="flex flex-wrap justify-between items-end gap-4">
+          {/* Search */}
+          <div className="w-128">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Search
+            </label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by customer name, phone, or order number..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            {/* Order Type Filter */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Order Type
+              </label>
+              <select
+                value={orderTypeFilter}
+                onChange={(e) => setOrderTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              >
+                <option value="">All Types</option>
+                <option value="dine-in">Dine In</option>
+                <option value="takeaway">Takeaway</option>
+              </select>
+            </div>
+
+            {/* Start Date */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              />
+            </div>
+
+            {/* End Date */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Clear Filters */}
+        {(search || orderTypeFilter || startDate || endDate) && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => {
+                setSearch('');
+                setOrderTypeFilter('');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Controls */}
       <div className="mb-4 flex justify-between items-center">
         {pagination.totalCount > 0 && (
@@ -202,16 +296,25 @@ export default function PendingOrderRequests() {
             Order Type
           </th>
           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            Items Count
+          </th>
+          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
             Timings
+          </th>
+          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            Waiting Time
+          </th>
+          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            Status
           </th>
           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
             Order Req Total
           </th>
           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-            Status Updated By
+            Created At
           </th>
           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-            Order Req Date
+            Updated At
           </th>
           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
             Actions
@@ -243,6 +346,11 @@ export default function PendingOrderRequests() {
               {order.orderType}
             </td>
 
+            {/* Items Count */}
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
+              {order.items?.length || 0}
+            </td>
+
             {/* Timings */}
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
               {order.eatTimings && (
@@ -256,20 +364,31 @@ export default function PendingOrderRequests() {
               )}
             </td>
 
+            {/* Waiting Time */}
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
+              {order.waitingTime && order.waitingTime > 0 ? `${order.waitingTime} min` : '-'}
+            </td>
+
+            {/* Status */}
+            <td className="px-6 py-4 whitespace-nowrap text-center">
+              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                Pending
+              </span>
+            </td>
+
             {/* Total */}
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
               ₹{order.orderTotal}
             </td>
 
-            {/* Status Updated By */}
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white capitalize text-center">
-              {order.statusUpdatedBy || '-'}
+            {/* Created At */}
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
+              {order.createdAt}
             </td>
 
-            {/* Date */}
+            {/* Updated At */}
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-              <div>{new Date(order.createdAt).toLocaleDateString('en-GB').replace(/\//g, '/').slice(0, -2) + new Date(order.createdAt).toLocaleDateString('en-GB').slice(-2)}</div>
-              <div>{new Date(order.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+              {order.updatedAt}
             </td>
 
             {/* Actions */}
