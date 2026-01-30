@@ -8,8 +8,17 @@ import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
 
 const ordersApi = {
-  getServed: async (page: number = 1, limit: number = 10) => {
-    const response = await axiosInstance.get(`/api/restaurants/orders/served?page=${page}&limit=${limit}`);
+  getServed: async (page: number = 1, limit: number = 10, filters?: any) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const response = await axiosInstance.get(`/api/restaurants/orders/served?${params.toString()}`);
     return response.data;
   },
 
@@ -70,15 +79,23 @@ const ServedOrdersPage = () => {
   });
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [statusConfirm, setStatusConfirm] = useState<{show: boolean, orderId: string, orderNo: string, currentStatus: string, newStatus: string}>({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
+  const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     fetchOrders(1);
-  }, []);
+  }, [search, startDate, endDate]);
 
   const fetchOrders = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
       setApiLoading(true);
-      const response = await ordersApi.getServed(page, limit);
+      const filters = {
+        search,
+        startDate,
+        endDate
+      };
+      const response = await ordersApi.getServed(page, limit, filters);
       if (response.success) {
         setOrders(response.data);
         setPagination(response.pagination);
@@ -158,6 +175,70 @@ const ServedOrdersPage = () => {
         </p>
       </div>
 
+      {/* Filters */}
+      <div className="mb-6">
+        <div className="flex flex-wrap justify-between items-end gap-4">
+          {/* Search */}
+          <div className="w-128">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Search
+            </label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by customer name, phone, or order number..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            {/* Start Date */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              />
+            </div>
+
+            {/* End Date */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Clear Filters */}
+        {(search || startDate || endDate) && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => {
+                setSearch('');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Results Count and Records Per Page */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Showing {orders.length} of {pagination.totalCount} orders
@@ -268,20 +349,10 @@ const ServedOrdersPage = () => {
                       </select>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(order.createdAt).toLocaleTimeString()}
-                      </div>
+                      {order.createdAt}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {new Date(order.updatedAt).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(order.updatedAt).toLocaleTimeString()}
-                      </div>
+                      {order.updatedAt}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <Link

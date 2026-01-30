@@ -28,7 +28,7 @@ interface OrderDetail {
     startTime: string;
     endTime: string;
   };
-  orderTotal: number;
+  cartTotal: number;
   waitingTime?: number;
   statusUpdatedBy?: string;
   items: {
@@ -286,21 +286,12 @@ export default function OrderRequestDetail() {
               
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Order Total</label>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">₹{order.orderTotal}</p>
+                <p className="text-lg font-semibold text-gray-900 dark:text-white">₹{order.cartTotal}</p>
               </div>
             </div>
             
             {order.status === 'pending' && (
               <div className="mt-6 space-y-2">
-                <button
-                  onClick={() => {
-                    console.log('Test toast clicked');
-                    toast.success('Test toast message');
-                  }}
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 mb-2"
-                >
-                  Test Toast
-                </button>
                 <button
                   onClick={() => openConfirmModal('confirm')}
                   className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
@@ -389,7 +380,7 @@ export default function OrderRequestDetail() {
                               {item.selectedCustomizations.map((custom, index) => (
                                 <li key={index}>
                                   {custom.selectedOptions?.map((opt: any, i: number) => (
-                                    <span key={i}>Option x{opt.quantity}</span>
+                                    <span key={i}>{opt.optionName} ({opt.unit}) x{opt.quantity}</span>
                                   ))}
                                 </li>
                               ))}
@@ -407,7 +398,7 @@ export default function OrderRequestDetail() {
               <div className="flex justify-end">
                 <div className="text-right">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Order Request Total</p>
-                  <p className="text-2xl font-bold text-green-600">₹{order.orderTotal}</p>
+                  <p className="text-2xl font-bold text-green-600">₹{order.cartTotal}</p>
                 </div>
               </div>
             </div>

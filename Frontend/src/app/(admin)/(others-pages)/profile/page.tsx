@@ -273,7 +273,6 @@ export default function Profile() {
     }
   };
 
-
   if (loading) return <LoadingSpinner />;
   if (!restaurantData) return <div>No data found</div>;
 
@@ -740,7 +739,7 @@ export default function Profile() {
       {/* Image Preview Modal */}
       {previewImage && (
         <div 
-          className="fixed inset-0 bg-black flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]"
           onClick={() => setPreviewImage(null)}
         >
           <div className="relative bg-white p-4 rounded-lg max-w-2xl max-h-[80vh]">

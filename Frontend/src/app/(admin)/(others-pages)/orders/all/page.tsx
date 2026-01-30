@@ -8,8 +8,19 @@ import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
 
 const ordersApi = {
-  getAll: async (page: number = 1, limit: number = 10) => {
-    const response = await axiosInstance.get(`/api/restaurants/orders/all?page=${page}&limit=${limit}`);
+  getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.orderType) params.append('orderType', filters.orderType);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const response = await axiosInstance.get(`/api/restaurants/orders/all?${params.toString()}`);
     return response.data;
   },
 
@@ -111,15 +122,27 @@ const AllOrdersPage = () => {
   const [statusConfirm, setStatusConfirm] = useState<{show: boolean, orderId: string, orderNo: string, currentStatus: string, newStatus: string}>({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [orderTypeFilter, setOrderTypeFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     fetchOrders(1);
-  }, []);
+  }, [search, statusFilter, orderTypeFilter, startDate, endDate]);
 
   const fetchOrders = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
       setApiLoading(true);
-      const response = await ordersApi.getAll(page, limit);
+      const filters = {
+        search,
+        status: statusFilter,
+        orderType: orderTypeFilter,
+        startDate,
+        endDate
+      };
+      const response = await ordersApi.getAll(page, limit, filters);
       if (response.success) {
         setOrders(response.data);
         setPagination(response.pagination);
@@ -226,6 +249,109 @@ const AllOrdersPage = () => {
         <p className="text-gray-600 dark:text-gray-400">
           View and manage all orders from your restaurant
         </p>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-6">
+        <div className="flex flex-wrap justify-between items-end gap-4">
+          {/* Search */}
+          <div className="w-128">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Search
+            </label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by customer name, phone, or order number..."
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            {/* Status Filter */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Status
+              </label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              >
+                <option value="">All Status</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="waiting">Waiting</option>
+                <option value="preparing">Preparing</option>
+                <option value="ready">Ready</option>
+                <option value="served">Served</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
+                <option value="refunded">Refunded</option>
+              </select>
+            </div>
+
+            {/* Order Type Filter */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Order Type
+              </label>
+              <select
+                value={orderTypeFilter}
+                onChange={(e) => setOrderTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              >
+                <option value="">All Types</option>
+                <option value="dine-in">Dine In</option>
+                <option value="takeaway">Takeaway</option>
+              </select>
+            </div>
+
+            {/* Start Date */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              />
+            </div>
+
+            {/* End Date */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Clear Filters */}
+        {(search || statusFilter || orderTypeFilter || startDate || endDate) && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => {
+                setSearch('');
+                setStatusFilter('');
+                setOrderTypeFilter('');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Results Count and Records Per Page */}
@@ -356,20 +482,10 @@ const AllOrdersPage = () => {
                       </select>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(order.createdAt).toLocaleTimeString()}
-                      </div>
+                      {order.createdAt}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {new Date(order.updatedAt).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {new Date(order.updatedAt).toLocaleTimeString()}
-                      </div>
+                      {order.updatedAt}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <Link
