@@ -23,7 +23,7 @@ interface OrderRequest {
     startTime: string;
     endTime: string;
   };
-  orderTotal: number;
+  cartTotal: number;
   statusUpdatedBy?: string;
   createdAt: string;
 }
@@ -280,7 +280,7 @@ export default function RejectedOrderRequests() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
-                    ₹{order.orderTotal}
+                    ₹{order.cartTotal}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
                     {order.createdAt}

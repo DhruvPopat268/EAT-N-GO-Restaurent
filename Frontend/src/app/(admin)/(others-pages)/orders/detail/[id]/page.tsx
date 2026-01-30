@@ -383,7 +383,7 @@ const OrderDetailPage = () => {
                                 <p className="text-xs text-gray-600 dark:text-gray-400">{customization.customizationName}:</p>
                                 {customization.selectedOptions.map((option, optIdx) => (
                                   <p key={optIdx} className="text-xs text-gray-600 dark:text-gray-400 ml-2">
-                                    • {option.optionName} (₹{option.optionPrice} x {option.quantity})
+                                    • {option.optionName} ({option.optionUnit}) x{option.quantity}
                                   </p>
                                 ))}
                               </div>
