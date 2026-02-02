@@ -2,9 +2,13 @@
 import React from "react";
 import OrdersTable from "@/components/tables/OrdersTable";
 import { getPendingOrders } from "@/data/ordersData";
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 const PendingOrders = () => {
   const pendingOrders = getPendingOrders();
+
+  // Add order notifications
+  useOrderNotifications("Pending Orders");
 
 
 

@@ -6,6 +6,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 const attributesApi = {
   getAll: async (page: number = 1, limit: number = 10) => {
@@ -67,6 +68,9 @@ const AddAttributesPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
+
+  // Add order notifications
+  useOrderNotifications("Add Attributes");
 
   useEffect(() => {
     fetchAttributes(1);

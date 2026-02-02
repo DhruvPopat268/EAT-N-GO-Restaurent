@@ -1,10 +1,14 @@
 "use client";
 
+import { useGlobalOrderSocket } from "@/hooks/useGlobalOrderSocket";
 import { useSidebar } from "@/context/SidebarContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
 import ToastProvider from "@/components/common/ToastProvider";
+import { SocketProvider } from "@/context/SocketContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+import NotificationPopup from "@/components/notifications/NotificationPopup";
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
@@ -24,6 +28,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [restaurentStatus, setRestaurentStatus] = useState<string | null>(null);
   const [restaurantData, setRestaurantData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Global order socket hook - works across all pages
+  useGlobalOrderSocket();
+  
+  // Log current page for debugging
+  useEffect(() => {
+    console.log(`🏠 [${new Date().toLocaleString()}] Current page: ${pathname}`);
+    console.log(`🌐 Global socket hook active on: ${pathname}`);
+  }, [pathname]);
   
   // Move all useState hooks to the top level
   const [resubmitData, setResubmitData] = useState<Record<string, any>>({});
@@ -625,24 +638,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen xl:flex">
-      {/* Sidebar and Backdrop */}
-      <AppSidebar />
-      <Backdrop />
+    <NotificationProvider>
+      <SocketProvider restaurantId={restaurantData?._id || ''}>
+        <div className="min-h-screen xl:flex">
+          {/* Sidebar and Backdrop */}
+          <AppSidebar />
+          <Backdrop />
 
-      {/* Main Content Area */}
-      <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
-      >
-        {/* Header */}
-        <AppHeader />
+          {/* Main Content Area */}
+          <div
+            className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
+          >
+            {/* Header */}
+            <AppHeader />
 
-        {/* Page Content */}
-        <div className="p-4 mx-auto  md:p-6">{children}</div>
-      </div>
-      
-      {/* Toast Provider */}
-      <ToastProvider />
-    </div>
+            {/* Page Content */}
+            <div className="p-4 mx-auto  md:p-6">{children}</div>
+          </div>
+          
+          {/* Toast Provider */}
+          <ToastProvider />
+          
+          {/* Global Notification Popup */}
+          <NotificationPopup />
+        </div>
+      </SocketProvider>
+    </NotificationProvider>
   );
 }

@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import MapLocationSelector from "@/components/common/MapLocationSelector";
 import TimePicker from "@/components/common/TimePicker";
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 const cuisineTypes = [
   'Indian', 'Chinese', 'Italian', 'Mexican', 'Thai', 'Japanese', 'American', 'Mediterranean',
@@ -61,6 +62,9 @@ export default function Profile() {
   const [primaryImageIndex, setPrimaryImageIndex] = useState<number>(-1);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const router = useRouter();
+
+  // Add order notifications
+  useOrderNotifications("Profile Page");
 
   useEffect(() => {
     const fetchRestaurantDetails = async () => {

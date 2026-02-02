@@ -12,6 +12,7 @@ import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import MultiSelect from "@/components/form/MultiSelect";
 import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
+import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
@@ -137,6 +138,9 @@ const ComboListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  // Add order notifications
+  useOrderNotifications("Combos");
 
   const [combos, setCombos] = useState<ComboItem[]>([]);
   const [items, setItems] = useState<Item[]>([]);

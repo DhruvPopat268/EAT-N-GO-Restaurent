@@ -7,6 +7,7 @@ import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
 import { formatDateTime } from '@/utils/dateUtils';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 const ordersApi = {
   getServed: async (page: number = 1, limit: number = 10, filters?: any) => {
@@ -83,6 +84,9 @@ const ServedOrdersPage = () => {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // Add order notifications
+  useOrderNotifications("Served Orders");
 
   useEffect(() => {
     fetchOrders(1);

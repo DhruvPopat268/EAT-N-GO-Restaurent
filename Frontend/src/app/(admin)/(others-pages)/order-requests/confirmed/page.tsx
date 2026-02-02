@@ -6,6 +6,11 @@ import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Pagination from '@/components/tables/Pagination';
 import { formatDateTime } from '@/utils/dateUtils';
+import { useSocket } from '@/context/SocketContext';
+import { useNotification } from '@/context/NotificationContext';
+import { playNotificationSound } from '@/utils/soundUtils';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 interface OrderRequest {
   _id: string;
@@ -51,6 +56,66 @@ export default function ConfirmedOrderRequests() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const router = useRouter();
+  
+  // Socket integration for notifications
+  const { socket, isConnected } = useSocket();
+  const { showNotification } = useNotification();
+
+  // Add order notifications
+  useOrderNotifications("Confirmed Order Requests");
+  useOrderRequestNotifications("Confirmed Order Requests");
+
+  // Direct socket listener for notifications
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      console.log('📱 Confirmed Orders page: Socket not ready', { socket: !!socket, isConnected });
+      return;
+    }
+
+    const handleNewOrder = (orderData: any) => {
+      const timestamp = new Date().toLocaleString();
+      console.log(`🔔 [${timestamp}] CONFIRMED ORDERS PAGE - New order received:`, {
+        orderId: orderData._id,
+        orderNo: orderData.orderRequestNo || orderData.orderNo,
+        customer: orderData.userId?.fullName || 'Unknown',
+        status: orderData.status
+      });
+      
+      // Show notification for waiting or confirmed orders
+      if (orderData.status === 'waiting' || orderData.status === 'confirmed') {
+        // Play sound
+        console.log(`🔊 [${timestamp}] Playing sound for ${orderData.status} order...`);
+        playNotificationSound('new-order');
+        
+        // Show notification
+        console.log(`📱 [${timestamp}] Showing notification for ${orderData.status} order...`);
+        showNotification({
+          id: orderData._id,
+          orderNo: orderData.orderRequestNo || orderData.orderNo,
+          customerName: orderData.userId?.fullName || 'Unknown',
+          orderType: orderData.orderType,
+          totalAmount: orderData.cartTotal || orderData.totalAmount,
+          itemsCount: orderData.items?.length || 0,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Add to confirmed orders list if on page 1 and status is confirmed
+        if (pagination.page === 1 && orderData.status === 'confirmed') {
+          console.log(`➕ [${timestamp}] Adding to confirmed orders list`);
+          setOrders(prev => [orderData, ...prev]);
+          setPagination(prev => ({ ...prev, totalCount: prev.totalCount + 1 }));
+        }
+      }
+    };
+
+    console.log('📱 Confirmed Orders page: Registering socket listener');
+    socket.on('new-order', handleNewOrder);
+
+    return () => {
+      console.log('📱 Confirmed Orders page: Removing socket listener');
+      socket.off('new-order', handleNewOrder);
+    };
+  }, [socket, isConnected, showNotification, pagination.page]);
 
   useEffect(() => {
     fetchOrders(1);

@@ -6,6 +6,7 @@ import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 const ordersApi = {
   getWaiting: async (page: number = 1, limit: number = 10, filters?: any) => {
@@ -84,6 +85,9 @@ const WaitingOrdersPage = () => {
   const [orderTypeFilter, setOrderTypeFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // Add order notifications
+  useOrderNotifications("Waiting Orders");
 
   useEffect(() => {
     fetchOrders(1);

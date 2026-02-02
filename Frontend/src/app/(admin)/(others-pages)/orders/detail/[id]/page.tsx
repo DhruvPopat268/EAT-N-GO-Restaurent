@@ -201,7 +201,7 @@ const OrderDetailPage = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.back()}
             className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors dark:border-gray-600 dark:hover:bg-gray-800"
           >
             <ArrowLeft className="w-5 h-5" />

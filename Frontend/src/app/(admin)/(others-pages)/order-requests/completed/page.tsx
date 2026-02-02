@@ -6,6 +6,7 @@ import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Pagination from '@/components/tables/Pagination';
 import { formatDateTime } from '@/utils/dateUtils';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 interface OrderRequest {
   _id: string;
@@ -52,6 +53,9 @@ export default function CompletedOrderRequests() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const router = useRouter();
+
+  // Add order notifications
+  useOrderNotifications("Completed Order Requests");
 
   useEffect(() => {
     fetchOrders(1);
