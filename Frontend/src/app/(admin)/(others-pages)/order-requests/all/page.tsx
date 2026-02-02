@@ -6,6 +6,11 @@ import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Pagination from '@/components/tables/Pagination';
 import { formatDateTime } from '@/utils/dateUtils';
+import { usePageOrderSocket } from '@/hooks/usePageOrderSocket';
+import { useSocket } from '@/context/SocketContext';
+import { useNotification } from '@/context/NotificationContext';
+import { playNotificationSound } from '@/utils/soundUtils';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 interface Reason {
   _id: string;
@@ -66,6 +71,79 @@ export default function AllOrderRequests() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const router = useRouter();
+  
+  // Socket integration for notifications
+  const { socket, isConnected } = useSocket();
+  const { showNotification } = useNotification();
+
+  // Add order notifications
+  useOrderNotifications("All Order Requests");
+
+  // Direct socket listener for notifications
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      console.log('📱 All Orders page: Socket not ready', { socket: !!socket, isConnected });
+      return;
+    }
+
+    const handleNewOrder = (orderData: any) => {
+      const timestamp = new Date().toLocaleString();
+      console.log(`🔔 [${timestamp}] ALL ORDERS PAGE - New order received:`, {
+        orderId: orderData._id,
+        orderNo: orderData.orderRequestNo || orderData.orderNo,
+        customer: orderData.userId?.fullName || 'Unknown',
+        status: orderData.status
+      });
+      
+      // Show notification for waiting or confirmed orders
+      if (orderData.status === 'waiting' || orderData.status === 'confirmed') {
+        // Play sound
+        console.log(`🔊 [${timestamp}] Playing sound for ${orderData.status} order...`);
+        playNotificationSound('new-order');
+        
+        // Show notification
+        console.log(`📱 [${timestamp}] Showing notification for ${orderData.status} order...`);
+        showNotification({
+          id: orderData._id,
+          orderNo: orderData.orderRequestNo || orderData.orderNo,
+          customerName: orderData.userId?.fullName || 'Unknown',
+          orderType: orderData.orderType,
+          totalAmount: orderData.cartTotal || orderData.totalAmount,
+          itemsCount: orderData.items?.length || 0,
+          timestamp: new Date().toISOString()
+        });
+      }
+    };
+
+    console.log('📱 All Orders page: Registering socket listener');
+    socket.on('new-order', handleNewOrder);
+
+    return () => {
+      console.log('📱 All Orders page: Removing socket listener');
+      socket.off('new-order', handleNewOrder);
+    };
+  }, [socket, isConnected, showNotification]);
+
+  // Socket integration for real-time updates
+  usePageOrderSocket((newOrder) => {
+    const timestamp = new Date().toLocaleString();
+    console.log(`📝 [${timestamp}] Order page received new order:`, {
+      orderId: newOrder._id,
+      orderNo: newOrder.orderRequestNo,
+      customer: newOrder.userId?.fullName,
+      currentPage: pagination.page
+    });
+    
+    // Add new order to the list if we're on page 1
+    if (pagination.page === 1) {
+      console.log(`➕ [${timestamp}] Adding new order to orders list (page 1)`);
+      setOrders(prev => [newOrder, ...prev]);
+      setPagination(prev => ({ ...prev, totalCount: prev.totalCount + 1 }));
+      console.log(`✅ [${timestamp}] Order added to list, total count updated`);
+    } else {
+      console.log(`📊 [${timestamp}] Not adding to list (not on page 1, current page: ${pagination.page})`);
+    }
+  });
 
   useEffect(() => {
     fetchOrders(1);
@@ -368,7 +446,6 @@ export default function AllOrderRequests() {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Updated At
                 </th>
-                
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { X, Plus, Edit, Trash2, Users, Key, Shield, Mail, Phone } from "lucide-react";
 import { permissionService, Permission, CreatePermissionData } from "@/services/permissionService";
 import { toast } from "react-hot-toast";
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 const RBACManagementPage = () => {
   const [activeTab, setActiveTab] = useState("permissions");
@@ -23,6 +24,9 @@ const RBACManagementPage = () => {
   const [userForm, setUserForm] = useState({ name: "", email: "", phone: "", role: "Viewer", status: "Active" });
 
   const [permissions, setPermissions] = useState<Permission[]>([]);
+
+  // Add order notifications
+  useOrderNotifications("Role Management");
 
   const [roles, setRoles] = useState([
     {

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Pagination from '@/components/tables/Pagination';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 interface Reason {
   _id: string;
@@ -36,6 +37,9 @@ export default function ReasonManagement() {
     reasonType: 'waiting' as 'waiting' | 'rejected',
     reasonText: ''
   });
+
+  // Add order notifications
+  useOrderNotifications("Reason Management");
 
   useEffect(() => {
     fetchReasons(1);

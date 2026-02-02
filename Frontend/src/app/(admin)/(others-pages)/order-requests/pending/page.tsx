@@ -6,6 +6,11 @@ import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Pagination from '@/components/tables/Pagination';
 import { formatDateTime } from '@/utils/dateUtils';
+import { useSocket } from '@/context/SocketContext';
+import { useNotification } from '@/context/NotificationContext';
+import { playNotificationSound } from '@/utils/soundUtils';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 interface Reason {
   _id: string;
@@ -64,6 +69,66 @@ export default function PendingOrderRequests() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const router = useRouter();
+  
+  // Socket integration for notifications
+  const { socket, isConnected } = useSocket();
+  const { showNotification } = useNotification();
+
+  // Add order notifications
+  useOrderNotifications("Pending Order Requests");
+  useOrderRequestNotifications("Pending Order Requests");
+
+  // Direct socket listener for this page
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      console.log('📱 Pending page: Socket not ready', { socket: !!socket, isConnected });
+      return;
+    }
+
+    const handleNewOrder = (orderData: any) => {
+      const timestamp = new Date().toLocaleString();
+      console.log(`🔔 [${timestamp}] PENDING PAGE - New order received:`, {
+        orderId: orderData._id,
+        orderNo: orderData.orderRequestNo || orderData.orderNo,
+        customer: orderData.userId?.fullName || 'Unknown',
+        status: orderData.status
+      });
+      
+      // Show notification for waiting or confirmed orders
+      if (orderData.status === 'waiting' || orderData.status === 'confirmed') {
+        // Play sound
+        console.log(`🔊 [${timestamp}] Playing sound for ${orderData.status} order...`);
+        playNotificationSound('new-order');
+        
+        // Show notification
+        console.log(`📱 [${timestamp}] Showing notification for ${orderData.status} order...`);
+        showNotification({
+          id: orderData._id,
+          orderNo: orderData.orderRequestNo || orderData.orderNo,
+          customerName: orderData.userId?.fullName || 'Unknown',
+          orderType: orderData.orderType,
+          totalAmount: orderData.cartTotal || orderData.totalAmount,
+          itemsCount: orderData.items?.length || 0,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Add to pending orders list if on page 1 and status is pending
+        if (pagination.page === 1 && orderData.status === 'pending') {
+          console.log(`➕ [${timestamp}] Adding to pending orders list`);
+          setOrders(prev => [orderData, ...prev]);
+          setPagination(prev => ({ ...prev, totalCount: prev.totalCount + 1 }));
+        }
+      }
+    };
+
+    console.log('📱 Pending page: Registering socket listener');
+    socket.on('new-order', handleNewOrder);
+
+    return () => {
+      console.log('📱 Pending page: Removing socket listener');
+      socket.off('new-order', handleNewOrder);
+    };
+  }, [socket, isConnected, showNotification, pagination.page]);
 
   useEffect(() => {
     fetchOrders(1);

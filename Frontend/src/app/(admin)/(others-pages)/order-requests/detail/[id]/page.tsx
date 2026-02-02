@@ -6,6 +6,7 @@ import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 interface Reason {
   _id: string;
@@ -63,6 +64,9 @@ export default function OrderRequestDetail() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
+
+  // Add order notifications
+  useOrderNotifications("Order Request Detail");
 
   useEffect(() => {
     if (orderId) {
@@ -204,8 +208,8 @@ export default function OrderRequestDetail() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Request #{order.orderRequestNo}</h1>
-            <p className="text-gray-600 dark:text-gray-400">Order details and management</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Req #{order.orderRequestNo}</h1>
+            <p className="text-gray-600 dark:text-gray-400">Order Req details and management</p>
           </div>
         </div>
         <div>
@@ -294,21 +298,24 @@ export default function OrderRequestDetail() {
               <div className="mt-6 space-y-2">
                 <button
                   onClick={() => openConfirmModal('confirm')}
-                  className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                  disabled={actionLoading}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  Confirm Order
+                  {actionLoading ? 'Processing...' : 'Confirm Order Req'}
                 </button>
                 <button
                   onClick={() => openReasonModal('waiting')}
-                  className="w-full bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
+                  disabled={actionLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  Set Waiting
+                  {actionLoading ? 'Processing...' : 'Set Waiting Order Req'}
                 </button>
                 <button
                   onClick={() => openReasonModal('reject')}
-                  className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                  disabled={actionLoading}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  Reject Order
+                  {actionLoading ? 'Processing...' : 'Reject Order Req'}
                 </button>
               </div>
             )}
