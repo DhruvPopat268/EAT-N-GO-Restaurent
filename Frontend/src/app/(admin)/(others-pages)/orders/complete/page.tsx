@@ -6,6 +6,7 @@ import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
+import { formatDateTime } from '@/utils/dateUtils';
 
 const ordersApi = {
   getCompleted: async (page: number = 1, limit: number = 10, filters?: any) => {
@@ -315,10 +316,12 @@ const CompletedOrdersPage = () => {
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      {order.createdAt}
+                      <div>{formatDateTime(order.createdAt).date}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.createdAt).time}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      {order.updatedAt}
+                      <div>{formatDateTime(order.updatedAt).date}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <Link
