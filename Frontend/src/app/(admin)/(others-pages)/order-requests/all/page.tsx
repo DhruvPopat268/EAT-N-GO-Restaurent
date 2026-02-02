@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Pagination from '@/components/tables/Pagination';
+import { formatDateTime } from '@/utils/dateUtils';
 
 interface Reason {
   _id: string;
@@ -33,6 +34,7 @@ interface OrderRequest {
   cartTotal: number;
   statusUpdatedBy?: string;
   createdAt: string;
+  updatedAt: string;
   waitingTime?: number;
 }
 
@@ -366,6 +368,7 @@ export default function AllOrderRequests() {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Updated At
                 </th>
+                
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
@@ -410,10 +413,12 @@ export default function AllOrderRequests() {
                     ₹{order.cartTotal}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-                    {order.createdAt}
+                    <div>{formatDateTime(order.createdAt).date}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.createdAt).time}</div>
                   </td>
                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-                    {order.updatedAt}
+                    <div>{formatDateTime(order.updatedAt).date}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2 text-center">
                     <button

@@ -6,6 +6,7 @@ import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
+import { formatDateTime } from '@/utils/dateUtils';
 
 const ordersApi = {
   getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
@@ -482,10 +483,12 @@ const AllOrdersPage = () => {
                       </select>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      {order.createdAt}
+                      <div>{formatDateTime(order.createdAt).date}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.createdAt).time}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      {order.updatedAt}
+                      <div>{formatDateTime(order.updatedAt).date}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <Link
@@ -607,13 +610,13 @@ const AllOrdersPage = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Created At</label>
-                  <p className="text-sm text-gray-900 dark:text-white">{new Date(viewingOrder.createdAt).toLocaleDateString()}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(viewingOrder.createdAt).toLocaleTimeString()}</p>
+                  <div className="text-sm text-gray-900 dark:text-white">{formatDateTime(viewingOrder.createdAt).date}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(viewingOrder.createdAt).time}</div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Updated At</label>
-                  <p className="text-sm text-gray-900 dark:text-white">{new Date(viewingOrder.updatedAt).toLocaleDateString()}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{new Date(viewingOrder.updatedAt).toLocaleTimeString()}</p>
+                  <div className="text-sm text-gray-900 dark:text-white">{formatDateTime(viewingOrder.updatedAt).date}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(viewingOrder.updatedAt).time}</div>
                 </div>
               </div>
             </div>

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
+import { formatDateTime } from '@/utils/dateUtils';
 
 const orderDetailApi = {
   getById: async (orderId: string) => {
@@ -306,14 +307,18 @@ const OrderDetailPage = () => {
 
               <div>
                 <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Created At</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{new Date(order.createdAt).toLocaleDateString()}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500">{new Date(order.createdAt).toLocaleTimeString()}</p>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div>{formatDateTime(order.createdAt).date}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.createdAt).time}</div>
+                </div>
               </div>
 
               <div>
                 <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Updated At</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{new Date(order.updatedAt).toLocaleDateString()}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-500">{new Date(order.updatedAt).toLocaleTimeString()}</p>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div>{formatDateTime(order.updatedAt).date}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
+                </div>
               </div>
             </div>
           </div>

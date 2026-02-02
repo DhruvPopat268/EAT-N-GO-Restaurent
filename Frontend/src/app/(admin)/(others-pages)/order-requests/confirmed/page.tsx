@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Pagination from '@/components/tables/Pagination';
+import { formatDateTime } from '@/utils/dateUtils';
 
 interface OrderRequest {
   _id: string;
@@ -26,6 +27,7 @@ interface OrderRequest {
   cartTotal: number;
   statusUpdatedBy?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface PaginationInfo {
@@ -283,10 +285,12 @@ export default function ConfirmedOrderRequests() {
                     ₹{order.cartTotal}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-                    {order.createdAt}
+                    <div>{formatDateTime(order.createdAt).date}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.createdAt).time}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-                    {order.updatedAt}
+                    <div>{formatDateTime(order.updatedAt).date}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
                     <button
