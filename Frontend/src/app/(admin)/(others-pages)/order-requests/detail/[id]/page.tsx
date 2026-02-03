@@ -208,14 +208,14 @@ export default function OrderRequestDetail() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Req #{order.orderRequestNo}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Req #{order.orderRequestNo}</h1>
+              <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                {order.status}
+              </span>
+            </div>
             <p className="text-gray-600 dark:text-gray-400">Order Req details and management</p>
           </div>
-        </div>
-        <div>
-          <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(order.status)}`}>
-            {order.status}
-          </span>
         </div>
       </div>
 
@@ -234,13 +234,6 @@ export default function OrderRequestDetail() {
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Order Type</label>
                 <p className="text-gray-900 dark:text-white capitalize">{order.orderType}</p>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                  {order.status}
-                </span>
               </div>
               
               {order.waitingTime && order.waitingTime > 0 && order.status === 'waiting' && (
