@@ -4,6 +4,7 @@ import { X, Plus, Edit, Trash2, Users, Key, Shield, Mail, Phone } from "lucide-r
 import { permissionService, Permission, CreatePermissionData } from "@/services/permissionService";
 import { toast } from "react-hot-toast";
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const RBACManagementPage = () => {
   const [activeTab, setActiveTab] = useState("permissions");
@@ -27,6 +28,7 @@ const RBACManagementPage = () => {
 
   // Add order notifications
   useOrderNotifications("Role Management");
+  useOrderRequestNotifications("Role Management");
 
   const [roles, setRoles] = useState([
     {

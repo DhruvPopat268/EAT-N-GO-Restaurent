@@ -7,6 +7,8 @@ import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const addonItemsApi = {
   getAll: async (page: number = 1, limit: number = 10) => {
@@ -138,6 +140,10 @@ const AddonItemsPage = () => {
   const { restaurantDetails, loading } = useRestaurantDetails();
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<any[]>([]);
+  
+  // Add order notifications
+  useOrderNotifications("Addon Items");
+  useOrderRequestNotifications("Addon Items");
   
   // Filter subcategories based on selected category
   const filteredSubcategories = subcategories.filter(sub => 

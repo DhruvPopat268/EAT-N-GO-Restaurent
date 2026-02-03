@@ -7,6 +7,7 @@ import { toast } from "@/utils/toast";
 import MultiSelect from "@/components/form/MultiSelect";
 import axiosInstance from '@/utils/axiosConfig';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const itemsApi = {
   create: async (data: any, images: File[]) => {
@@ -133,6 +134,7 @@ const AddItemPage = () => {
 
   // Add order notifications
   useOrderNotifications("Add Menu Item");
+  useOrderRequestNotifications("Add Menu Item");
 
   useEffect(() => {
     fetchData();

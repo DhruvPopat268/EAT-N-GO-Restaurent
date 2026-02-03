@@ -13,6 +13,7 @@ import MultiSelect from "@/components/form/MultiSelect";
 import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
+import { useOrderRequestNotifications } from "@/hooks/useOrderRequestNotifications";
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
@@ -141,6 +142,7 @@ const ComboListPage = () => {
 
   // Add order notifications
   useOrderNotifications("Combos");
+  useOrderRequestNotifications("Combos");
 
   const [combos, setCombos] = useState<ComboItem[]>([]);
   const [items, setItems] = useState<Item[]>([]);

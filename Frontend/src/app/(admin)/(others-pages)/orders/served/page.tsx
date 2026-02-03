@@ -8,6 +8,7 @@ import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
 import { formatDateTime } from '@/utils/dateUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const ordersApi = {
   getServed: async (page: number = 1, limit: number = 10, filters?: any) => {
@@ -87,6 +88,7 @@ const ServedOrdersPage = () => {
 
   // Add order notifications
   useOrderNotifications("Served Orders");
+  useOrderRequestNotifications("Served Orders");
 
   useEffect(() => {
     fetchOrders(1);

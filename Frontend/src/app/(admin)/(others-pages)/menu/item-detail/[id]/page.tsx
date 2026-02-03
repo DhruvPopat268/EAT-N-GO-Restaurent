@@ -4,6 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import axiosInstance from '@/utils/axiosConfig';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const itemDetailApi = {
   getDetail: async (itemId: string) => {
@@ -69,6 +71,10 @@ const ItemDetailPage = () => {
   const [item, setItem] = useState<ItemDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+
+  // Add order notifications
+  useOrderNotifications("Item Detail");
+  useOrderRequestNotifications("Item Detail");
 
   useEffect(() => {
     if (params.id) {
