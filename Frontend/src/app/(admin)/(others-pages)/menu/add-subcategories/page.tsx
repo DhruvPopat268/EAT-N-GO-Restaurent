@@ -10,6 +10,8 @@ import { useRestaurantDetails } from "@/hooks/useRestaurantDetails";
 import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const subcategoriesApi = {
   getAll: async (page: number = 1, limit: number = 10) => {
@@ -99,6 +101,10 @@ const AddSubcategoriesPage = () => {
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
 
   const { restaurantDetails, loading } = useRestaurantDetails();
+
+  // Add order notifications
+  useOrderNotifications("Add Subcategories");
+  useOrderRequestNotifications("Add Subcategories");
 
   useEffect(() => {
     fetchSubcategories(1);

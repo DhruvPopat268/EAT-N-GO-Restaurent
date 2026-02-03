@@ -7,12 +7,14 @@ import PopularDishes from "@/components/restaurant/PopularDishes";
 import OrderStatusChart from "@/components/restaurant/OrderStatusChart";
 import MonthlySalesChart from "@/components/ecommerce/MonthlySalesChart";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
+import { useOrderRequestNotifications } from "@/hooks/useOrderRequestNotifications";
 
 console.log("Rendering Restaurant Dashboard Page");
 
 export default function RestaurantDashboard() {
   // Add order notifications to dashboard
   useOrderNotifications("Dashboard");
+  useOrderRequestNotifications("Dashboard");
 
   return (
     <div className="grid grid-cols-12 gap-4 md:gap-6">

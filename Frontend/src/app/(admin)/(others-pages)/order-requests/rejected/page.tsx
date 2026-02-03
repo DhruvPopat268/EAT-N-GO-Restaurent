@@ -7,6 +7,7 @@ import { toast } from '@/utils/toast';
 import Pagination from '@/components/tables/Pagination';
 import { formatDateTime } from '@/utils/dateUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 interface OrderRequest {
   _id: string;
@@ -55,6 +56,7 @@ export default function RejectedOrderRequests() {
 
   // Add order notifications
   useOrderNotifications("Rejected Order Requests");
+  useOrderRequestNotifications("Rejected Order Requests");
 
   useEffect(() => {
     fetchOrders(1);

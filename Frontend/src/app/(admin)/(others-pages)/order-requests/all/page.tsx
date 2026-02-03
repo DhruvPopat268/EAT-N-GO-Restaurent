@@ -11,6 +11,7 @@ import { useSocket } from '@/context/SocketContext';
 import { useNotification } from '@/context/NotificationContext';
 import { playNotificationSound } from '@/utils/soundUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 interface Reason {
   _id: string;
@@ -78,6 +79,7 @@ export default function AllOrderRequests() {
 
   // Add order notifications
   useOrderNotifications("All Order Requests");
+  useOrderRequestNotifications("All Order Requests");
 
   // Direct socket listener for notifications
   useEffect(() => {

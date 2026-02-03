@@ -7,6 +7,7 @@ import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const attributesApi = {
   getAll: async (page: number = 1, limit: number = 10) => {
@@ -71,6 +72,7 @@ const AddAttributesPage = () => {
 
   // Add order notifications
   useOrderNotifications("Add Attributes");
+  useOrderRequestNotifications("Add Attributes");
 
   useEffect(() => {
     fetchAttributes(1);

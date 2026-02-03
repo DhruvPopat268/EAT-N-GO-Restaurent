@@ -5,6 +5,7 @@ import axiosInstance from '@/utils/axiosConfig';
 import { toast } from '@/utils/toast';
 import Pagination from '@/components/tables/Pagination';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 interface Reason {
   _id: string;
@@ -40,6 +41,7 @@ export default function ReasonManagement() {
 
   // Add order notifications
   useOrderNotifications("Reason Management");
+  useOrderRequestNotifications("Reason Management");
 
   useEffect(() => {
     fetchReasons(1);
