@@ -223,7 +223,6 @@ export default function OrderRequestDetail() {
         <div className="lg:col-span-1">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Req Information</h2>
-            
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Customer</label>

@@ -286,7 +286,6 @@ const AllOrdersPage = () => {
               >
                 <option value="">All Status</option>
                 <option value="confirmed">Confirmed</option>
-                <option value="waiting">Waiting</option>
                 <option value="preparing">Preparing</option>
                 <option value="ready">Ready</option>
                 <option value="served">Served</option>
