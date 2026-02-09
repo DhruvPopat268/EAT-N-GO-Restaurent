@@ -18,7 +18,6 @@ export default function SignInForm() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log(localStorage.getItem("RestaurantToken"));
     setEmail("");
     setPassword("");
   }, []);
@@ -45,11 +44,6 @@ export default function SignInForm() {
 
       if (!response.ok) {
         throw new Error(data.message || "Login failed");
-      }
-
-      // Store token if provided
-      if (data.token) {
-        localStorage.setItem("RestaurantToken", data.token);
       }
 
       // Redirect to home page

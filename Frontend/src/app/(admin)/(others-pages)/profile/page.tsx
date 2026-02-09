@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import axiosInstance from "@/utils/axiosConfig";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
@@ -69,27 +69,13 @@ export default function Profile() {
   useEffect(() => {
     const fetchRestaurantDetails = async () => {
       try {
-        const token = localStorage.getItem('RestaurantToken');
-        if (!token) {
-          router.push('/signin');
-          return;
-        }
-
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/details`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          }
-        );
+        const response = await axiosInstance.get('/api/restaurants/details');
 
         setRestaurantData(response.data.data);
         setFormData(response.data.data);
       } catch (error: any) {
         console.error('Error fetching restaurant details:', error);
         if (error.response?.status === 401) {
-          localStorage.removeItem('RestaurantToken');
           router.push('/signin');
         }
       } finally {
@@ -232,7 +218,6 @@ export default function Profile() {
 
   const handleSave = async () => {
     try {
-      const token = localStorage.getItem('RestaurantToken');
       const updateFormData = new FormData();
       
       // Add form data
@@ -255,12 +240,11 @@ export default function Profile() {
         updateFormData.append('restaurantImages', file);
       });
       
-      const response = await axios.patch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/updateData`,
+      const response = await axiosInstance.patch(
+        '/api/restaurants/updateData',
         updateFormData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
           }
         }

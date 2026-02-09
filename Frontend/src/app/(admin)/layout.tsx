@@ -10,7 +10,7 @@ import { SocketProvider } from "@/context/SocketContext";
 import { NotificationProvider } from "@/context/NotificationContext";
 import NotificationPopup from "@/components/notifications/NotificationPopup";
 import React, { useEffect, useState, useRef } from "react";
-import axios from "axios";
+import axiosInstance from "@/utils/axiosConfig";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { useRouter, usePathname } from "next/navigation";
 import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
@@ -49,29 +49,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const token = localStorage.getItem('RestaurantToken');
-        
-        if (!token) {
-          router.push('/signin');
-          return;
-        }
-        
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/status`,
-          { 
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-          }
-        );
+        const response = await axiosInstance.get('/api/restaurants/status');
         
         setRestaurentStatus(response.data.data.status);
         setRestaurantData(response.data.data);
       } catch (error: any) {
         console.error("Error fetching restaurant status:", error);
         if (error.response?.status === 401) {
-          localStorage.removeItem('RestaurantToken');
           router.push('/signin');
           return;
         }
@@ -256,16 +240,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }
       });
 
-      const token = localStorage.getItem('RestaurantToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/resubmit`, {
-        method: 'PUT',
+      const response = await axiosInstance.put('/api/restaurants/resubmit', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      const result = await response.json();
+      const result = response.data;
 
       if (result.success) {
         alert('Application resubmitted successfully! Please wait for admin review.');

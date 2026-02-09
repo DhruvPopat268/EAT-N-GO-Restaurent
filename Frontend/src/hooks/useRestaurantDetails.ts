@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '@/utils/axiosConfig';
 
 interface RestaurantDetails {
   foodCategory: string[];
@@ -14,18 +14,7 @@ export const useRestaurantDetails = () => {
   useEffect(() => {
     const fetchRestaurantDetails = async () => {
       try {
-        const token = localStorage.getItem('RestaurantToken');
-        if (!token) {
-          setError('Restaurant token not found');
-          setLoading(false);
-          return;
-        }
-
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/usefullDetails`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const response = await axiosInstance.get('/api/restaurants/usefullDetails');
 
         setRestaurantDetails(response.data.data);
         setError(null);

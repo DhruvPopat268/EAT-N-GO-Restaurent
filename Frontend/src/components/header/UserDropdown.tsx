@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "@/utils/axiosConfig";
 import { usePathname } from "next/navigation";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
@@ -31,18 +31,7 @@ export default function UserDropdown() {
   useEffect(() => {
     const fetchRestaurantDetails = async () => {
       try {
-        const token = localStorage.getItem('RestaurantToken');
-        if (!token) return;
-
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_BASE_URL}/api/restaurants/details`,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-          }
-        );
+        const response = await axiosInstance.get('/api/restaurants/details');
         const data = response.data.data;
         setRestaurantData(data);
         
@@ -195,7 +184,6 @@ export default function UserDropdown() {
         </ul>
         <button
           onClick={() => {
-            localStorage.removeItem('RestaurantToken');
             window.location.href = '/signin';
           }}
           className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 w-full text-left"
