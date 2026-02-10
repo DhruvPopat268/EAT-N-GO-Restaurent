@@ -12,6 +12,12 @@ import { playNotificationSound } from '@/utils/soundUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
+interface Reason {
+  _id: string;
+  reasonType: 'waiting' | 'rejected' | 'cancelled';
+  reasonText: string;
+}
+
 interface OrderRequest {
   _id: string;
   orderRequestNo: number;
@@ -52,6 +58,10 @@ export default function WaitingOrderRequests() {
     totalCount: 0,
     totalPages: 0
   });
+  const [showCancelModal, setShowCancelModal] = useState<{show: boolean, orderId: string}>({show: false, orderId: ''});
+  const [reasons, setReasons] = useState<Reason[]>([]);
+  const [selectedReason, setSelectedReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [orderTypeFilter, setOrderTypeFilter] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -143,6 +153,40 @@ export default function WaitingOrderRequests() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchReasons = async () => {
+    try {
+      const response = await axiosInstance.get(`/api/restaurants/order-requests/active-reasons?reasonType=cancelled`);
+      setReasons(response.data.data);
+    } catch (error) {
+      toast.error('Failed to fetch reasons');
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!selectedReason) {
+      toast.error('Please select a reason');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const payload = { orderReqId: showCancelModal.orderId, orderReqReasonId: selectedReason };
+      const response = await axiosInstance.patch(`/api/restaurants/order-requests/cancel`, payload);
+      toast.success(response.data.message || 'Order cancelled successfully');
+      fetchOrders(pagination.page, pagination.limit);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to cancel order');
+    } finally {
+      setActionLoading(false);
+      setShowCancelModal({show: false, orderId: ''});
+      setSelectedReason('');
+    }
+  };
+
+  const openCancelModal = async (orderId: string) => {
+    await fetchReasons();
+    setShowCancelModal({show: true, orderId});
   };
 
   const handlePageChange = (page: number) => {
@@ -370,16 +414,27 @@ export default function WaitingOrderRequests() {
                     <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                    <button
-                      onClick={() => router.push(`/order-requests/detail/${order._id}`)}
-                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1"
-                      title="View Details"
-                    >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        onClick={() => router.push(`/order-requests/detail/${order._id}`)}
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-1"
+                        title="View Details"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => openCancelModal(order._id)}
+                        className="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 p-1"
+                        title="Cancel Order"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -401,6 +456,58 @@ export default function WaitingOrderRequests() {
             totalPages={pagination.totalPages}
             onPageChange={handlePageChange}
           />
+        </div>
+      )}
+
+      {/* Cancel Modal */}
+      {showCancelModal.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Cancel Order Request
+              </h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Reason
+                </label>
+                <select
+                  value={selectedReason}
+                  onChange={(e) => setSelectedReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                >
+                  <option value="">Select a reason</option>
+                  {reasons.map((reason) => (
+                    <option key={reason._id} value={reason._id}>
+                      {reason.reasonText}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCancelModal({show: false, orderId: ''});
+                    setSelectedReason('');
+                  }}
+                  disabled={actionLoading}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={actionLoading || !selectedReason}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                  Cancel Order
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

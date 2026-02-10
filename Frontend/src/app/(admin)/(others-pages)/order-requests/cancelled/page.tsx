@@ -31,6 +31,7 @@ interface OrderRequest {
     endTime: string;
   };
   cartTotal: number;
+  cancelledBy?: string;
   statusUpdatedBy?: string;
   createdAt: string;
   updatedAt: string;
@@ -295,6 +296,9 @@ export default function CancelledOrderRequests() {
                   Order Req Total
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Cancelled By
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Created At
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -342,6 +346,9 @@ export default function CancelledOrderRequests() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
                     ₹{order.cartTotal}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
+                    {order.cancelledBy || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
                     <div>{formatDateTime(order.createdAt).date}</div>

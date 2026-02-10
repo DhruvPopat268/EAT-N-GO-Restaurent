@@ -38,6 +38,7 @@ interface OrderRequest {
     endTime: string;
   };
   cartTotal: number;
+  cancelledBy?: string;
   statusUpdatedBy?: string;
   createdAt: string;
   updatedAt: string;
@@ -61,7 +62,7 @@ export default function AllOrderRequests() {
     totalPages: 0
   });
   const [showConfirmModal, setShowConfirmModal] = useState<{show: boolean, orderId: string, action: string}>({show: false, orderId: '', action: ''});
-  const [showReasonModal, setShowReasonModal] = useState<{show: boolean, orderId: string, action: 'waiting' | 'reject'}>({show: false, orderId: '', action: 'waiting'});
+  const [showReasonModal, setShowReasonModal] = useState<{show: boolean, orderId: string, action: 'waiting' | 'reject' | 'cancel'}>({show: false, orderId: '', action: 'waiting'});
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [selectedReason, setSelectedReason] = useState('');
   const [waitingMinutes, setWaitingMinutes] = useState('');
@@ -179,9 +180,9 @@ export default function AllOrderRequests() {
     fetchOrders(page, pagination.limit);
   };
 
-  const fetchReasons = async (reasonType: 'waiting' | 'reject') => {
+  const fetchReasons = async (reasonType: 'waiting' | 'reject' | 'cancel') => {
     try {
-      const apiReasonType = reasonType === 'reject' ? 'rejected' : reasonType;
+      const apiReasonType = reasonType === 'reject' ? 'rejected' : reasonType === 'cancel' ? 'cancelled' : reasonType;
       const response = await axiosInstance.get(`/api/restaurants/order-requests/active-reasons?reasonType=${apiReasonType}`);
       setReasons(response.data.data);
     } catch (error) {
@@ -255,7 +256,7 @@ export default function AllOrderRequests() {
     setShowConfirmModal({show: true, orderId, action});
   };
 
-  const openReasonModal = async (orderId: string, action: 'waiting' | 'reject') => {
+  const openReasonModal = async (orderId: string, action: 'waiting' | 'reject' | 'cancel') => {
     await fetchReasons(action);
     setShowReasonModal({show: true, orderId, action});
   };
@@ -443,6 +444,9 @@ export default function AllOrderRequests() {
                   Order Req Total
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Cancelled By
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Created At
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -490,6 +494,9 @@ export default function AllOrderRequests() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
                     ₹{order.cartTotal}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
+                    {order.cancelledBy || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
                     <div>{formatDateTime(order.createdAt).date}</div>
@@ -540,6 +547,17 @@ export default function AllOrderRequests() {
                           </svg>
                         </button>
                       </>
+                    )}
+                    {(order.status === 'pending' || order.status === 'confirmed' || order.status === 'waiting') && (
+                      <button
+                        onClick={() => openReasonModal(order._id, 'cancel')}
+                        className="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 p-1"
+                        title="Cancel Order"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                        </svg>
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -605,7 +623,7 @@ export default function AllOrderRequests() {
           <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
             <div className="p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                {showReasonModal.action === 'waiting' ? 'Set Order to Waiting' : 'Reject Order Request'}
+                {showReasonModal.action === 'waiting' ? 'Set Order to Waiting' : showReasonModal.action === 'cancel' ? 'Cancel Order Request' : 'Reject Order Request'}
               </h2>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -659,11 +677,11 @@ export default function AllOrderRequests() {
                   onClick={handleReasonAction}
                   disabled={actionLoading || !selectedReason || (showReasonModal.action === 'waiting' && !waitingMinutes)}
                   className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 flex items-center gap-2 ${
-                    showReasonModal.action === 'waiting' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-red-600 hover:bg-red-700'
+                    showReasonModal.action === 'waiting' ? 'bg-yellow-600 hover:bg-yellow-700' : showReasonModal.action === 'cancel' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
                   {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-                  {showReasonModal.action === 'waiting' ? 'Set Waiting' : 'Reject'}
+                  {showReasonModal.action === 'waiting' ? 'Set Waiting' : showReasonModal.action === 'cancel' ? 'Cancel' : 'Reject'}
                 </button>
               </div>
             </div>

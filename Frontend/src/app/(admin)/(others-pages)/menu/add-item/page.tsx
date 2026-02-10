@@ -97,7 +97,7 @@ const AddItemPage = () => {
     description: "",
     productImages: [] as File[],
     isAvailable: true,
-    attributes: [] as { attribute: string; price: number; name?: string }[],
+    attributes: [] as { attribute: string; basePrice: number; price: number; name?: string }[],
     foodTypes: [] as string[],
     customizations: [] as { name: string; MaxSelection: number; options: { label: string; price: number }[] }[],
     addons: [] as string[]
@@ -110,8 +110,10 @@ const AddItemPage = () => {
   const [currentAttribute, setCurrentAttribute] = useState({
     attribute: "",
     name: "",
+    basePrice: "",
     price: ""
   });
+  const [editingAttributeIndex, setEditingAttributeIndex] = useState<number | null>(null);
 
   const [customizationsEnabled, setCustomizationsEnabled] = useState(false);
   const [currentCustomization, setCurrentCustomization] = useState({
@@ -186,6 +188,7 @@ const AddItemPage = () => {
           isAvailable: item.isAvailable,
           attributes: item.attributes.map((attr: any) => ({
             attribute: attr.attribute._id,
+            basePrice: attr.basePrice || 0,
             price: attr.price,
             name: attr.attribute.name
           })),
@@ -284,23 +287,44 @@ const AddItemPage = () => {
   };
 
   const addAttribute = () => {
-    if (!currentAttribute.attribute || !currentAttribute.price) {
-      toast.error('Please select an attribute and enter a price');
+    if (!currentAttribute.attribute || !currentAttribute.basePrice || !currentAttribute.price) {
+      toast.error('Please select an attribute and enter base price and selling price');
       return;
     }
     
-    setFormData(prev => ({
-      ...prev,
-      attributes: [...prev.attributes, {
-        attribute: currentAttribute.attribute,
-        price: parseFloat(currentAttribute.price),
-        name: currentAttribute.name // Keep name for display purposes
-      }]
-    }));
+    if (editingAttributeIndex !== null) {
+      // Update existing attribute
+      setFormData(prev => ({
+        ...prev,
+        attributes: prev.attributes.map((attr, i) => 
+          i === editingAttributeIndex 
+            ? {
+                attribute: currentAttribute.attribute,
+                basePrice: parseFloat(currentAttribute.basePrice),
+                price: parseFloat(currentAttribute.price),
+                name: currentAttribute.name
+              }
+            : attr
+        )
+      }));
+      setEditingAttributeIndex(null);
+    } else {
+      // Add new attribute
+      setFormData(prev => ({
+        ...prev,
+        attributes: [...prev.attributes, {
+          attribute: currentAttribute.attribute,
+          basePrice: parseFloat(currentAttribute.basePrice),
+          price: parseFloat(currentAttribute.price),
+          name: currentAttribute.name
+        }]
+      }));
+    }
     
     setCurrentAttribute({
       attribute: "",
       name: "",
+      basePrice: "",
       price: ""
     });
   };
@@ -344,6 +368,7 @@ const AddItemPage = () => {
     setCurrentAttribute({
       attribute: "",
       name: "",
+      basePrice: "",
       price: ""
     });
     setImagePreviews([]);
@@ -382,6 +407,7 @@ const AddItemPage = () => {
         currency: restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR',
         attributes: formData.attributes.map(attr => ({
           attribute: attr.attribute,
+          basePrice: attr.basePrice,
           price: attr.price
         })),
         foodTypes: formData.foodTypes,
@@ -699,7 +725,7 @@ const AddItemPage = () => {
                       name: selectedAttr?.name || ""
                     }));
                   }}
-                  className="w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  className="w-1/4 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   disabled={apiLoading}
                 >
                   <option value="">{apiLoading ? 'Loading...' : 'Select Attribute'}</option>
@@ -714,13 +740,22 @@ const AddItemPage = () => {
                 <input
                   type="number"
                   step="0.01"
-                  value={currentAttribute.price}
-                  onChange={(e) => setCurrentAttribute(prev => ({ ...prev, price: e.target.value }))}
-                  className="w-1/3 px-3 py-2 border border-gray-300 rounded-lg "
-                  placeholder="0.00"
+                  value={currentAttribute.basePrice}
+                  onChange={(e) => setCurrentAttribute(prev => ({ ...prev, basePrice: e.target.value }))}
+                  className="w-1/5 px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Base Price"
                 />
 
-                <div className="w-1/4 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 flex items-center">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={currentAttribute.price}
+                  onChange={(e) => setCurrentAttribute(prev => ({ ...prev, price: e.target.value }))}
+                  className="w-1/5 px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Selling Price"
+                />
+
+                <div className="w-1/6 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 flex items-center">
                   <span className="text-sm text-gray-600 dark:text-gray-300">
                     {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'}
                   </span>
@@ -731,8 +766,25 @@ const AddItemPage = () => {
                   onClick={addAttribute}
                   className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Add
+                  {editingAttributeIndex !== null ? 'Update' : 'Add'}
                 </button>
+                {editingAttributeIndex !== null && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentAttribute({
+                        attribute: "",
+                        name: "",
+                        basePrice: "",
+                        price: ""
+                      });
+                      setEditingAttributeIndex(null);
+                    }}
+                    className="px-4 py-2 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
               </div>
 
               {/* Added Attributes List */}
@@ -744,19 +796,42 @@ const AddItemPage = () => {
                       <div className="flex items-center gap-4">
                         <span className="font-medium text-gray-900 dark:text-white">{attr.name}</span>
                         <span className="text-gray-600 dark:text-gray-300">
-                          {attr.price} {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'} 
+                          Base: {attr.basePrice} {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'}
+                        </span>
+                        <span className="text-gray-600 dark:text-gray-300">
+                          Selling: {attr.price} {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'}
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeAttribute(index)}
-                        className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors dark:hover:bg-red-900/20"
-                        title="Remove attribute"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentAttribute({
+                              attribute: attr.attribute,
+                              name: attr.name || "",
+                              basePrice: attr.basePrice.toString(),
+                              price: attr.price.toString()
+                            });
+                            setEditingAttributeIndex(index);
+                          }}
+                          className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors dark:hover:bg-blue-900/20"
+                          title="Edit attribute"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeAttribute(index)}
+                          className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors dark:hover:bg-red-900/20"
+                          title="Remove attribute"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

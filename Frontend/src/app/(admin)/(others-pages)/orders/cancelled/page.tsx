@@ -49,6 +49,7 @@ interface Order {
     startTime: string;
     endTime: string;
   };
+  cancelledBy?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -260,6 +261,7 @@ const CancelledOrdersPage = () => {
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Payment Method</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Total Amount</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Cancelled By</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Created At</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Updated At</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</TableCell>
@@ -319,6 +321,11 @@ const CancelledOrdersPage = () => {
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 capitalize">
                         {order.status}
+                      </span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        {order.cancelledBy || '-'}
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">

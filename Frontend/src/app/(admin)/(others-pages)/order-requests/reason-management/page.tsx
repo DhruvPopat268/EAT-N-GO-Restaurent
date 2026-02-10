@@ -9,7 +9,7 @@ import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotificatio
 
 interface Reason {
   _id: string;
-  reasonType: 'waiting' | 'rejected';
+  reasonType: 'waiting' | 'rejected' | 'cancelled';
   reasonText: string;
   isActive: boolean;
   createdBy: string;
@@ -35,7 +35,7 @@ export default function ReasonManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingReason, setEditingReason] = useState<Reason | null>(null);
   const [formData, setFormData] = useState({
-    reasonType: 'waiting' as 'waiting' | 'rejected',
+    reasonType: 'waiting' as 'waiting' | 'rejected' | 'cancelled',
     reasonText: ''
   });
 
@@ -124,8 +124,8 @@ export default function ReasonManagement() {
     <div className="p-6">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Request Reason Management</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage reasons for waiting and rejected orders</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Order Action Reason Management</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage reasons for waiting, rejected and cancelled orders</p>
         </div>
         <button
           onClick={openCreateModal}
@@ -198,7 +198,9 @@ export default function ReasonManagement() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      reason.reasonType === 'waiting' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                      reason.reasonType === 'waiting' ? 'bg-yellow-100 text-yellow-800' : 
+                      reason.reasonType === 'rejected' ? 'bg-red-100 text-red-800' : 
+                      'bg-orange-100 text-orange-800'
                     }`}>
                       {reason.reasonType}
                     </span>
@@ -274,13 +276,14 @@ export default function ReasonManagement() {
                   </label>
                   <select
                     value={formData.reasonType}
-                    onChange={(e) => setFormData({ ...formData, reasonType: e.target.value as 'waiting' | 'rejected' })}
+                    onChange={(e) => setFormData({ ...formData, reasonType: e.target.value as 'waiting' | 'rejected' | 'cancelled' })}
                     disabled={!!editingReason}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     required
                   >
                     <option value="waiting">Waiting</option>
                     <option value="rejected">Rejected</option>
+                    <option value="cancelled">Cancelled</option>
                   </select>
                 </div>
                 <div className="mb-4">

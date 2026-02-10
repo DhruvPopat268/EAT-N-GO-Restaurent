@@ -28,6 +28,14 @@ const ordersApi = {
   updateToCompleted: async (orderId: string) => {
     const response = await axiosInstance.patch(`/api/restaurants/orders/completed/${orderId}`);
     return response.data;
+  },
+
+  cancelOrder: async (orderId: string, cancellationReasonId: string) => {
+    const response = await axiosInstance.patch(`/api/restaurants/orders/cancel`, {
+      orderId,
+      cancellationReasonId
+    });
+    return response.data;
   }
 };
 
@@ -37,6 +45,12 @@ const getNextStatuses = (currentStatus: string) => {
   }
   return [currentStatus];
 };
+
+interface Reason {
+  _id: string;
+  reasonType: 'cancelled';
+  reasonText: string;
+}
 
 interface Order {
   _id: string;
@@ -82,6 +96,10 @@ const ServedOrdersPage = () => {
   });
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [statusConfirm, setStatusConfirm] = useState<{show: boolean, orderId: string, orderNo: string, currentStatus: string, newStatus: string}>({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
+  const [showCancelModal, setShowCancelModal] = useState<{show: boolean, orderId: string, orderNo: string}>({show: false, orderId: '', orderNo: ''});
+  const [reasons, setReasons] = useState<Reason[]>([]);
+  const [selectedReason, setSelectedReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -121,6 +139,43 @@ const ServedOrdersPage = () => {
 
   const handleLimitChange = (limit: number) => {
     fetchOrders(1, limit);
+  };
+
+  const fetchReasons = async () => {
+    try {
+      const response = await axiosInstance.get(`/api/restaurants/order-requests/active-reasons?reasonType=cancelled`);
+      setReasons(response.data.data);
+    } catch (error) {
+      toast.error('Failed to fetch reasons');
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!selectedReason) {
+      toast.error('Please select a reason');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const response = await ordersApi.cancelOrder(showCancelModal.orderId, selectedReason);
+      if (response.success) {
+        toast.success('Order cancelled successfully');
+        fetchOrders();
+      } else {
+        toast.error(response.message || 'Error cancelling order');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to cancel order');
+    } finally {
+      setActionLoading(false);
+      setShowCancelModal({show: false, orderId: '', orderNo: ''});
+      setSelectedReason('');
+    }
+  };
+
+  const openCancelModal = async (orderId: string, orderNo: string) => {
+    await fetchReasons();
+    setShowCancelModal({show: true, orderId, orderNo});
   };
 
   const handleStatusChange = (orderId: string, orderNo: string, currentStatus: string, newStatus: string) => {
@@ -342,18 +397,29 @@ const ServedOrdersPage = () => {
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <select
-                        value={order.status}
-                        onChange={(e) => handleStatusChange(order._id, order.orderNo, order.status, e.target.value)}
-                        disabled={updatingStatus === order._id}
-                        className="px-3 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      >
-                        {getNextStatuses(order.status).map(status => (
-                          <option key={status} value={status} className="capitalize">
-                            {status}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex items-center justify-center gap-2">
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleStatusChange(order._id, order.orderNo, order.status, e.target.value)}
+                          disabled={updatingStatus === order._id}
+                          className="px-3 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        >
+                          {getNextStatuses(order.status).map(status => (
+                            <option key={status} value={status} className="capitalize">
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => openCancelModal(order._id, order.orderNo)}
+                          className="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 p-1"
+                          title="Cancel Order"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <div>{formatDateTime(order.createdAt).date}</div>
@@ -417,6 +483,58 @@ const ServedOrdersPage = () => {
                 )}
                 Update Status
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Modal */}
+      {showCancelModal.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Cancel Order #{showCancelModal.orderNo}
+              </h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Cancellation Reason
+                </label>
+                <select
+                  value={selectedReason}
+                  onChange={(e) => setSelectedReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  required
+                >
+                  <option value="">Select a reason</option>
+                  {reasons.map((reason) => (
+                    <option key={reason._id} value={reason._id}>
+                      {reason.reasonText}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCancelModal({show: false, orderId: '', orderNo: ''});
+                    setSelectedReason('');
+                  }}
+                  disabled={actionLoading}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleCancelOrder}
+                  disabled={actionLoading || !selectedReason}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                  Cancel Order
+                </button>
+              </div>
             </div>
           </div>
         </div>
