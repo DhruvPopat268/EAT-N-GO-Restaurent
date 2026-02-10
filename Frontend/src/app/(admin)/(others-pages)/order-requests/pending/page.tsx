@@ -62,7 +62,8 @@ export default function PendingOrderRequests() {
   const [showReasonModal, setShowReasonModal] = useState<{show: boolean, orderId: string, action: 'waiting' | 'reject' | 'cancel'}>({show: false, orderId: '', action: 'waiting'});
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [selectedReason, setSelectedReason] = useState('');
-  const [waitingMinutes, setWaitingMinutes] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [orderTypeFilter, setOrderTypeFilter] = useState('');
@@ -176,7 +177,9 @@ export default function PendingOrderRequests() {
     try {
       const payload: any = { orderReqId: orderId };
       if (reasonId) payload.orderReqReasonId = reasonId;
-      if (action === 'waiting' && waitingMinutes) payload.waitingTime = parseInt(waitingMinutes);
+      if (action === 'waiting' && startTime && endTime) {
+        payload.waitingTime = { startTime, endTime };
+      }
       
       const response = await axiosInstance.patch(`/api/restaurants/order-requests/${action}`, payload);
       if (response.data.message) {
@@ -206,14 +209,15 @@ export default function PendingOrderRequests() {
       toast.error('Please select a reason');
       return;
     }
-    if (showReasonModal.action === 'waiting' && !waitingMinutes) {
-      toast.error('Please enter waiting time in minutes');
+    if (showReasonModal.action === 'waiting' && (!startTime || !endTime)) {
+      toast.error('Please select start and end time');
       return;
     }
     updateOrderStatus(showReasonModal.orderId, showReasonModal.action, selectedReason);
     setShowReasonModal({show: false, orderId: '', action: 'waiting'});
     setSelectedReason('');
-    setWaitingMinutes('');
+    setStartTime('');
+    setEndTime('');
   };
 
   const openConfirmModal = (orderId: string, action: string) => {
@@ -608,21 +612,64 @@ export default function PendingOrderRequests() {
           </select>
         </div>
         {showReasonModal.action === 'waiting' && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Waiting Time (Minutes)
-            </label>
-            <input
-              type="number"
-              min="1"
-              max="120"
-              value={waitingMinutes}
-              onChange={(e) => setWaitingMinutes(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-              placeholder="Enter waiting time in minutes"
-              required
-            />
-          </div>
+          <>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Start Time
+              </label>
+              <div className="flex gap-2">
+                <select
+                  value={startTime.split(':')[0] || ''}
+                  onChange={(e) => setStartTime(`${e.target.value}:${startTime.split(':')[1] || '00'}`)}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">HH</option>
+                  {Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0')).map(h => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
+                <span className="flex items-center text-gray-500">:</span>
+                <select
+                  value={startTime.split(':')[1] || ''}
+                  onChange={(e) => setStartTime(`${startTime.split(':')[0] || '00'}:${e.target.value}`)}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">MM</option>
+                  {Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0')).map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                End Time
+              </label>
+              <div className="flex gap-2">
+                <select
+                  value={endTime.split(':')[0] || ''}
+                  onChange={(e) => setEndTime(`${e.target.value}:${endTime.split(':')[1] || '00'}`)}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">HH</option>
+                  {Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0')).map(h => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
+                <span className="flex items-center text-gray-500">:</span>
+                <select
+                  value={endTime.split(':')[1] || ''}
+                  onChange={(e) => setEndTime(`${endTime.split(':')[0] || '00'}:${e.target.value}`)}
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">MM</option>
+                  {Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0')).map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </>
         )}
         <div className="flex justify-end space-x-2">
           <button
@@ -630,7 +677,8 @@ export default function PendingOrderRequests() {
             onClick={() => {
               setShowReasonModal({show: false, orderId: '', action: 'waiting'});
               setSelectedReason('');
-              setWaitingMinutes('');
+              setStartTime('');
+              setEndTime('');
             }}
             disabled={actionLoading}
             className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
@@ -639,7 +687,7 @@ export default function PendingOrderRequests() {
           </button>
           <button
             onClick={handleReasonAction}
-            disabled={actionLoading || !selectedReason || (showReasonModal.action === 'waiting' && !waitingMinutes)}
+            disabled={actionLoading || !selectedReason || (showReasonModal.action === 'waiting' && (!startTime || !endTime))}
             className={`px-4 py-2 text-white rounded-lg disabled:opacity-50 flex items-center gap-2 ${
               showReasonModal.action === 'waiting' ? 'bg-yellow-600 hover:bg-yellow-700' : showReasonModal.action === 'cancel' ? 'bg-orange-600 hover:bg-orange-700' : 'bg-red-600 hover:bg-red-700'
             }`}

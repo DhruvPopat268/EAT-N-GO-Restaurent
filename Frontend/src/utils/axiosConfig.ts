@@ -5,8 +5,6 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-
-
 // Response interceptor - handle 401 errors
 axiosInstance.interceptors.response.use(
   (response) => response,
