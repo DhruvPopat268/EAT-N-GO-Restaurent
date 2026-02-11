@@ -65,7 +65,10 @@ interface Order {
   totalAmount: number;
   status: string;
   items: any[];
-  waitingTime?: number;
+  waitingTime?: {
+    startTime: string;
+    endTime: string;
+  };
   eatTimings?: {
     startTime: string;
     endTime: string;
@@ -401,7 +404,7 @@ const ConfirmedOrdersPage = () => {
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm text-gray-900 dark:text-white">
-                        {order.waitingTime ? `${order.waitingTime} min` : '-'}
+                        {order.waitingTime ? `${order.waitingTime.startTime} - ${order.waitingTime.endTime}` : '-'}
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">

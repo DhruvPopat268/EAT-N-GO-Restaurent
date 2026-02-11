@@ -27,6 +27,10 @@ interface OrderRequest {
     startTime: string;
     endTime: string;
   };
+  waitingTime?: {
+    startTime: string;
+    endTime: string;
+  };
   cartTotal: number;
   statusUpdatedBy?: string;
   createdAt: string;
@@ -287,7 +291,7 @@ export default function CompletedOrderRequests() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-                    {order.waitingTime && order.waitingTime > 0 ? `${order.waitingTime} min` : '-'}
+                    {order.waitingTime ? `${order.waitingTime.startTime} - ${order.waitingTime.endTime}` : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">

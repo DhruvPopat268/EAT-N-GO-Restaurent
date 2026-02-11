@@ -27,7 +27,10 @@ interface OrderRequest {
   };
   orderType: string;
   status: string;
-  waitingTime?: number;
+  waitingTime?: {
+    startTime: string;
+    endTime: string;
+  };
   eatTimings?: {
     startTime: string;
     endTime: string;
@@ -400,7 +403,7 @@ export default function WaitingOrderRequests() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-                    {order.waitingTime && order.waitingTime > 0 ? `${order.waitingTime} min` : '-'}
+                    {order.waitingTime ? `${order.waitingTime.startTime} - ${order.waitingTime.endTime}` : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
                     ₹{order.cartTotal}
