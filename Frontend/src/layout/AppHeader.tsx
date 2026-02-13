@@ -5,10 +5,14 @@ import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useState ,useEffect,useRef} from "react";
+import React, { useState, useEffect, useRef } from "react";
+import axiosInstance from "@/utils/axiosConfig";
+import { toast } from "@/utils/toast";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+  const [isManuallyClosed, setIsManuallyClosed] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -39,6 +43,40 @@ const AppHeader: React.FC = () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  const fetchStatus = async () => {
+    try {
+      const response = await axiosInstance.get('/api/restaurants/status');
+      if (response.data.success) {
+        setIsManuallyClosed(response.data.data.isManuallyClosed || false);
+      }
+    } catch (error) {
+      console.error('Error fetching status:', error);
+    }
+  };
+
+  const handleToggleManuallyClosed = async () => {
+    try {
+      setLoading(true);
+      const newStatus = !isManuallyClosed;
+      const response = await axiosInstance.patch('/api/restaurants/manuallyClosed', {
+        isManuallyClosed: newStatus
+      });
+      if (response.data.success) {
+        setIsManuallyClosed(newStatus);
+        toast.success(`Restaurant ${newStatus ? 'closed' : 'opened'} manually`);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Error updating restaurant status');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
@@ -126,6 +164,22 @@ const AppHeader: React.FC = () => {
           } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
           <div className="flex items-center gap-2 2xsm:gap-3">
+            {/* Manual Close Toggle */}
+            <div className="flex items-center gap-2 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {isManuallyClosed ? 'Closed' : 'Open'}
+              </span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isManuallyClosed}
+                  onChange={handleToggleManuallyClosed}
+                  disabled={loading}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600 disabled:opacity-50"></div>
+              </label>
+            </div>
            
            <NotificationDropdown /> 
             {/* <!-- Notification Menu Area --> */}
