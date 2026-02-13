@@ -352,7 +352,8 @@ const AppSidebar: React.FC = () => {
     });
   };
 
-  return (
+return (
+  <>
     <aside
       className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
         ${isExpanded || isMobileOpen
@@ -389,13 +390,13 @@ const AppSidebar: React.FC = () => {
             <div>
               {renderMenuItems(navItems, "main")}
             </div>
+
             <div className="">
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
                     ? "lg:justify-center"
                     : "justify-start"
-                }`}
+                  }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Orders Management"
@@ -422,9 +423,19 @@ const AppSidebar: React.FC = () => {
                     { name: "Reason Management", path: "/order-requests/reason-management" }
                   ]
                 },
-                ...ordersItems
+                ...ordersItems,
+                {
+                  name: "Order Cancel & Refund Management",
+                  icon: (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                    </svg>
+                  ),
+                  path: "/orders/cancel-refund-settings"
+                }
               ], "orders")}
-            </div> 
+            </div>
+
             <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
@@ -440,6 +451,8 @@ const AppSidebar: React.FC = () => {
               </h2>
               {renderMenuItems(menuItems, "menu")}
             </div>
+
+            {/* Customer Management - Commented Out */}
             {/* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
@@ -464,8 +477,10 @@ const AppSidebar: React.FC = () => {
                   path: "/customers"
                 }
               ], "customer")}
-            </div>
-            <div className="">
+            </div> */}
+
+            {/* Payment Management - Commented Out */}
+            {/* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
                   ? "lg:justify-center"
@@ -494,7 +509,8 @@ const AppSidebar: React.FC = () => {
                   ]
                 }
               ], "payment")}
-            </div> */
+            </div> */}
+
             <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
@@ -520,7 +536,9 @@ const AppSidebar: React.FC = () => {
                 }
               ], "rbac")}
             </div>
-           /* <div className="">
+
+            {/* Help & Support - Commented Out */}
+            {/* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
                   ? "lg:justify-center"
@@ -547,6 +565,8 @@ const AppSidebar: React.FC = () => {
                 }
               ], "help")}
             </div> */}
+
+            {/* Others - Commented Out */}
             {/* <div className="">
               <h2
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
@@ -567,7 +587,8 @@ const AppSidebar: React.FC = () => {
         {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
       </div>
     </aside>
-  );
+  </>
+);
 };
 
 export default AppSidebar;

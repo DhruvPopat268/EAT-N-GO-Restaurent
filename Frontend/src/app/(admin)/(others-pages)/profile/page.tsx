@@ -7,6 +7,7 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 import MapLocationSelector from "@/components/common/MapLocationSelector";
 import TimePicker from "@/components/common/TimePicker";
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { toast } from "@/utils/toast";
 
 const cuisineTypes = [
   'Indian', 'Chinese', 'Italian', 'Mexican', 'Thai', 'Japanese', 'American', 'Mediterranean',
@@ -121,7 +122,7 @@ export default function Profile() {
       const totalCount = existingCount + files.length;
       
       if (totalCount > 10) {
-        alert(`Only 10 restaurant images are allowed. You currently have ${existingCount} images and are trying to add ${files.length} more.`);
+        toast.error(`Only 10 restaurant images are allowed. You currently have ${existingCount} images and are trying to add ${files.length} more.`);
         return;
       }
       
@@ -135,7 +136,16 @@ export default function Profile() {
     // If setting an existing gallery image as primary
     if (index >= 0) {
       const updatedImages = [...formData.documents.restaurantImages];
-      updatedImages.splice(index, 1); // Remove from gallery
+      // DON'T remove the image from gallery, keep it there
+      
+      // If there's already a primary image, check if it exists in gallery before adding
+      if (formData.documents.primaryImage) {
+        // Only add the old primary image if it's not already in the gallery
+        const imageExistsInGallery = updatedImages.includes(formData.documents.primaryImage);
+        if (!imageExistsInGallery) {
+          updatedImages.unshift(formData.documents.primaryImage); // Add old primary to start of gallery
+        }
+      }
       
       setFormData({
         ...formData,
@@ -254,10 +264,10 @@ export default function Profile() {
       setFormData(response.data.data);
       setIsEditing(false);
       setNewImages([]);
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Error updating profile');
+      toast.error('Error updating profile');
     }
   };
 
@@ -677,47 +687,58 @@ export default function Profile() {
                 </div>
               )}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {data.documents.restaurantImages.map((image, index) => (
-                  <div 
-                    key={index} 
-                    className={`relative ${
-                      isEditing ? 'cursor-move' : ''
-                    } ${
-                      draggedIndex === index ? 'opacity-50' : ''
-                    }`}
-                    draggable={isEditing}
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, index)}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <img
-                      src={image}
-                      alt={`Restaurant ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-80"
-                      onClick={() => setPreviewImage(image)}
-                    />
-                    {isEditing && (
-                      <>
-                        <div className="absolute top-1 left-1 bg-gray-800 text-white rounded px-1 py-0.5 text-xs">
-                          {index + 1}
-                        </div>
-                        <button
-                          onClick={() => setPrimaryImage(image, index)}
-                          className="absolute bottom-1 left-1 bg-blue-500 text-white rounded px-2 py-1 text-xs hover:bg-blue-600"
-                        >
-                          Set Primary
-                        </button>
-                        <button
-                          onClick={() => removeImage(index)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
-                        >
-                          ×
-                        </button>
-                      </>
-                    )}
-                  </div>
-                ))}
+                {data.documents.restaurantImages.map((image, index) => {
+                  const isPrimaryImage = image === data.documents.primaryImage;
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className={`relative ${
+                        isEditing ? 'cursor-move' : ''
+                      } ${
+                        draggedIndex === index ? 'opacity-50' : ''
+                      }`}
+                      draggable={isEditing}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <img
+                        src={image}
+                        alt={`Restaurant ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-80"
+                        onClick={() => setPreviewImage(image)}
+                      />
+                      {isEditing && (
+                        <>
+                          <div className="absolute top-1 left-1 bg-gray-800 text-white rounded px-1 py-0.5 text-xs">
+                            {index + 1}
+                          </div>
+                          {!isPrimaryImage && (
+                            <button
+                              onClick={() => setPrimaryImage(image, index)}
+                              className="absolute bottom-1 left-1 bg-blue-500 text-white rounded px-2 py-1 text-xs hover:bg-blue-600"
+                            >
+                              Set Primary
+                            </button>
+                          )}
+                          {isPrimaryImage && (
+                            <div className="absolute bottom-1 left-1 bg-green-500 text-white rounded px-2 py-1 text-xs font-medium">
+                              Primary
+                            </div>
+                          )}
+                          <button
+                            onClick={() => removeImage(index)}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                          >
+                            ×
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
