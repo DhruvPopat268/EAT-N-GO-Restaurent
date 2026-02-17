@@ -29,7 +29,12 @@ interface OrderDetail {
     startTime: string;
     endTime: string;
   };
+  baseCartTotal: number;
   cartTotal: number;
+  appliedCoupon?: {
+    couponId: string;
+    savedAmount: number;
+  };
   waitingTime?: number;
   statusUpdatedBy?: string;
   items: {
@@ -279,11 +284,6 @@ export default function OrderRequestDetail() {
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Order Req Date</label>
                 <p className="text-gray-900 dark:text-white">{new Date(order.createdAt).toLocaleDateString('en-GB').replace(/\//g, '/').slice(0, -2) + new Date(order.createdAt).toLocaleDateString('en-GB').slice(-2)} - {new Date(order.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
-              
-              <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Order Total</label>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">₹{order.cartTotal}</p>
-              </div>
             </div>
             
             {order.status === 'pending' && (
@@ -394,10 +394,24 @@ export default function OrderRequestDetail() {
             </div>
             
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex justify-end">
-                <div className="text-right">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Order Request Total</p>
-                  <p className="text-2xl font-bold text-green-600">₹{order.cartTotal}</p>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Base Total:</span>
+                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">₹{order.baseCartTotal}</span>
+                </div>
+                
+                {order.appliedCoupon && order.appliedCoupon.savedAmount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Coupon Discount:</span>
+                    <span className="text-sm font-semibold text-red-600 dark:text-red-400">-₹{order.appliedCoupon.savedAmount}</span>
+                  </div>
+                )}
+                
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">Final Total:</span>
+                    <span className="text-xl font-bold text-green-600 dark:text-green-400">₹{order.cartTotal}</span>
+                  </div>
                 </div>
               </div>
             </div>

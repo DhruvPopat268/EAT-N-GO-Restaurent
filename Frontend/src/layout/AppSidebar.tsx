@@ -104,7 +104,7 @@ const AppSidebar: React.FC = () => {
 
   const renderMenuItems = (
     navItems: NavItem[],
-    menuType: "main" | "orders" | "menu" | "customer" | "help" | "payment" | "rbac"
+    menuType: "main" | "orders" | "menu" | "customer" | "help" | "payment" | "rbac" | "coupons"
   ) => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
@@ -220,7 +220,7 @@ const AppSidebar: React.FC = () => {
   );
 
   const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac";
+    type: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons";
     index: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
@@ -234,7 +234,7 @@ const AppSidebar: React.FC = () => {
   useEffect(() => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
-    ["main", "orders", "menu", "others", "customer", "payment", "help", "rbac"].forEach((menuType) => {
+    ["main", "orders", "menu", "others", "customer", "payment", "help", "rbac", "coupons"].forEach((menuType) => {
       const items = menuType === "main" ? navItems : menuType === "orders" ? [
         {
           name: "Order Requests",
@@ -292,6 +292,20 @@ const AppSidebar: React.FC = () => {
             { name: "Users", path: "/rbac/users" }
           ]
         }
+      ] : menuType === "coupons" ? [
+        {
+          name: "Coupons",
+          icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+              <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+            </svg>
+          ),
+          subItems: [
+            { name: "All Coupons", path: "/coupons/all" },
+            { name: "Add Coupon", path: "/coupons/add" }
+          ]
+        }
       ] : [
         {
           name: "Help & Support",
@@ -310,7 +324,7 @@ const AppSidebar: React.FC = () => {
           nav.subItems.forEach((subItem) => {
             if (isActive(subItem.path)) {
               setOpenSubmenu({
-                type: menuType as "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac",
+                type: menuType as "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons",
                 index,
               });
               submenuMatched = true;
@@ -339,7 +353,7 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac") => {
+  const handleSubmenuToggle = (index: number, menuType: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons") => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&
@@ -434,6 +448,32 @@ return (
                   path: "/orders/cancel-refund-settings"
                 }
               ], "orders")}
+            </div>
+
+            <div className="">
+              <h2
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "justify-start"
+                  }`}
+              >
+                {isExpanded || isHovered || isMobileOpen ? (
+                  "Coupons Management"
+                ) : (
+                  <HorizontaLDots />
+                )}
+              </h2>
+              {renderMenuItems([
+                {
+                  name: "Coupons",
+                  icon: (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm2.5 3a1.5 1.5 0 100 3 1.5 1.5 0 000-3zm6.207.293a1 1 0 00-1.414 0l-6 6a1 1 0 101.414 1.414l6-6a1 1 0 000-1.414zM12.5 10a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clipRule="evenodd" />
+                    </svg>
+                  ),
+                  path: "/coupons"
+                }
+              ], "coupons")}
             </div>
 
             <div className="">

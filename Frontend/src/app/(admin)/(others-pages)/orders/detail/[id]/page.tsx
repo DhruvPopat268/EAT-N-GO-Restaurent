@@ -75,7 +75,19 @@ interface OrderDetail {
   numberOfGuests?: number;
   dineInstructions?: string;
   paymentMethod: string;
+  baseTotalAmount: number;
   totalAmount: number;
+  appliedCoupon?: {
+    couponId: {
+      _id: string;
+      name: string;
+      couponCode: string;
+      discountType: string;
+      amount: number;
+      maxDiscount?: number;
+    };
+    savedAmount: number;
+  };
   status: string;
   waitingTime?: number;
   eatTimings?: {
@@ -424,9 +436,30 @@ const OrderDetailPage = () => {
 
             {/* Order Summary */}
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold text-green-600 dark:text-green-400">Order Total:</span>
-                <span className="text-xl font-bold text-green-600 dark:text-green-400">₹{order.orderTotal}</span>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Base Total:</span>
+                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">₹{order.baseTotalAmount}</span>
+                </div>
+                
+                {order.appliedCoupon && (
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Coupon Discount:</span>
+                      <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-2 py-0.5 rounded font-medium">
+                        {order.appliedCoupon.couponId.couponCode}
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold text-red-600 dark:text-red-400">-₹{order.appliedCoupon.savedAmount}</span>
+                  </div>
+                )}
+                
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-900 dark:text-white">Final Total:</span>
+                    <span className="text-xl font-bold text-green-600 dark:text-green-400">₹{order.totalAmount}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
