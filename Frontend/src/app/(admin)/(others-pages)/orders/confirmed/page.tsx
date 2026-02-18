@@ -8,6 +8,9 @@ import Pagination from '@/components/tables/Pagination';
 import Link from 'next/link';
 import { formatDateTime } from '@/utils/dateUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useSocket } from '@/context/SocketContext';
+import { useNotification } from '@/context/NotificationContext';
+import { playNotificationSound } from '@/utils/soundUtils';
 
 const ordersApi = {
   getConfirmed: async (page: number = 1, limit: number = 10, filters?: any) => {
@@ -110,6 +113,37 @@ const ConfirmedOrdersPage = () => {
 
   // Add order notifications
   useOrderNotifications("Confirmed Orders");
+
+  const { socket, isConnected } = useSocket();
+  const { showNotification } = useNotification();
+
+  // Real-time order updates
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleNewOrder = (orderData: any) => {
+      if (orderData.status === 'confirmed') {
+        playNotificationSound('new-order');
+        showNotification({
+          id: orderData._id,
+          orderNo: orderData.orderNo,
+          customerName: orderData.userId?.fullName || 'Unknown',
+          orderType: orderData.orderType,
+          totalAmount: orderData.totalAmount,
+          itemsCount: orderData.items?.length || 0,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (pagination.page === 1 && !search && !orderTypeFilter && !startDate && !endDate) {
+          setOrders(prev => [orderData, ...prev]);
+          setPagination(prev => ({ ...prev, totalCount: prev.totalCount + 1 }));
+        }
+      }
+    };
+
+    socket.on('new-order', handleNewOrder);
+    return () => socket.off('new-order', handleNewOrder);
+  }, [socket, isConnected, showNotification, pagination.page, search, orderTypeFilter, startDate, endDate]);
 
   useEffect(() => {
     fetchOrders(1);

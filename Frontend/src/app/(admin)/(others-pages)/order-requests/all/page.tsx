@@ -86,50 +86,32 @@ export default function AllOrderRequests() {
   useOrderNotifications("All Order Requests");
   useOrderRequestNotifications("All Order Requests");
 
-  // Direct socket listener for notifications
+  // Direct socket listener for new order requests
   useEffect(() => {
-    if (!socket || !isConnected) {
-      console.log('📱 All Orders page: Socket not ready', { socket: !!socket, isConnected });
-      return;
-    }
+    if (!socket || !isConnected) return;
 
-    const handleNewOrder = (orderData: any) => {
-      const timestamp = new Date().toLocaleString();
-      console.log(`🔔 [${timestamp}] ALL ORDERS PAGE - New order received:`, {
-        orderId: orderData._id,
-        orderNo: orderData.orderRequestNo || orderData.orderNo,
-        customer: orderData.userId?.fullName || 'Unknown',
-        status: orderData.status
+    const handleNewOrderRequest = (orderData: any) => {
+      playNotificationSound('new-order');
+      showNotification({
+        id: orderData._id,
+        orderNo: orderData.orderRequestNo,
+        customerName: orderData.userId?.fullName || 'Unknown',
+        orderType: orderData.orderType,
+        totalAmount: orderData.cartTotal,
+        itemsCount: orderData.items?.length || 0,
+        timestamp: new Date().toISOString()
       });
       
-      // Show notification for waiting or confirmed orders
-      if (orderData.status === 'waiting' || orderData.status === 'confirmed') {
-        // Play sound
-        console.log(`🔊 [${timestamp}] Playing sound for ${orderData.status} order...`);
-        playNotificationSound('new-order');
-        
-        // Show notification
-        console.log(`📱 [${timestamp}] Showing notification for ${orderData.status} order...`);
-        showNotification({
-          id: orderData._id,
-          orderNo: orderData.orderRequestNo || orderData.orderNo,
-          customerName: orderData.userId?.fullName || 'Unknown',
-          orderType: orderData.orderType,
-          totalAmount: orderData.cartTotal || orderData.totalAmount,
-          itemsCount: orderData.items?.length || 0,
-          timestamp: new Date().toISOString()
-        });
+      // Add to table if on page 1 and no filters applied
+      if (pagination.page === 1 && !search && !statusFilter && !orderTypeFilter && !startDate && !endDate) {
+        setOrders(prev => [orderData, ...prev]);
+        setPagination(prev => ({ ...prev, totalCount: prev.totalCount + 1 }));
       }
     };
 
-    console.log('📱 All Orders page: Registering socket listener');
-    socket.on('new-order', handleNewOrder);
-
-    return () => {
-      console.log('📱 All Orders page: Removing socket listener');
-      socket.off('new-order', handleNewOrder);
-    };
-  }, [socket, isConnected, showNotification]);
+    socket.on('new-order-req', handleNewOrderRequest);
+    return () => socket.off('new-order-req', handleNewOrderRequest);
+  }, [socket, isConnected, showNotification, pagination.page, search, statusFilter, orderTypeFilter, startDate, endDate]);
 
   // Socket integration for real-time updates
   usePageOrderSocket((newOrder) => {
