@@ -104,7 +104,7 @@ const AppSidebar: React.FC = () => {
 
   const renderMenuItems = (
     navItems: NavItem[],
-    menuType: "main" | "orders" | "menu" | "customer" | "help" | "payment" | "rbac" | "coupons"
+    menuType: "main" | "orders" | "menu" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings"
   ) => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
@@ -220,7 +220,7 @@ const AppSidebar: React.FC = () => {
   );
 
   const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons";
+    type: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings";
     index: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
@@ -234,7 +234,7 @@ const AppSidebar: React.FC = () => {
   useEffect(() => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
-    ["main", "orders", "menu", "others", "customer", "payment", "help", "rbac", "coupons"].forEach((menuType) => {
+    ["main", "orders", "menu", "others", "customer", "payment", "help", "rbac", "coupons", "ratings"].forEach((menuType) => {
       const items = menuType === "main" ? navItems : menuType === "orders" ? [
         {
           name: "Order Requests",
@@ -306,6 +306,16 @@ const AppSidebar: React.FC = () => {
             { name: "Add Coupon", path: "/coupons/add" }
           ]
         }
+      ] : menuType === "ratings" ? [
+        {
+          name: "User Ratings",
+          icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+          ),
+          path: "/user-ratings"
+        }
       ] : [
         {
           name: "Help & Support",
@@ -324,7 +334,7 @@ const AppSidebar: React.FC = () => {
           nav.subItems.forEach((subItem) => {
             if (isActive(subItem.path)) {
               setOpenSubmenu({
-                type: menuType as "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons",
+                type: menuType as "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings",
                 index,
               });
               submenuMatched = true;
@@ -353,7 +363,7 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons") => {
+  const handleSubmenuToggle = (index: number, menuType: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings") => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&
@@ -550,6 +560,32 @@ return (
                 }
               ], "payment")}
             </div> */}
+
+            <div className="">
+              <h2
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                  ? "lg:justify-center"
+                  : "justify-start"
+                  }`}
+              >
+                {isExpanded || isHovered || isMobileOpen ? (
+                  "User Ratings"
+                ) : (
+                  <HorizontaLDots />
+                )}
+              </h2>
+              {renderMenuItems([
+                {
+                  name: "User Ratings",
+                  icon: (
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ),
+                  path: "/user-ratings"
+                }
+              ], "ratings")}
+            </div>
 
             <div className="">
               <h2

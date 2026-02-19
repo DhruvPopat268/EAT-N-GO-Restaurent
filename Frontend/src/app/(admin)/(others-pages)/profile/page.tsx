@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import MapLocationSelector from "@/components/common/MapLocationSelector";
-import TimePicker from "@/components/common/TimePicker";
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { toast } from "@/utils/toast";
 
@@ -394,13 +393,16 @@ export default function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-1">Opening Time</label>
                 {isEditing ? (
-                  <TimePicker
+                  <input
+                    type="time"
+                    step="60"
                     value={data.basicInfo.operatingHours?.openTime || ''}
-                    onChange={(time) => handleInputChange('basicInfo', 'operatingHours', {
+                    onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
                       ...data.basicInfo.operatingHours,
-                      openTime: time
+                      openTime: e.target.value
                     })}
-                    placeholder="Select opening time"
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                    className="w-full p-2 border rounded cursor-pointer"
                   />
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">
@@ -411,13 +413,16 @@ export default function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-1">Closing Time</label>
                 {isEditing ? (
-                  <TimePicker
+                  <input
+                    type="time"
+                    step="60"
                     value={data.basicInfo.operatingHours?.closeTime || ''}
-                    onChange={(time) => handleInputChange('basicInfo', 'operatingHours', {
+                    onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
                       ...data.basicInfo.operatingHours,
-                      closeTime: time
+                      closeTime: e.target.value
                     })}
-                    placeholder="Select closing time"
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                    className="w-full p-2 border rounded cursor-pointer"
                   />
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">
