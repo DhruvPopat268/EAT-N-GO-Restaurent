@@ -11,8 +11,18 @@ import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const addonItemsApi = {
-  getAll: async (page: number = 1, limit: number = 10) => {
-    const response = await axiosInstance.get(`/api/addon-items?page=${page}&limit=${limit}`);
+  getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.subcategory) params.append('subcategory', filters.subcategory);
+    if (filters?.status) params.append('status', filters.status);
+    
+    const response = await axiosInstance.get(`/api/addon-items?${params.toString()}`);
     return response.data;
   },
 
@@ -128,7 +138,8 @@ const AddonItemsPage = () => {
   const [viewingItem, setViewingItem] = useState<AddonItem | null>(null);
 
   const [addonItems, setAddonItems] = useState<AddonItem[]>([]);
-  const [apiLoading, setApiLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -154,9 +165,38 @@ const AddonItemsPage = () => {
     fetchData(1);
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchAddonItems();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, categoryFilter, subcategoryFilter, statusFilter]);
+
+  const fetchAddonItems = async (page: number = pagination.page, limit: number = pagination.limit) => {
+    try {
+      setLoading(true);
+      const filters = {
+        search: searchTerm,
+        category: categoryFilter,
+        subcategory: subcategoryFilter,
+        status: statusFilter === 'active' ? 'available' : statusFilter === 'inactive' ? 'unavailable' : ''
+      };
+      const response = await addonItemsApi.getAll(page, limit, filters);
+      if (response.success) {
+        setAddonItems(response.data);
+        setPagination(response.pagination);
+      }
+    } catch (error) {
+      console.error('Error fetching addon items:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchData = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
-      setApiLoading(true);
+      setInitialLoading(true);
       const [addonRes, subcategoriesRes, attributesRes] = await Promise.all([
         addonItemsApi.getAll(page, limit),
         subcategoriesApi.getAll(),
@@ -176,26 +216,17 @@ const AddonItemsPage = () => {
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
-      setApiLoading(false);
+      setInitialLoading(false);
     }
   };
 
   const handlePageChange = (page: number) => {
-    fetchData(page, pagination.limit);
+    fetchAddonItems(page, pagination.limit);
   };
 
   const handleLimitChange = (limit: number) => {
-    fetchData(1, limit);
+    fetchAddonItems(1, limit);
   };
-
-  const filteredItems = addonItems.filter(item => {
-    return (
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (categoryFilter === "" || item.category === categoryFilter) &&
-      (subcategoryFilter === "" || (typeof item.subcategory === 'object' ? item.subcategory.name === subcategoryFilter : item.subcategory === subcategoryFilter)) &&
-      (statusFilter === "" || (statusFilter === "active" ? item.isAvailable : !item.isAvailable))
-    );
-  });
 
   const handleSubmit = async () => {
     const isImageRequired = !editingItem;
@@ -365,7 +396,7 @@ const AddonItemsPage = () => {
     setStatusFilter("");
   };
 
-  if (apiLoading) {
+  if (initialLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
@@ -469,7 +500,7 @@ const AddonItemsPage = () => {
       {/* Results Count and Records Per Page */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          {apiLoading ? 'Loading...' : `Showing ${filteredItems.length} of ${pagination.totalCount} items`}
+          Showing {addonItems.length} of {pagination.totalCount} items
         </p>
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-600 dark:text-gray-400">Records per page:</label>
@@ -487,8 +518,13 @@ const AddonItemsPage = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-        {filteredItems.length === 0 ? (
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center z-10 rounded-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+        {addonItems.length === 0 ? (
           <div>
             {/* Table Header - Always visible */}
             <div className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
@@ -526,7 +562,7 @@ const AddonItemsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredItems.map((item, index) => (
+                {addonItems.map((item, index) => (
                   <TableRow key={item._id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'}`}>
                     <TableCell className="px-6 py-4">
                       <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">

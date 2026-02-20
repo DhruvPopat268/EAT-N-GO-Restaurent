@@ -14,8 +14,17 @@ import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const subcategoriesApi = {
-  getAll: async (page: number = 1, limit: number = 10) => {
-    const response = await axiosInstance.get(`/api/subcategories?page=${page}&limit=${limit}`);
+  getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.status) params.append('status', filters.status);
+    
+    const response = await axiosInstance.get(`/api/subcategories?${params.toString()}`);
     return response.data;
   },
 
@@ -89,7 +98,8 @@ const AddSubcategoriesPage = () => {
   const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
   
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
-  const [apiLoading, setApiLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -99,21 +109,33 @@ const AddSubcategoriesPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
-  const { restaurantDetails, loading } = useRestaurantDetails();
+  const { restaurantDetails, loading: restaurantLoading } = useRestaurantDetails();
 
   // Add order notifications
   useOrderNotifications("Add Subcategories");
   useOrderRequestNotifications("Add Subcategories");
 
   useEffect(() => {
-    fetchSubcategories(1);
-  }, []);
+    const timer = setTimeout(() => {
+      fetchSubcategories(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, categoryFilter, statusFilter]);
 
   const fetchSubcategories = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
-      setApiLoading(true);
-      const response = await subcategoriesApi.getAll(page, limit);
+      setLoading(true);
+      const filters = {
+        search: searchQuery,
+        category: categoryFilter,
+        status: statusFilter
+      };
+      const response = await subcategoriesApi.getAll(page, limit, filters);
       if (response.success) {
         setSubcategories(response.data);
         setPagination(response.pagination);
@@ -121,7 +143,8 @@ const AddSubcategoriesPage = () => {
     } catch (error) {
       console.error('Error fetching subcategories:', error);
     } finally {
-      setApiLoading(false);
+      setInitialLoading(false);
+      setLoading(false);
     }
   };
 
@@ -260,7 +283,13 @@ const AddSubcategoriesPage = () => {
     }
   };
 
-  if (apiLoading) {
+  const clearFilters = () => {
+    setSearchQuery("");
+    setCategoryFilter("");
+    setStatusFilter("");
+  };
+
+  if (initialLoading) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
@@ -308,10 +337,64 @@ const AddSubcategoriesPage = () => {
         </button>
       </div>
 
+      <div className="flex items-center justify-between mb-4">
+        <div className="w-[30%] relative">
+          <svg
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search subcategories..."
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          >
+            <option value="">All Categories</option>
+            {restaurantDetails?.foodCategory?.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          >
+            <option value="">All Status</option>
+            <option value="available">Available</option>
+            <option value="unavailable">Unavailable</option>
+          </select>
+          {(searchQuery || categoryFilter || statusFilter) && (
+            <button
+              onClick={clearFilters}
+              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Results Count and Records Per Page */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          {apiLoading ? 'Loading...' : `Showing ${subcategories.length} of ${pagination.totalCount} subcategories`}
+          Showing {subcategories.length} of {pagination.totalCount} subcategories
         </p>
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-600 dark:text-gray-400">Records per page:</label>
@@ -355,7 +438,12 @@ const AddSubcategoriesPage = () => {
       )}
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center z-10 rounded-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
         {subcategories.length === 0 ? (
           <div>
             {/* Table Header - Always visible */}
@@ -559,9 +647,9 @@ const AddSubcategoriesPage = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   required
-                  disabled={loading || restaurantDetails?.foodCategory?.length === 1}
+                  disabled={restaurantLoading || restaurantDetails?.foodCategory?.length === 1}
                 >
-                  <option value="">{loading ? "Loading..." : "Select Category"}</option>
+                  <option value="">{restaurantLoading ? "Loading..." : "Select Category"}</option>
                   {restaurantDetails?.foodCategory?.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}

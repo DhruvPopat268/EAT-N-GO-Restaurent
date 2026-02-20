@@ -28,9 +28,9 @@ interface Rating {
 export default function UserRatingsPage() {
   const router = useRouter();
   const [ratings, setRatings] = useState<Rating[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchInput, setSearchInput] = useState("");
   const [ratingFilter, setRatingFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -42,22 +42,15 @@ export default function UserRatingsPage() {
   });
 
   useEffect(() => {
-    fetchRatings(1);
+    const timer = setTimeout(() => {
+      fetchRatings(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [searchTerm, ratingFilter, startDate, endDate]);
-
-  const handleSearch = () => {
-    setSearchTerm(searchInput);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
 
   const handleClearFilters = () => {
     setSearchTerm("");
-    setSearchInput("");
     setRatingFilter("");
     setStartDate("");
     setEndDate("");
@@ -98,6 +91,7 @@ export default function UserRatingsPage() {
     } catch (error) {
       console.error("Error fetching ratings:", error);
     } finally {
+      setInitialLoading(false);
       setLoading(false);
     }
   };
@@ -129,7 +123,7 @@ export default function UserRatingsPage() {
     );
   };
 
-  if (loading) {
+  if (initialLoading) {
     return <LoadingSpinner size="lg" fullScreen />;
   }
 
@@ -142,26 +136,17 @@ export default function UserRatingsPage() {
 
       <div className="mb-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 w-[35%]">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search by order no, name, or phone..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+          <div className="relative w-[35%]">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SearchIcon className="h-4 w-4 text-gray-400" />
             </div>
-            <button
-              onClick={handleSearch}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            >
-              Search
-            </button>
+            <input
+              type="text"
+              placeholder="Search by order no, name, or phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
 
           <div className="flex gap-4">
@@ -226,7 +211,12 @@ export default function UserRatingsPage() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center z-10 rounded-lg">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">

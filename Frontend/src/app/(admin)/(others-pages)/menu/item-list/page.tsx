@@ -15,8 +15,18 @@ import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import { useOrderRequestNotifications } from "@/hooks/useOrderRequestNotifications";
 
 const itemsApi = {
-  getAll: async (page: number = 1, limit: number = 10) => {
-    const response = await axiosInstance.get(`/api/items?page=${page}&limit=${limit}`);
+  getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.subcategory) params.append('subcategory', filters.subcategory);
+    if (filters?.status) params.append('status', filters.status);
+    
+    const response = await axiosInstance.get(`/api/items?${params.toString()}`);
     return response.data;
   },
 
@@ -70,7 +80,8 @@ const ItemListPage = () => {
   useOrderRequestNotifications("Menu Items");
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -78,22 +89,47 @@ const ItemListPage = () => {
     totalPages: 0
   });
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
+  const [categories, setCategories] = useState<string[]>([]);
+  const [subcategories, setSubcategories] = useState<string[]>([]);
+  const { restaurantDetails } = useRestaurantDetails();
 
   useEffect(() => {
-    fetchItems(1);
-  }, []);
+    const timer = setTimeout(() => {
+      fetchItems(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, categoryFilter, subcategoryFilter, statusFilter]);
+
+  useEffect(() => {
+    if (restaurantDetails?.foodCategory) {
+      setCategories(restaurantDetails.foodCategory);
+    }
+  }, [restaurantDetails]);
 
   const fetchItems = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
       setLoading(true);
-      const response = await itemsApi.getAll(page, limit);
+      const filters = {
+        search: searchTerm,
+        category: categoryFilter,
+        subcategory: subcategoryFilter,
+        status: statusFilter
+      };
+      const response = await itemsApi.getAll(page, limit, filters);
       if (response.success) {
         setMenuItems(response.data);
         setPagination(response.pagination);
+        
+        const uniqueSubcats = [...new Set(response.data.map((item: MenuItem) => 
+          typeof item.subcategory === 'object' ? item.subcategory?.name || '' : item.subcategory
+        ))].filter(Boolean);
+        setSubcategories(uniqueSubcats as string[]);
       }
     } catch (error) {
       console.error('Error fetching items:', error);
     } finally {
+      setInitialLoading(false);
       setLoading(false);
     }
   };
@@ -151,26 +187,11 @@ const ItemListPage = () => {
     }
   };
 
-  const { restaurantDetails } = useRestaurantDetails();
-  
-  const filteredByRestaurantCategory = menuItems.filter(item => 
-    !restaurantDetails?.foodCategory || restaurantDetails.foodCategory.includes(item.category)
-  );
-  
-  const categories = restaurantDetails?.foodCategory || [...new Set(menuItems.map(item => item.category))];
-  const subcategories = [...new Set(filteredByRestaurantCategory.map(item => 
-    typeof item.subcategory === 'object' ? item.subcategory?.name || '' : item.subcategory
-  ))].filter(Boolean);
-  const statuses = ['available', 'unavailable'];
+  const handleLimitChange = (limit: number) => {
+    fetchItems(1, limit);
+  };
 
-  const filteredItems = filteredByRestaurantCategory.filter(item => {
-    return (
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (categoryFilter === "" || item.category === categoryFilter) &&
-      (subcategoryFilter === "" || (typeof item.subcategory === 'object' ? item.subcategory?.name === subcategoryFilter : item.subcategory === subcategoryFilter)) &&
-      (statusFilter === "" || (statusFilter === 'available' ? item.isAvailable : !item.isAvailable))
-    );
-  });
+  const statuses = ['available', 'unavailable'];
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -179,7 +200,7 @@ const ItemListPage = () => {
     setStatusFilter("");
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="mb-6">
@@ -288,11 +309,7 @@ const ItemListPage = () => {
           <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
           <select
             value={pagination.limit}
-            onChange={(e) => {
-              const newLimit = parseInt(e.target.value);
-              setPagination(prev => ({ ...prev, limit: newLimit }));
-              fetchItems(1, newLimit);
-            }}
+            onChange={(e) => handleLimitChange(parseInt(e.target.value))}
             className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
           >
             <option value={10}>10</option>
@@ -305,8 +322,13 @@ const ItemListPage = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-        {filteredItems.length === 0 ? (
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center z-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+        {menuItems.length === 0 ? (
           <div>
             {/* Empty State Header */}
             <div className="border-b border-gray-200 dark:border-gray-700">
@@ -373,7 +395,7 @@ const ItemListPage = () => {
               </TableHeader>
 
               <TableBody>
-                {filteredItems.map((item, index) => (
+                {menuItems.map((item, index) => (
                   <TableRow 
                     key={item._id} 
                     className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${

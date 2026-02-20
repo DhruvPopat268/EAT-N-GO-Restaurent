@@ -65,10 +65,10 @@ interface PaginationInfo {
 
 const CouponsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchInput, setSearchInput] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -96,18 +96,12 @@ const CouponsPage = () => {
   useOrderRequestNotifications("Coupons");
 
   useEffect(() => {
-    fetchCoupons(1);
+    const timer = setTimeout(() => {
+      fetchCoupons(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [searchTerm, statusFilter]);
-
-  const handleSearch = () => {
-    setSearchTerm(searchInput);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
 
   const fetchCoupons = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
@@ -125,6 +119,7 @@ const CouponsPage = () => {
       console.error('Error fetching coupons:', error);
       toast.error('Error fetching coupons');
     } finally {
+      setInitialLoading(false);
       setLoading(false);
     }
   };
@@ -243,7 +238,7 @@ const CouponsPage = () => {
 
 
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="mb-6">
@@ -266,26 +261,17 @@ const CouponsPage = () => {
 
       <div className="mb-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 w-[35%]">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search coupons..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              />
+          <div className="relative w-[35%]">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SearchIcon className="h-4 w-4 text-gray-400" />
             </div>
-            <button
-              onClick={handleSearch}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-            >
-              Search
-            </button>
+            <input
+              type="text"
+              placeholder="Search coupons..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-200 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            />
           </div>
 
           <div className="flex gap-4">
@@ -301,7 +287,7 @@ const CouponsPage = () => {
 
             {(statusFilter || searchTerm) && (
               <button
-                onClick={() => { setStatusFilter(""); setSearchTerm(""); setSearchInput(""); }}
+                onClick={() => { setStatusFilter(""); setSearchTerm(""); }}
                 className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700"
               >
                 Clear
@@ -337,7 +323,12 @@ const CouponsPage = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center z-10 rounded-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
         {coupons.length === 0 ? (
           <div>
             <div className="border-b border-gray-200 dark:border-gray-700">

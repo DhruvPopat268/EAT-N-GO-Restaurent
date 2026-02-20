@@ -18,8 +18,17 @@ import { useOrderRequestNotifications } from "@/hooks/useOrderRequestNotificatio
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
 const combosApi = {
-  getAll: async (page: number = 1, limit: number = 10) => {
-    const response = await axiosInstance.get(`/api/combos?page=${page}&limit=${limit}`);
+  getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.status) params.append('status', filters.status);
+    
+    const response = await axiosInstance.get(`/api/combos?${params.toString()}`);
     return response.data;
   },
 
@@ -147,7 +156,8 @@ const ComboListPage = () => {
   const [combos, setCombos] = useState<ComboItem[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [addonItems, setAddonItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -181,11 +191,19 @@ const ComboListPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewingCombo, setViewingCombo] = useState<ComboItem | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [filterLoading, setFilterLoading] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchCombos(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, categoryFilter, statusFilter]);
 
   const fetchData = async () => {
     try {
@@ -198,6 +216,9 @@ const ComboListPage = () => {
       if (combosRes.success) {
         setCombos(combosRes.data);
         setPagination(combosRes.pagination);
+        
+        const uniqueCategories = [...new Set(combosRes.data.map((combo: ComboItem) => combo.category))].filter(Boolean);
+        setCategories(uniqueCategories as string[]);
       }
       if (itemsRes.success) {
         setItems(itemsRes.data.filter((item: Item) => item.attributes.length > 0));
@@ -209,20 +230,31 @@ const ComboListPage = () => {
       console.error('Error fetching data:', error);
       toast.error('Error loading data');
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
     }
   };
 
   const fetchCombos = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
-      const response = await combosApi.getAll(page, limit);
+      setLoading(true);
+      const filters = {
+        search: searchTerm,
+        category: categoryFilter,
+        status: statusFilter
+      };
+      const response = await combosApi.getAll(page, limit, filters);
       if (response.success) {
         setCombos(response.data);
         setPagination(response.pagination);
+        
+        const uniqueCategories = [...new Set(response.data.map((combo: ComboItem) => combo.category))].filter(Boolean);
+        setCategories(uniqueCategories as string[]);
       }
     } catch (error) {
       console.error('Error fetching combos:', error);
       toast.error('Error loading combos');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -453,30 +485,11 @@ const ComboListPage = () => {
     }
   };
 
-  const categories = [...new Set(combos.map(combo => combo.category))];
+  const handleLimitChange = (limit: number) => {
+    fetchCombos(1, limit);
+  };
+
   const statuses = ['available', 'unavailable'];
-
-  const filteredCombos = combos.filter(combo => {
-    return (
-      combo.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (categoryFilter === "" || combo.category === categoryFilter) &&
-      (statusFilter === "" || (statusFilter === 'available' ? combo.isAvailable : !combo.isAvailable))
-    );
-  });
-
-  const handleCategoryFilter = async (value: string) => {
-    setFilterLoading(true);
-    setCategoryFilter(value);
-    // Simulate filter processing time
-    setTimeout(() => setFilterLoading(false), 300);
-  };
-
-  const handleStatusFilter = async (value: string) => {
-    setFilterLoading(true);
-    setStatusFilter(value);
-    // Simulate filter processing time
-    setTimeout(() => setFilterLoading(false), 300);
-  };
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -484,7 +497,7 @@ const ComboListPage = () => {
     setStatusFilter("");
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="mb-6">
@@ -543,45 +556,29 @@ const ComboListPage = () => {
         </div>
 
         <div className="flex gap-4">
-          <div className="relative">
-            <select
-              value={categoryFilter}
-              onChange={(e) => handleCategoryFilter(e.target.value)}
-              disabled={filterLoading}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg disabled:opacity-50"
-            >
-              <option value="">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            {filterLoading && (
-              <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              </div>
-            )}
-          </div>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg"
+          >
+            <option value="">All Categories</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
 
-          <div className="relative">
-            <select
-              value={statusFilter}
-              onChange={(e) => handleStatusFilter(e.target.value)}
-              disabled={filterLoading}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg disabled:opacity-50"
-            >
-              <option value="">All Status</option>
-              {statuses.map(status => (
-                <option key={status} value={status}>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </option>
-              ))}
-            </select>
-            {filterLoading && (
-              <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-              </div>
-            )}
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg"
+          >
+            <option value="">All Status</option>
+            {statuses.map(status => (
+              <option key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </option>
+            ))}
+          </select>
 
           {(categoryFilter || statusFilter || searchTerm) && (
             <button
@@ -606,11 +603,7 @@ const ComboListPage = () => {
           <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
           <select
             value={pagination.limit}
-            onChange={(e) => {
-              const newLimit = parseInt(e.target.value);
-              setPagination(prev => ({ ...prev, limit: newLimit }));
-              fetchCombos(1, newLimit);
-            }}
+            onChange={(e) => handleLimitChange(parseInt(e.target.value))}
             className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
           >
             <option value={10}>10</option>
@@ -623,8 +616,13 @@ const ComboListPage = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-        {filteredCombos.length === 0 ? (
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center z-10 rounded-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+        {combos.length === 0 ? (
           <div>
             <div className="border-b border-gray-200 dark:border-gray-700">
               <div className="grid grid-cols-[80px_120px_1fr_150px_120px_100px_150px] gap-4 px-6 py-3">
@@ -663,7 +661,7 @@ const ComboListPage = () => {
               </TableHeader>
 
               <TableBody>
-                {filteredCombos.map((combo, index) => (
+                {combos.map((combo, index) => (
                   <TableRow
                     key={combo._id}
                     className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${index % 2 === 0

@@ -10,8 +10,16 @@ import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
 const attributesApi = {
-  getAll: async (page: number = 1, limit: number = 10) => {
-    const response = await axiosInstance.get(`/api/attributes?page=${page}&limit=${limit}`, { withCredentials: true });
+  getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.status) params.append('status', filters.status);
+    
+    const response = await axiosInstance.get(`/api/attributes?${params.toString()}`, { withCredentials: true });
     return response.data;
   },
 
@@ -59,7 +67,8 @@ const AddAttributesPage = () => {
   const [isAvailable, setIsAvailable] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [attributes, setAttributes] = useState<Attribute[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10,
@@ -67,7 +76,7 @@ const AddAttributesPage = () => {
     totalPages: 0
   });
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
 
   // Add order notifications
@@ -75,13 +84,21 @@ const AddAttributesPage = () => {
   useOrderRequestNotifications("Add Attributes");
 
   useEffect(() => {
-    fetchAttributes(1);
-  }, []);
+    const timer = setTimeout(() => {
+      fetchAttributes(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, statusFilter]);
 
   const fetchAttributes = async (page: number = pagination.page, limit: number = pagination.limit) => {
     try {
       setLoading(true);
-      const response = await attributesApi.getAll(page, limit);
+      const filters = {
+        search: searchQuery,
+        status: statusFilter
+      };
+      const response = await attributesApi.getAll(page, limit, filters);
       if (response.success) {
         setAttributes(response.data);
         setPagination(response.pagination);
@@ -89,6 +106,7 @@ const AddAttributesPage = () => {
     } catch (error) {
       console.error('Error fetching attributes:', error);
     } finally {
+      setInitialLoading(false);
       setLoading(false);
     }
   };
@@ -175,16 +193,16 @@ const AddAttributesPage = () => {
     }
   };
 
-  // Filter attributes based on search and status
-  const filteredAttributes = attributes.filter(attr => {
-    const matchesSearch = attr.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || 
-                         (statusFilter === "available" && attr.isAvailable) ||
-                         (statusFilter === "unavailable" && !attr.isAvailable);
-    return matchesSearch && matchesStatus;
-  });
+  const handleLimitChange = (limit: number) => {
+    fetchAttributes(1, limit);
+  };
 
-  if (loading) {
+  const clearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("");
+  };
+
+  if (initialLoading) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
@@ -260,15 +278,26 @@ const AddAttributesPage = () => {
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-        >
-          <option value="all">All Status</option>
-          <option value="available">Available</option>
-          <option value="unavailable">Unavailable</option>
-        </select>
+        <div className="flex items-center justify-between gap-4">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          >
+            <option value="">All Status</option>
+            <option value="available">Available</option>
+            <option value="unavailable">Unavailable</option>
+          </select>
+          
+          {(searchQuery || statusFilter) && (
+            <button
+              onClick={clearFilters}
+              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table Controls - Above Table */}
@@ -283,11 +312,7 @@ const AddAttributesPage = () => {
           <span className="text-sm text-gray-600 dark:text-gray-400">Show</span>
           <select
             value={pagination.limit}
-            onChange={(e) => {
-              const newLimit = parseInt(e.target.value);
-              setPagination(prev => ({ ...prev, limit: newLimit }));
-              fetchAttributes(1, newLimit);
-            }}
+            onChange={(e) => handleLimitChange(parseInt(e.target.value))}
             className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
           >
             <option value={10}>10</option>
@@ -300,8 +325,13 @@ const AddAttributesPage = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-        {filteredAttributes.length === 0 ? (
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 flex items-center justify-center z-10 rounded-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+        {attributes.length === 0 ? (
           <div>
             {/* Table Header - Always visible */}
             <div className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
@@ -336,7 +366,7 @@ const AddAttributesPage = () => {
               </TableHeader>
 
               <TableBody>
-                {filteredAttributes.map((attribute, index) => (
+                {attributes.map((attribute, index) => (
                   <TableRow
                     key={attribute._id}
                     className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
