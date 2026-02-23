@@ -61,6 +61,16 @@ export default function ConfirmedOrderRequests() {
     totalCount: 0,
     totalPages: 0
   });
+  
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
   const [showCancelModal, setShowCancelModal] = useState<{show: boolean, orderId: string}>({show: false, orderId: ''});
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [selectedReason, setSelectedReason] = useState('');
@@ -395,7 +405,7 @@ export default function ConfirmedOrderRequests() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
-                    ₹{order.cartTotal}
+                    {getCurrency()}{order.cartTotal}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
                     <div>{formatDateTime(order.createdAt).date}</div>

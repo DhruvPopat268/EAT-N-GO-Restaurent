@@ -149,6 +149,16 @@ const ComboListPage = () => {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
+
   // Add order notifications
   useOrderNotifications("Combos");
   useOrderRequestNotifications("Combos");
@@ -733,7 +743,7 @@ const ComboListPage = () => {
 
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {combo.currency} {combo.price}
+                        {getCurrency()} {combo.price}
                       </div>
                     </TableCell>
 
@@ -945,16 +955,23 @@ const ComboListPage = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Price *
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.price}
-                    onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg  dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                    placeholder="0.00"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.price}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg  dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      placeholder="0.00"
+                      required
+                    />
+                    <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 flex items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        {getCurrency()}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

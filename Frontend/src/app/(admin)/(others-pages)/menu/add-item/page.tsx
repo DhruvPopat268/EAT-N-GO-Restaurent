@@ -76,18 +76,24 @@ const AddItemPage = () => {
   const [selectedOption, setSelectedOption] = useState<"individual" | "bulk" | null>(isEditMode ? "individual" : null);
   const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [bulkResults, setBulkResults] = useState<any>(null);
-  const getDefaultCurrency = (country: string) => {
-    const currencyMap: { [key: string]: string } = {
-      "India": "INR",
-      "United States": "USD",
-      "United Kingdom": "GBP",
-      "Canada": "CAD",
-      "Australia": "AUD",
-      "Germany": "EUR",
-      "France": "EUR",
-      "Japan": "JPY"
-    };
-    return currencyMap[country] || "USD";
+  
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
+  
+  const getCurrencyCode = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.code || 'INR';
+    } catch {
+      return 'INR';
+    }
   };
 
   const [formData, setFormData] = useState({
@@ -352,7 +358,6 @@ const AddItemPage = () => {
   }, [restaurantDetails]);
 
   const resetForm = () => {
-    const defaultCurrency = restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : "INR";
     setFormData({
       category: restaurantDetails?.foodCategory?.length === 1 ? restaurantDetails.foodCategory[0] : "",
       subcategory: "",
@@ -404,7 +409,7 @@ const AddItemPage = () => {
         category: formData.category,
         subcategory: formData.subcategory,
         isAvailable: formData.isAvailable,
-        currency: restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR',
+        currency: getCurrencyCode(),
         attributes: formData.attributes.map(attr => ({
           attribute: attr.attribute,
           basePrice: attr.basePrice,
@@ -757,7 +762,7 @@ const AddItemPage = () => {
 
                 <div className="w-1/6 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 flex items-center">
                   <span className="text-sm text-gray-600 dark:text-gray-300">
-                    {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'}
+                    {getCurrency()}
                   </span>
                 </div>
 
@@ -796,10 +801,10 @@ const AddItemPage = () => {
                       <div className="flex items-center gap-4">
                         <span className="font-medium text-gray-900 dark:text-white">{attr.name}</span>
                         <span className="text-gray-600 dark:text-gray-300">
-                          Base: {attr.basePrice} {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'}
+                          Base: {attr.basePrice} {getCurrency()}
                         </span>
                         <span className="text-gray-600 dark:text-gray-300">
-                          Selling: {attr.price} {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'}
+                          Selling: {attr.price} {getCurrency()}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -960,7 +965,7 @@ const AddItemPage = () => {
                         />
                         <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 flex items-center">
                           <span className="text-sm text-gray-600 dark:text-gray-300">
-                            {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'}
+                            {getCurrency()}
                           </span>
                         </div>
                         <button
@@ -1038,7 +1043,7 @@ const AddItemPage = () => {
                               <div className="flex items-center gap-2">
                                 {option.price > 0 && (
                                   <span className="text-sm text-gray-600 dark:text-gray-300">
-                                    {option.price} {restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'} 
+                                    {option.price} {getCurrency()} 
                                   </span>
                                 )}
                                 {option.price === 0 && (
@@ -1163,7 +1168,7 @@ const AddItemPage = () => {
                                 <span>{option.label}</span>
                                 <span className={option.price > 0 ? "text-gray-600 dark:text-gray-300" : "text-green-600 dark:text-green-400"}>
                                   {option.price > 0 
-                                    ? `${restaurantDetails?.country ? getDefaultCurrency(restaurantDetails.country) : 'INR'} ${option.price}`
+                                    ? `${getCurrency()} ${option.price}`
                                     : 'Free'
                                   }
                                 </span>

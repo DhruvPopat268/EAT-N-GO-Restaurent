@@ -62,6 +62,16 @@ export default function PendingOrderRequests() {
     totalCount: 0,
     totalPages: 0
   });
+  
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
   const [showConfirmModal, setShowConfirmModal] = useState<{show: boolean, orderId: string, action: string}>({show: false, orderId: '', action: ''});
   const [showReasonModal, setShowReasonModal] = useState<{show: boolean, orderId: string, action: 'waiting' | 'reject' | 'cancel'}>({show: false, orderId: '', action: 'waiting'});
   const [reasons, setReasons] = useState<Reason[]>([]);
@@ -428,7 +438,7 @@ export default function PendingOrderRequests() {
 
             {/* Total */}
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
-              ₹{order.cartTotal}
+              {getCurrency()}{order.cartTotal}
             </td>
 
             {/* Created At */}

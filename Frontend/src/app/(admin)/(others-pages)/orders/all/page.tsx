@@ -136,6 +136,17 @@ const AllOrdersPage = () => {
     totalCount: 0,
     totalPages: 0
   });
+  
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
+  
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [statusConfirm, setStatusConfirm] = useState<{show: boolean, orderId: string, orderNo: string, currentStatus: string, newStatus: string}>({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
   const [showCancelModal, setShowCancelModal] = useState<{show: boolean, orderId: string, orderNo: string}>({show: false, orderId: '', orderNo: ''});
@@ -544,7 +555,7 @@ const AllOrdersPage = () => {
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        ₹{order.totalAmount}
+                        {getCurrency()}{order.totalAmount}
                       </span>
                     </TableCell>
                    
@@ -720,7 +731,7 @@ const AllOrdersPage = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Amount</label>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">₹{viewingOrder.totalAmount}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{getCurrency()}{viewingOrder.totalAmount}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Created At</label>

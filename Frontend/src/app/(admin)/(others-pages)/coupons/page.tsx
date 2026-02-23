@@ -79,6 +79,17 @@ const CouponsPage = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingCoupon, setViewingCoupon] = useState<Coupon | null>(null);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -388,11 +399,11 @@ const CouponsPage = () => {
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {coupon.discountType === 'percentage' ? `${coupon.amount}%` : `₹${coupon.amount}`}
+                        {coupon.discountType === 'percentage' ? `${coupon.amount}%` : `${getCurrency()}${coupon.amount}`}
                       </div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">₹{coupon.minOrderTotal}</div>
+                      <div className="text-sm text-gray-900 dark:text-white">{getCurrency()}{coupon.minOrderTotal}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">
@@ -630,7 +641,7 @@ const CouponsPage = () => {
                     required
                   >
                     <option value="percentage">Percentage (%)</option>
-                    <option value="fixed">Fixed Amount (₹)</option>
+                    <option value="fixed">Fixed Amount ({getCurrency()})</option>
                   </select>
                 </div>
 

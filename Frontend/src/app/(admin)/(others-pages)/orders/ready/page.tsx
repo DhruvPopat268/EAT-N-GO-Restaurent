@@ -107,6 +107,17 @@ const ReadyOrdersPage = () => {
     totalCount: 0,
     totalPages: 0
   });
+  
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
+  
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [statusConfirm, setStatusConfirm] = useState<{show: boolean, orderId: string, orderNo: string, currentStatus: string, newStatus: string}>({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
   const [showCancelModal, setShowCancelModal] = useState<{show: boolean, orderId: string, orderNo: string}>({show: false, orderId: '', orderNo: ''});
@@ -430,7 +441,7 @@ const ReadyOrdersPage = () => {
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        ₹{order.totalAmount}
+                        {getCurrency()}{order.totalAmount}
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">

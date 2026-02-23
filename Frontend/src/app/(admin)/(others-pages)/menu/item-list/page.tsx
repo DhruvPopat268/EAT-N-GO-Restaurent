@@ -75,6 +75,16 @@ const ItemListPage = () => {
   const [subcategoryFilter, setSubcategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
+
   // Add order notifications
   useOrderNotifications("Menu Items");
   useOrderRequestNotifications("Menu Items");
@@ -464,7 +474,7 @@ const ItemListPage = () => {
                         {item.attributes.length > 0 ? (
                           item.attributes.map((attr, attrIndex) => (
                             <div key={attrIndex} className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {item.currency === 'INR' ? '₹' : '$'}{attr.price}
+                              {getCurrency()}{attr.price}
                             </div>
                           ))
                         ) : (

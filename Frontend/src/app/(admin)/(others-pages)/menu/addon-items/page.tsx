@@ -119,20 +119,24 @@ const AddonItemsPage = () => {
 
   const [currentAttribute, setCurrentAttribute] = useState("");
   const [currentPrice, setCurrentPrice] = useState("");
-  const [currentCurrency, setCurrentCurrency] = useState("INR");
-
-  const getDefaultCurrency = (country: string) => {
-    const currencyMap: { [key: string]: string } = {
-      "India": "INR",
-      "United States": "USD",
-      "United Kingdom": "GBP",
-      "Canada": "CAD",
-      "Australia": "AUD",
-      "Germany": "EUR",
-      "France": "EUR",
-      "Japan": "JPY"
-    };
-    return currencyMap[country] || "USD";
+  
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
+  
+  const getCurrencyCode = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.code || 'INR';
+    } catch {
+      return 'INR';
+    }
   };
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingItem, setViewingItem] = useState<AddonItem | null>(null);
@@ -299,10 +303,6 @@ const AddonItemsPage = () => {
       if (restaurantDetails.foodCategory?.length === 1) {
         updates.category = restaurantDetails.foodCategory[0];
       }
-      if (restaurantDetails.country) {
-        const defaultCurrency = getDefaultCurrency(restaurantDetails.country);
-        setCurrentCurrency(defaultCurrency);
-      }
       if (Object.keys(updates).length > 0) {
         setFormData(prev => ({ ...prev, ...updates }));
       }
@@ -353,7 +353,7 @@ const AddonItemsPage = () => {
 
   const addAttribute = () => {
     if (currentAttribute.trim() && currentPrice.trim() && !formData.attributes.some(attr => attr.name === currentAttribute.trim())) {
-      setFormData(prev => ({ ...prev, attributes: [...prev.attributes, { name: currentAttribute.trim(), price: currentPrice.trim(), currency: currentCurrency }] }));
+      setFormData(prev => ({ ...prev, attributes: [...prev.attributes, { name: currentAttribute.trim(), price: currentPrice.trim() }] }));
       setCurrentAttribute("");
       setCurrentPrice("");
     }
@@ -595,7 +595,7 @@ const AddonItemsPage = () => {
                               {attr.attribute.name}
                             </span>
                             <span className="font-medium text-gray-900 dark:text-white">
-                              {item.currency} {attr.price}
+                              {getCurrency()} {attr.price}
                             </span>
                           </div>
                         ))}
@@ -789,20 +789,13 @@ const AddonItemsPage = () => {
                     placeholder="Price"
                     value={currentPrice}
                     onChange={(e) => setCurrentPrice(e.target.value)}
-                    className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <select
-                    value={currentCurrency}
-                    onChange={(e) => setCurrentCurrency(e.target.value)}
-                    className="w-20 px-2 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={!!restaurantDetails?.country}
-                  >
-                    <option value="INR">INR</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                    <option value="CAD">CAD</option>
-                  </select>
+                  <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 flex items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {getCurrency()}
+                    </span>
+                  </div>
                   <button
                     type="button"
                     onClick={addAttribute}
@@ -816,7 +809,7 @@ const AddonItemsPage = () => {
                   <div className="space-y-2 mt-2">
                     {formData.attributes.map((attr, index) => (
                       <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                        <span className="text-sm font-medium">{attr.name} - {attr.currency || 'INR'} {attr.price}</span>
+                        <span className="text-sm font-medium">{attr.name} - {getCurrency()} {attr.price}</span>
                         <button
                           type="button"
                           onClick={() => removeAttribute(index)}
@@ -933,7 +926,7 @@ const AddonItemsPage = () => {
                   {viewingItem.attributes.map((attr, index) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">{attr.attribute.name}</span>
-                      <span className="text-sm font-semibold text-green-600 dark:text-green-400">{viewingItem.currency} {attr.price}</span>
+                      <span className="text-sm font-semibold text-green-600 dark:text-green-400">{getCurrency()} {attr.price}</span>
                     </div>
                   ))}
                 </div>

@@ -53,6 +53,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         
         setRestaurentStatus(response.data.data.status);
         setRestaurantData(response.data.data);
+        
+        // Store currency in localStorage
+        if (response.data.data.currency) {
+          localStorage.setItem('currency', JSON.stringify(response.data.data.currency));
+        }
       } catch (error: any) {
         console.error("Error fetching restaurant status:", error);
         if (error.response?.status === 401) {

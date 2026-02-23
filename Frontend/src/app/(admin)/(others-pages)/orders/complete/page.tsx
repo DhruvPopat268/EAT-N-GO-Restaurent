@@ -72,6 +72,17 @@ const CompletedOrdersPage = () => {
     totalCount: 0,
     totalPages: 0
   });
+  
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
+  
   const [search, setSearch] = useState('');
   const [orderTypeFilter, setOrderTypeFilter] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -316,7 +327,7 @@ const CompletedOrdersPage = () => {
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        ₹{order.totalAmount}
+                        {getCurrency()}{order.totalAmount}
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
