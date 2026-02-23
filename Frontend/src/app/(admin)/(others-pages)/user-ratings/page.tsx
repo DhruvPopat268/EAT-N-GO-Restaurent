@@ -19,10 +19,12 @@ interface Rating {
   orderId: {
     _id: string;
     orderNo: number;
+    orderType: string;
+    createdAt: string;
   };
   rating: number;
   feedback: string;
-  createdAt: string;
+  ratedAt: string;
 }
 
 export default function UserRatingsPage() {
@@ -246,34 +248,34 @@ export default function UserRatingsPage() {
                     <td className="px-6 py-4">
                       <div className="text-sm">
                         <div className="font-medium text-gray-900 dark:text-gray-100">
-                          {rating.userId.fullName}
+                          {rating.userId?.fullName || "-"}
                         </div>
                         <div className="text-gray-500 dark:text-gray-400">
-                          {rating.userId.phone}
+                          {rating.userId?.phone || "-"}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
-                      {rating.orderId.orderNo}
+                      {rating.orderId?.orderNo || "-"}
                     </td>
                     <td className="px-6 py-4">
-                      {renderStars(rating.rating)}
+                      {renderStars(rating.rating || 0)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100 max-w-xs truncate">
                       {rating.feedback || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-gray-100">{formatDateTime(rating.createdAt).date}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(rating.createdAt).time}</div>
+                      <div className="text-sm text-gray-900 dark:text-gray-100">{rating.ratedAt ? formatDateTime(rating.ratedAt).date : "-"}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{rating.ratedAt ? formatDateTime(rating.ratedAt).time : "-"}</div>
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => router.push(`/orders/detail/${rating.orderId._id}`)}
+                        onClick={() => router.push(`/orders/detail/${rating.orderId?._id}`)}
                         className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
                         title="View Order Details"
+                        disabled={!rating.orderId?._id}
                       >
-                        <VisibilityIcon className="w-4 h-4" />
-                      </button>
+                        <VisibilityIcon className="w-4 h-4" />                      </button>
                     </td>
                   </tr>
                 ))

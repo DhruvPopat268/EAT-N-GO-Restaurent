@@ -148,7 +148,7 @@ const AddonItemsPage = () => {
   });
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean, id: string, name: string}>({show: false, id: '', name: ''});
 
-  const { restaurantDetails, loading } = useRestaurantDetails();
+  const { restaurantDetails, loading: restaurantLoading } = useRestaurantDetails();
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [attributes, setAttributes] = useState<any[]>([]);
   
