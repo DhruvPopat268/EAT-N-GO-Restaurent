@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useNotification } from '@/context/NotificationContext';
-import { X, Eye, Clock, Users, CreditCard, ShoppingBag, Calendar } from 'lucide-react';
+import { X, Eye, Clock, Users, CreditCard, ShoppingBag, Calendar, MapPin, Navigation } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const NotificationPopup: React.FC = () => {
@@ -151,6 +151,43 @@ const NotificationPopup: React.FC = () => {
                       {timings.startTime} - {timings.endTime}
                     </p>
                   </div>
+                </div>
+              )}
+
+              {/* Location Information */}
+              {notification.userCurrentLocation?.address && (
+                <div className="flex items-start gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
+                  <MapPin className="w-4 h-4 text-black dark:text-white mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Address</p>
+                    <p className="font-semibold text-black dark:text-white text-sm">
+                      {notification.userCurrentLocation.address}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Distance & Duration Grid */}
+              {(notification.distanceToReachRestaurant || notification.durationToReachRestaurant) && (
+                <div className="grid grid-cols-2 gap-3">
+                  {notification.distanceToReachRestaurant && (
+                    <div className="flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
+                      <Navigation className="w-4 h-4 text-black dark:text-white" />
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Distance</p>
+                        <p className="font-bold text-black dark:text-white text-sm">{notification.distanceToReachRestaurant}</p>
+                      </div>
+                    </div>
+                  )}
+                  {notification.durationToReachRestaurant && (
+                    <div className="flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
+                      <Clock className="w-4 h-4 text-black dark:text-white" />
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Duration</p>
+                        <p className="font-bold text-black dark:text-white text-sm">{notification.durationToReachRestaurant}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

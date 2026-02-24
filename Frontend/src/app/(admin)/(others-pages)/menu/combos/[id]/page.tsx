@@ -20,7 +20,11 @@ interface ComboDetail {
   description: string;
   category: string;
   price: number;
-  currency: string;
+  currency: {
+    code: string;
+    name: string;
+    symbol: string;
+  };
   items: Array<{
     itemId: { _id: string; name: string; images: string[] };
     quantity: number;
@@ -35,7 +39,11 @@ interface ComboDetail {
       name: string;
       price: number;
     }>;
-    currency: string;
+    currency: {
+      code: string;
+      name: string;
+      symbol: string;
+    };
   }>;
   image?: string;
   isAvailable: boolean;
@@ -145,7 +153,7 @@ const ComboDetailPage = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Price</p>
-                  <p className="font-semibold text-gray-900 dark:text-white text-lg">{combo.currency} {combo.price}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white text-lg">{combo.currency.symbol} {combo.price}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
@@ -247,7 +255,7 @@ const ComboDetailPage = () => {
                             <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Pricing Options:</p>
                             {addon.attributes.map((attr, attrIndex) => (
                               <div key={attrIndex} className="text-sm text-gray-600 dark:text-gray-300">
-                                {attr.name}: {addon.currency} {attr.price}
+                                {attr.name}: {addon.currency.symbol} {attr.price}
                               </div>
                             ))}
                           </div>

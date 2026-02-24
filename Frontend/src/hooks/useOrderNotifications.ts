@@ -49,6 +49,9 @@ export const useOrderNotifications = (pageName: string) => {
           noOfGuest: orderData.numberOfGuests,
           eatTimings: orderData.eatTimings,
           takeawayTimings: orderData.takeawayTimings,
+          userCurrentLocation: orderData.userCurrentLocation,
+          distanceToReachRestaurant: orderData.distanceToReachRestaurant,
+          durationToReachRestaurant: orderData.durationToReachRestaurant,
           timestamp: new Date().toISOString()
         });
       }

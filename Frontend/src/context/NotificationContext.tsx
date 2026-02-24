@@ -18,6 +18,13 @@ interface OrderNotification {
     startTime: string;
     endTime: string;
   };
+  userCurrentLocation?: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
+  distanceToReachRestaurant?: string;
+  durationToReachRestaurant?: string;
   timestamp: string;
 }
 

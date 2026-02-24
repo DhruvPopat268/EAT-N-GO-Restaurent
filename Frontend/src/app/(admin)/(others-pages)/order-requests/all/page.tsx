@@ -118,6 +118,9 @@ export default function AllOrderRequests() {
         orderType: orderData.orderType,
         totalAmount: orderData.cartTotal,
         itemsCount: orderData.items?.length || 0,
+        userCurrentLocation: orderData.userCurrentLocation,
+        distanceToReachRestaurant: orderData.distanceToReachRestaurant,
+        durationToReachRestaurant: orderData.durationToReachRestaurant,
         timestamp: new Date().toISOString()
       });
       

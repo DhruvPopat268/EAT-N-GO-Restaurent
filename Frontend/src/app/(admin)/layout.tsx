@@ -50,6 +50,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const fetchStatus = async () => {
       try {
         const response = await axiosInstance.get('/api/restaurants/status');
+        console.log('🏪 Restaurant data:', response.data.data);
+        console.log('🏪 Restaurant ID:', response.data.data.restaurantId);
         
         setRestaurentStatus(response.data.data.status);
         setRestaurantData(response.data.data);
@@ -625,7 +627,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <NotificationProvider>
-      <SocketProvider restaurantId={restaurantData?._id || ''}>
+      <SocketProvider restaurantId={restaurantData?.restaurantId || ''}>
         <div className="min-h-screen xl:flex">
           {/* Sidebar and Backdrop */}
           <AppSidebar />
