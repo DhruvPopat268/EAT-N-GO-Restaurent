@@ -25,6 +25,13 @@ interface OrderRequest {
     fullName: string;
     phone: string;
   };
+  userCurrentLocation?: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
+  distanceToReachRestaurant?: string;
+  durationToReachRestaurant?: string;
   orderType: string;
   status: string;
   items: any[];
@@ -74,6 +81,7 @@ export default function PendingOrderRequests() {
   };
   const [showConfirmModal, setShowConfirmModal] = useState<{show: boolean, orderId: string, action: string}>({show: false, orderId: '', action: ''});
   const [showReasonModal, setShowReasonModal] = useState<{show: boolean, orderId: string, action: 'waiting' | 'reject' | 'cancel'}>({show: false, orderId: '', action: 'waiting'});
+  const [showLocationModal, setShowLocationModal] = useState<{show: boolean, order: OrderRequest | null}>({show: false, order: null});
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [selectedReason, setSelectedReason] = useState('');
   const [startTime, setStartTime] = useState('');
@@ -377,6 +385,9 @@ export default function PendingOrderRequests() {
             Updated At
           </th>
           <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+            User Location
+          </th>
+          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
             Actions
           </th>
         </tr>
@@ -451,6 +462,15 @@ export default function PendingOrderRequests() {
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
               <div>{formatDateTime(order.updatedAt).date}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
+            </td>
+
+            {/* User Location */}
+            <td className="px-6 py-4 text-center">
+              {order.userCurrentLocation ? (
+                <button onClick={() => setShowLocationModal({show: true, order})} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm underline">
+                  See Location
+                </button>
+              ) : '-'}
             </td>
 
             {/* Actions */}
@@ -689,6 +709,36 @@ export default function PendingOrderRequests() {
     </div>
   </div>
 )}
+
+      {/* Location Modal */}
+      {showLocationModal.show && showLocationModal.order && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">User Location Details</h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Address:</label>
+                  <p className="text-sm text-gray-900 dark:text-white mt-1">{showLocationModal.order.userCurrentLocation?.address || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Distance to Restaurant:</label>
+                  <p className="text-sm text-gray-900 dark:text-white mt-1">{showLocationModal.order.distanceToReachRestaurant || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Duration to Restaurant:</label>
+                  <p className="text-sm text-gray-900 dark:text-white mt-1">{showLocationModal.order.durationToReachRestaurant || '-'}</p>
+                </div>
+              </div>
+              <div className="flex justify-end mt-6">
+                <button onClick={() => setShowLocationModal({show: false, order: null})} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

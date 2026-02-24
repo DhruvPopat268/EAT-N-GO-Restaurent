@@ -71,6 +71,13 @@ interface OrderDetail {
     fullName: string;
     phone: string;
   };
+  userCurrentLocation?: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
+  distanceToReachRestaurant?: string;
+  durationToReachRestaurant?: string;
   orderType: string;
   numberOfGuests?: number;
   dineInstructions?: string;
@@ -288,10 +295,23 @@ const OrderDetailPage = () => {
             
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Customer</label>
+                <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">User Info</label>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{order.userId.fullName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-500">{order.userId.phone}</p>
               </div>
+
+              {order.userCurrentLocation && (
+                <div>
+                  <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">User Location</label>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{order.userCurrentLocation.address}</p>
+                  {order.distanceToReachRestaurant && (
+                    <p className="text-xs text-gray-500 dark:text-gray-500">Distance: {order.distanceToReachRestaurant}</p>
+                  )}
+                  {order.durationToReachRestaurant && (
+                    <p className="text-xs text-gray-500 dark:text-gray-500">Duration: {order.durationToReachRestaurant}</p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Order Type</label>

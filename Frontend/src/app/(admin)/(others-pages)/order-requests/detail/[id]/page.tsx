@@ -21,6 +21,13 @@ interface OrderDetail {
     fullName: string;
     phone: string;
   };
+  userCurrentLocation?: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
+  distanceToReachRestaurant?: string;
+  durationToReachRestaurant?: string;
   orderType: string;
   status: string;
   numberOfGuests?: number;
@@ -230,10 +237,23 @@ export default function OrderRequestDetail() {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Order Req Information</h2>
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Customer</label>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">User Info</label>
                 <p className="text-gray-900 dark:text-white">{order.userId.fullName}</p>
                 <p className="text-gray-600 dark:text-gray-400">{order.userId.phone}</p>
               </div>
+              
+              {order.userCurrentLocation && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">User Location</label>
+                  <p className="text-gray-900 dark:text-white text-sm">{order.userCurrentLocation.address}</p>
+                  {order.distanceToReachRestaurant && (
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">Distance: {order.distanceToReachRestaurant}</p>
+                  )}
+                  {order.durationToReachRestaurant && (
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">Duration: {order.durationToReachRestaurant}</p>
+                  )}
+                </div>
+              )}
               
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Order Type</label>
