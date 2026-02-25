@@ -56,7 +56,7 @@ const menuItems: NavItem[] = [
     subItems: [
       { name: "Add Item", path: "/menu/add-item", pro: false },
       { name: "Item List", path: "/menu/item-list", pro: false },
-      { name: "Combo List", path: "/menu/combos", pro: false },
+      // { name: "Combo List", path: "/menu/combos", pro: false },
       { name: "Add Attributes", path: "/menu/add-attributes", pro: false },
       { name: "Add Subcategories", path: "/menu/add-subcategories", pro: false },
       { name: "Addon Items", path: "/menu/addon-items", pro: false },
