@@ -7,7 +7,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ["res.cloudinary.com"],
+    domains: ["res.cloudinary.com", "localhost"],
   },
   webpack(config) {
     config.module.rules.push({

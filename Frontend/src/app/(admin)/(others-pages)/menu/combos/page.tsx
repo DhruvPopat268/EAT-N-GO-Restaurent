@@ -277,26 +277,32 @@ const ComboListPage = () => {
 
     const newComboItems = [];
     for (const itemId of selectedItemIds) {
-      const item = items.find(i => i._id === itemId);
-      if (item) {
-        try {
-          const attributesRes = await combosApi.getItemAttributes(itemId);
-          const availableAttributes = attributesRes.success ? attributesRes.data : [];
+      const existingItem = comboItems.find(ci => ci.itemId === itemId);
+      
+      if (existingItem) {
+        newComboItems.push(existingItem);
+      } else {
+        const item = items.find(i => i._id === itemId);
+        if (item) {
+          try {
+            const attributesRes = await combosApi.getItemAttributes(itemId);
+            const availableAttributes = attributesRes.success ? attributesRes.data : [];
 
-          newComboItems.push({
-            itemId,
-            quantity: 1,
-            itemName: item.name,
-            availableAttributes
-          });
-        } catch (error) {
-          console.error('Error fetching attributes for item:', itemId, error);
-          newComboItems.push({
-            itemId,
-            quantity: 1,
-            itemName: item.name,
-            availableAttributes: []
-          });
+            newComboItems.push({
+              itemId,
+              quantity: 1,
+              itemName: item.name,
+              availableAttributes
+            });
+          } catch (error) {
+            console.error('Error fetching attributes for item:', itemId, error);
+            newComboItems.push({
+              itemId,
+              quantity: 1,
+              itemName: item.name,
+              availableAttributes: []
+            });
+          }
         }
       }
     }
@@ -932,7 +938,7 @@ const ComboListPage = () => {
                 </div>
               )}
 
-              <div>
+              {/* <div>
                 <MultiSelect
                   label="Addons"
                   options={addonItems
@@ -948,7 +954,7 @@ const ComboListPage = () => {
                     setFormData(prev => ({ ...prev, addons: selectedIds }));
                   }}
                 />
-              </div>
+              </div> */}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
