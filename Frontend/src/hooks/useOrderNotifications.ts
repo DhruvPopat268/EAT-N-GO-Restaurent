@@ -57,12 +57,17 @@ export const useOrderNotifications = (pageName: string) => {
       }
     };
 
-    const handleUpdatedOrder = (orderData: any) => {
+    const handleUpdatedOrder = (data: any) => {
       const timestamp = new Date().toLocaleString();
+      // Backend sends { order, addedAmount, addedItemsCount, message }
+      const orderData = data.order || data;
+      
       console.log(`🔔 [${timestamp}] ${pageName.toUpperCase()} - Order updated:`, {
         orderId: orderData._id,
         orderNo: orderData.orderNo,
-        customer: orderData.userId?.fullName || 'Unknown'
+        customer: orderData.userId?.fullName || 'Unknown',
+        addedAmount: data.addedAmount,
+        addedItemsCount: data.addedItemsCount
       });
       
       playNotificationSound('new-order');
@@ -74,7 +79,7 @@ export const useOrderNotifications = (pageName: string) => {
         customerName: orderData.userId?.fullName || 'Unknown',
         orderType: orderData.orderType,
         totalAmount: orderData.cartTotal || orderData.totalAmount,
-        itemsCount: orderData.items?.length || 0,
+        itemsCount: data.addedItemsCount || 0,
         noOfGuest: orderData.numberOfGuests,
         eatTimings: orderData.eatTimings,
         takeawayTimings: orderData.takeawayTimings,
