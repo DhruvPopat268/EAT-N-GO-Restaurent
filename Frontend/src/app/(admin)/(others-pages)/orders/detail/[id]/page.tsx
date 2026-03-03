@@ -96,7 +96,10 @@ interface OrderDetail {
     savedAmount: number;
   };
   status: string;
-  waitingTime?: number;
+  waitingTime?: {
+    startTime: string;
+    endTime: string;
+  };
   eatTimings?: {
     startTime: string;
     endTime: string;
@@ -319,24 +322,34 @@ const OrderDetailPage = () => {
                 {order.numberOfGuests && (
                   <p className="text-xs text-gray-500 dark:text-gray-500">Guests: {order.numberOfGuests}</p>
                 )}
-                {order.eatTimings && (
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
-                    Eat Timings: {order.eatTimings.startTime} - {order.eatTimings.endTime}
-                  </p>
-                )}
-                {order.takeawayTimings && (
-                  <p className="text-xs text-gray-500 dark:text-gray-500">
-                    Takeaway Timings: {order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}
-                  </p>
-                )}
               </div>
 
-              <div>
-                <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Waiting Time</label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {order.waitingTime ? `${order.waitingTime} minutes` : 'Not specified'}
-                </p>
-              </div>
+              {order.eatTimings && (
+                <div>
+                  <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Eat Timings</label>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {order.eatTimings.startTime} - {order.eatTimings.endTime}
+                  </p>
+                </div>
+              )}
+
+              {order.takeawayTimings && (
+                <div>
+                  <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Takeaway Timings</label>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}
+                  </p>
+                </div>
+              )}
+
+              {order.waitingTime && (
+                <div>
+                  <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Waiting Time</label>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {order.waitingTime.startTime} - {order.waitingTime.endTime}
+                  </p>
+                </div>
+              )}
 
               {order.dineInstructions && (
                 <div>
@@ -409,7 +422,14 @@ const OrderDetailPage = () => {
             
             <div className="space-y-6">
               {order.items.map((item, index) => (
-                <div key={item._id} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0 last:pb-0">
+                <div key={item._id} className={`border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0 last:pb-0 ${item.isPostOrder ? 'bg-blue-50 dark:bg-blue-900/10 p-4 rounded-lg border-l-4 border-l-blue-500' : ''}`}>
+                  {item.isPostOrder && (
+                    <div className="mb-3 flex items-center gap-2">
+                      <span className="text-xs font-semibold bg-blue-600 text-white px-3 py-1 rounded-full">
+                        🔄 Post Ordered Item
+                      </span>
+                    </div>
+                  )}
                   <div className="flex gap-4">
                     {/* Item Image */}
                     <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">

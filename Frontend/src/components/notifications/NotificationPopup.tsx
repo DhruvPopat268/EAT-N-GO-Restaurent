@@ -48,14 +48,15 @@ const NotificationPopup: React.FC = () => {
       {notifications.map((notification) => {
         const timings = notification.orderType === 'dine-in' ? notification.eatTimings : notification.takeawayTimings;
         const isOrderRequest = !!notification.orderRequestNo;
+        const isUpdatedOrder = !!notification.isUpdated;
         
         return (
           <div
             key={notification.id}
-            className={`bg-white dark:bg-gray-900 border-l-4 ${isOrderRequest ? 'border-l-amber-600 dark:border-l-amber-500' : 'border-l-black dark:border-l-white'} rounded-2xl shadow-2xl overflow-hidden w-full max-w-md animate-slide-in relative transform transition-all duration-300 hover:scale-105`}
+            className={`bg-white dark:bg-gray-900 border-l-4 ${isOrderRequest ? 'border-l-amber-600 dark:border-l-amber-500' : isUpdatedOrder ? 'border-l-blue-600 dark:border-l-blue-500' : 'border-l-black dark:border-l-white'} rounded-2xl shadow-2xl overflow-hidden w-full max-w-md animate-slide-in relative transform transition-all duration-300 hover:scale-105`}
           >
             {/* Header with pulsing indicator */}
-            <div className={`${isOrderRequest ? 'bg-amber-600 dark:bg-amber-500' : 'bg-black dark:bg-white'} px-6 py-4 relative overflow-hidden`}>
+            <div className={`${isOrderRequest ? 'bg-amber-600 dark:bg-amber-500' : isUpdatedOrder ? 'bg-blue-600 dark:bg-blue-500' : 'bg-black dark:bg-white'} px-6 py-4 relative overflow-hidden`}>
               <div className="absolute inset-0 bg-white/10 dark:bg-black/10 animate-pulse"></div>
               <div className="relative flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -63,7 +64,7 @@ const NotificationPopup: React.FC = () => {
                   <div className="w-3 h-3 bg-white dark:bg-black rounded-full animate-ping animation-delay-200"></div>
                   <div className="w-3 h-3 bg-white dark:bg-black rounded-full animate-ping animation-delay-400"></div>
                   <h3 className="text-white dark:text-black font-bold text-lg ml-2">
-                    {isOrderRequest ? '📋 Order Request!' : '🍽️ New Order Alert!'}
+                    {isOrderRequest ? '📋 Order Request!' : isUpdatedOrder ? '🔄 Order Updated!' : '🍽️ New Order Alert!'}
                   </h3>
                 </div>
                 <button
@@ -202,10 +203,10 @@ const NotificationPopup: React.FC = () => {
                     router.push(detailUrl);
                     dismissNotification(notification.id);
                   }}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 ${isOrderRequest ? 'bg-amber-600 dark:bg-amber-500 text-white hover:bg-amber-700 dark:hover:bg-amber-600' : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'} rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 ${isOrderRequest ? 'bg-amber-600 dark:bg-amber-500 text-white hover:bg-amber-700 dark:hover:bg-amber-600' : isUpdatedOrder ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600' : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'} rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg`}
                 >
                   <Eye className="w-4 h-4" />
-                  {isOrderRequest ? 'View Order Req' : 'View Order'}
+                  {isOrderRequest ? 'View Order Req' : isUpdatedOrder ? 'View Updated Order' : 'View Order'}
                 </button>
                 <button
                   onClick={() => dismissNotification(notification.id)}

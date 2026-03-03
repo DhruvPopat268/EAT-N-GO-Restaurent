@@ -47,6 +47,7 @@ interface Order {
   totalAmount: number;
   status: string;
   items: any[];
+  hasPostOrderItems?: boolean;
   waitingTime?: {
     startTime: string;
     endTime: string;
@@ -279,6 +280,7 @@ const CompletedOrdersPage = () => {
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order Type</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Items Count</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Waiting Time</TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Post Order</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Payment Method</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Total Amount</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</TableCell>
@@ -290,7 +292,7 @@ const CompletedOrdersPage = () => {
               </TableHeader>
               <TableBody>
                 {orders.map((order, index) => (
-                  <TableRow key={order._id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'}`}>
+                  <TableRow key={order._id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${order.hasPostOrderItems ? 'bg-gray-200 dark:bg-gray-700' : index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/20'}`}>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm font-mono font-semibold text-gray-900 dark:text-white">
                         #{order.orderNo}
@@ -328,6 +330,15 @@ const CompletedOrdersPage = () => {
                       <span className="text-sm text-gray-900 dark:text-white">
                         {order.waitingTime ? `${order.waitingTime.startTime} - ${order.waitingTime.endTime}` : '-'}
                       </span>
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                      {order.hasPostOrderItems ? (
+                        <span className="text-xs font-semibold bg-blue-600 text-white px-2 py-1 rounded-full">
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500">No</span>
+                      )}
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm text-gray-900 dark:text-white capitalize">

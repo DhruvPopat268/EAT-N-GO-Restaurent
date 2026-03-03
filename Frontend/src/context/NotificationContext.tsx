@@ -5,6 +5,7 @@ interface OrderNotification {
   id: string;
   orderNo: string;
   orderRequestNo?: string; // Add this to track if it's an order request
+  isUpdated?: boolean; // Add this to track if it's an updated order
   customerName: string;
   orderType: string;
   totalAmount: number;
