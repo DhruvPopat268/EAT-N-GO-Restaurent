@@ -20,6 +20,7 @@ interface RestaurantData {
     restaurantName: string;
     ownerName: string;
     foodCategory: string;
+    alcoholAvailable: boolean;
     cuisineTypes: string[];
     otherCuisine?: string;
     operatingHours: {
@@ -350,6 +351,21 @@ export default function Profile() {
                   </select>
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">{data.basicInfo.foodCategory}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Alcohol Available</label>
+                {isEditing ? (
+                  <select
+                    value={data.basicInfo.alcoholAvailable ? 'true' : 'false'}
+                    onChange={(e) => handleInputChange('basicInfo', 'alcoholAvailable', e.target.value === 'true')}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                ) : (
+                  <p className="p-2 bg-gray-50 rounded">{data.basicInfo.alcoholAvailable ? 'Yes' : 'No'}</p>
                 )}
               </div>
               <div>
