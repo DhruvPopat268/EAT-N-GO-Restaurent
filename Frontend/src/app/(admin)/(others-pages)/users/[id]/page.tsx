@@ -1,106 +1,94 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
 import EmailIcon from '@mui/icons-material/Email';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import axiosInstance from "@/utils/axiosConfig";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import Pagination from "@/components/tables/Pagination";
 
-interface CustomerDetail {
-  id: string;
-  name: string;
-  email: string;
+interface UserDetail {
+  _id: string;
+  fullName?: string;
+  email?: string;
   phone: string;
-  address: string;
-  numberOfOrders: number;
-  totalOrderAmount: number;
-  avgOrderValue: number;
-  completedOrders: number;
-  joinedAt: string;
-  status: "active" | "inactive";
-  customerType: string;
+  status: boolean;
+  totalOrders: number;
+  totalOrdersAmount: number;
+  avgOrderAmount: number;
+  totalCompletedOrders: number;
+  currency?: {
+    code: string;
+    name: string;
+    symbol: string;
+  };
+  orderPagination?: {
+    currentPage: number;
+    totalPages: number;
+    totalOrders: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
 }
 
 interface Order {
-  id: string;
-  orderId: string;
+  _id: string;
+  orderNo: number;
   status: string;
-  amount: number;
-  date: string;
+  orderAmount: number;
+  createdAt: string;
+  currency?: {
+    code: string;
+    name: string;
+    symbol: string;
+  };
 }
 
-const CustomerDetailPage = () => {
+const UserDetailPage = () => {
   const params = useParams();
-  const customerId = params.id as string;
+  const userId = params.id as string;
+  const [userData, setUserData] = useState<UserDetail | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderLimit, setOrderLimit] = useState(10);
 
-  // Mock customer data based on screenshot
-  const customerData: CustomerDetail = {
-    id: customerId,
-    name: "Alice Brown",
-    email: "alice.brown@email.com",
-    phone: "+91 9876543213",
-    address: "654 Pine Road, Chennai, Tamil Nadu",
-    numberOfOrders: 5,
-    totalOrderAmount: 1450,
-    avgOrderValue: 290,
-    completedOrders: 2,
-    joinedAt: "2023-06-15",
-    status: "active",
-    customerType: "Premium Customer"
-  };
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        const { data } = await axiosInstance.get(`/api/restaurants/users/${userId}`, {
+          params: {
+            orderPage,
+            orderLimit
+          }
+        });
+        if (data.success) {
+          setUserData(data.data);
+          setOrders(data.data.orders || []);
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Mock order history based on screenshot
-  const orderHistory: Order[] = [
-    {
-      id: "1",
-      orderId: "#ORD004",
-      status: "Delivered",
-      amount: 280,
-      date: "2024-01-15"
-    },
-    {
-      id: "2",
-      orderId: "#ORD013",
-      status: "Pending",
-      amount: 350,
-      date: "2024-01-14"
-    },
-    {
-      id: "3",
-      orderId: "#ORD014",
-      status: "Preparing",
-      amount: 420,
-      date: "2024-01-13"
-    },
-    {
-      id: "4",
-      orderId: "#ORD021",
-      status: "Delivered",
-      amount: 180,
-      date: "2024-01-12"
-    },
-    {
-      id: "5",
-      orderId: "#ORD022",
-      status: "Cancelled",
-      amount: 220,
-      date: "2024-01-11"
-    }
-  ];
+    fetchUserDetails();
+  }, [userId, orderPage, orderLimit]);
 
   const getStatusBadge = (status: string) => {
     const baseClasses = "inline-flex items-center px-3 py-1 rounded-full text-xs font-medium";
     switch (status.toLowerCase()) {
-      case "delivered":
+      case "completed":
         return `${baseClasses} bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400`;
       case "cancelled":
         return `${baseClasses} bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400`;
-      case "pending":
+      case "confirmed":
         return `${baseClasses} bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400`;
       case "preparing":
         return `${baseClasses} bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400`;
@@ -109,17 +97,35 @@ const CustomerDetailPage = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" text="Loading user details..." />
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <p className="text-gray-500 dark:text-gray-400">User not found</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Back Arrow and Profile Header */}
       <div className="flex items-center gap-4 mb-4">
         <Link
-          href="/customers"
+          href="/users"
           className="inline-flex items-center justify-center w-10 h-10 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
         >
           <ArrowBackIcon className="w-5 h-5" />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Customer Details</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Details</h1>
       </div>
       
       {/* Profile Header */}
@@ -129,8 +135,7 @@ const CustomerDetailPage = () => {
             <PersonIcon className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-white">{customerData.name}</h1>
-            <p className="text-gray-300">{customerData.customerType}</p>
+            <h1 className="text-xl font-semibold text-white">{userData.fullName || userData.phone}</h1>
           </div>
         </div>
       </div>
@@ -145,7 +150,7 @@ const CustomerDetailPage = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
-              <p className="font-medium text-gray-900 dark:text-white">{customerData.phone}</p>
+              <p className="font-medium text-gray-900 dark:text-white">{userData.phone}</p>
             </div>
           </div>
         </div>
@@ -158,20 +163,20 @@ const CustomerDetailPage = () => {
             </div>
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
-              <p className="font-medium text-gray-900 dark:text-white">{customerData.email}</p>
+              <p className="font-medium text-gray-900 dark:text-white">{userData.email || 'N/A'}</p>
             </div>
           </div>
         </div>
 
-        {/* Location */}
+        {/* Status */}
         <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
-              <LocationOnIcon className="w-5 h-5 text-white" />
+              <PersonIcon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Location</p>
-              <p className="font-medium text-gray-900 dark:text-white">{customerData.address}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>
+              <p className="font-medium text-gray-900 dark:text-white">{userData.status ? 'Active' : 'Inactive'}</p>
             </div>
           </div>
         </div>
@@ -188,7 +193,7 @@ const CustomerDetailPage = () => {
               </svg>
             </div>
             <div>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{customerData.numberOfOrders}</p>
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{userData.totalOrders}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Orders</p>
               <p className="text-xs text-gray-500 dark:text-gray-500">All time</p>
             </div>
@@ -205,7 +210,7 @@ const CustomerDetailPage = () => {
               </svg>
             </div>
             <div>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">₹{customerData.totalOrderAmount}</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{userData.currency?.symbol || '₹'}{userData.totalOrdersAmount}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Total Amount</p>
               <p className="text-xs text-gray-500 dark:text-gray-500">Lifetime value</p>
             </div>
@@ -221,7 +226,7 @@ const CustomerDetailPage = () => {
               </svg>
             </div>
             <div>
-              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">₹{customerData.avgOrderValue}</p>
+              <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">{userData.currency?.symbol || '₹'}{userData.avgOrderAmount.toFixed(2)}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Avg Order Value</p>
               <p className="text-xs text-gray-500 dark:text-gray-500">Per order</p>
             </div>
@@ -237,7 +242,7 @@ const CustomerDetailPage = () => {
               </svg>
             </div>
             <div>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{customerData.completedOrders}</p>
+              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{userData.totalCompletedOrders}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
               <p className="text-xs text-gray-500 dark:text-gray-500">Successful orders</p>
             </div>
@@ -250,9 +255,24 @@ const CustomerDetailPage = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Order History</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Track all customer orders</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Track all user orders</p>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{orderHistory.length} total orders</p>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600 dark:text-gray-400">Records per page:</label>
+            <select
+              value={orderLimit}
+              onChange={(e) => {
+                setOrderLimit(parseInt(e.target.value));
+                setOrderPage(1);
+              }}
+              className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+          </div>
         </div>
         
         <div className="overflow-hidden">
@@ -260,10 +280,7 @@ const CustomerDetailPage = () => {
             <TableHeader>
               <TableRow className="bg-gray-50 dark:bg-gray-800/50">
                 <TableCell isHeader className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  INDEX
-                </TableCell>
-                <TableCell isHeader className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                  ORDER ID
+                  ORDER NO
                 </TableCell>
                 <TableCell isHeader className="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                   STATUS
@@ -281,20 +298,14 @@ const CustomerDetailPage = () => {
             </TableHeader>
 
             <TableBody>
-              {orderHistory.map((order, index) => (
+              {orders.map((order, index) => (
                 <TableRow 
-                  key={order.id} 
+                  key={order.orderNo} 
                   className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-200 dark:border-gray-700"
                 >
                   <TableCell className="px-4 py-4">
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {order.id}
-                    </span>
-                  </TableCell>
-                  
-                  <TableCell className="px-4 py-4">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {order.orderId}
+                      #{order.orderNo}
                     </span>
                   </TableCell>
                   
@@ -306,20 +317,25 @@ const CustomerDetailPage = () => {
                   
                   <TableCell className="px-4 py-4">
                     <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                      ₹{order.amount}
+                      {order.currency?.symbol || userData.currency?.symbol || '₹'}{order.orderAmount}
                     </span>
                   </TableCell>
                   
                   <TableCell className="px-4 py-4">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {order.date}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(order.createdAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false })}
+                      </span>
+                    </div>
                   </TableCell>
                   
                   <TableCell className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <Link
-                        href={`/orders/detail/${order.orderId.replace('#', '')}`}
+                        href={`/orders/detail/${order._id}`}
                         className="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
                       >
                         <VisibilityIcon className="w-4 h-4" />
@@ -332,8 +348,19 @@ const CustomerDetailPage = () => {
           </Table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {userData.orderPagination && userData.orderPagination.totalPages > 1 && (
+        <div className="flex justify-end">
+          <Pagination
+            currentPage={userData.orderPagination.currentPage}
+            totalPages={userData.orderPagination.totalPages}
+            onPageChange={setOrderPage}
+          />
+        </div>
+      )}
     </div>
   );
 };
 
-export default CustomerDetailPage;
+export default UserDetailPage;
