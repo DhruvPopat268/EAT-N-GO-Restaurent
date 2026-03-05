@@ -22,9 +22,14 @@ interface Rating {
     orderType: string;
     createdAt: string;
   };
-  rating: number;
-  feedback: string;
-  ratedAt: string;
+  restaurantRating: number;
+  itemRatings: {
+    itemId: string;
+    rating: number;
+    _id: string;
+  }[];
+  restaurantFeedback: string;
+  createdAt: string;
 }
 
 export default function UserRatingsPage() {
@@ -259,14 +264,14 @@ export default function UserRatingsPage() {
                       {rating.orderId?.orderNo || "-"}
                     </td>
                     <td className="px-6 py-4">
-                      {renderStars(rating.rating || 0)}
+                      {renderStars(rating.restaurantRating || 0)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100 max-w-xs truncate">
-                      {rating.feedback || "-"}
+                      {rating.restaurantFeedback || "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-gray-100">{rating.ratedAt ? formatDateTime(rating.ratedAt).date : "-"}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{rating.ratedAt ? formatDateTime(rating.ratedAt).time : "-"}</div>
+                      <div className="text-sm text-gray-900 dark:text-gray-100">{rating.createdAt ? formatDateTime(rating.createdAt).date : "-"}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{rating.createdAt ? formatDateTime(rating.createdAt).time : "-"}</div>
                     </td>
                     <td className="px-6 py-4">
                       <button
