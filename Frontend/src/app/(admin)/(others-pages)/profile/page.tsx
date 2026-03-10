@@ -417,8 +417,14 @@ export default function Profile() {
                       ...data.basicInfo.operatingHours,
                       openTime: e.target.value
                     })}
-                    onClick={(e) => e.currentTarget.showPicker?.()}
-                    className="w-full p-2 border rounded cursor-pointer"
+                    onFocus={(e) => {
+                      try {
+                        e.currentTarget.showPicker?.();
+                      } catch (error) {
+                        // Fallback for browsers that don't support showPicker
+                      }
+                    }}
+                    className="w-full p-2 border rounded"
                   />
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">
@@ -437,8 +443,14 @@ export default function Profile() {
                       ...data.basicInfo.operatingHours,
                       closeTime: e.target.value
                     })}
-                    onClick={(e) => e.currentTarget.showPicker?.()}
-                    className="w-full p-2 border rounded cursor-pointer"
+                    onFocus={(e) => {
+                      try {
+                        e.currentTarget.showPicker?.();
+                      } catch (error) {
+                        // Fallback for browsers that don't support showPicker
+                      }
+                    }}
+                    className="w-full p-2 border rounded"
                   />
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">
