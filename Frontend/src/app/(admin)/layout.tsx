@@ -104,6 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       panCard: 'PAN Card',
       bankStatement: 'Bank Statement',
       foodLicense: 'Food License',
+      LicenceForAlchoholSelling: 'Licence For Alcohol Selling',
       restaurantImages: 'Restaurant Images',
       addressInfo: 'Address Information'
     };
@@ -115,7 +116,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     'Contact Details': ['email', 'phone', 'address', 'city', 'state', 'country', 'pincode'],
     'Address Information': ['addressInfo'],
     'Business Details': ['licenseNumber', 'gstNumber', 'bankAccount', 'ifscCode', 'description'],
-    'Documents': ['businessLicense', 'gstCertificate', 'panCard', 'bankStatement', 'foodLicense', 'restaurantImages']
+    'Documents': ['businessLicense', 'gstCertificate', 'panCard', 'bankStatement', 'foodLicense', 'LicenceForAlchoholSelling', 'restaurantImages']
   };
 
   const cuisineTypes = ['Indian', 'Chinese', 'Italian', 'Mexican', 'Thai', 'Japanese', 'American', 'Mediterranean', 'French', 'Korean', 'Vietnamese', 'Lebanese', 'Greek', 'Spanish', 'Turkish', 'Continental', 'Other'];
@@ -377,6 +378,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       case 'panCard':
       case 'bankStatement':
       case 'foodLicense':
+      case 'LicenceForAlchoholSelling':
         return (
           <input
             type="file"
