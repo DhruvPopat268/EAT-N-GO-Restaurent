@@ -9,6 +9,16 @@ import { formatDateTime } from '@/utils/dateUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
+// Utility function to format time to 12-hour format with AM/PM
+const formatTimeTo12Hour = (time24: string): string => {
+  if (!time24) return '-';
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours, 10);
+  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 interface OrderRequest {
   _id: string;
   orderRequestNo: number;
@@ -302,17 +312,17 @@ export default function CompletedOrderRequests() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
                     {order.eatTimings && (
-                      <div>{order.eatTimings.startTime} - {order.eatTimings.endTime}</div>
+                      <div>{formatTimeTo12Hour(order.eatTimings.startTime)} - {formatTimeTo12Hour(order.eatTimings.endTime)}</div>
                     )}
                     {order.takeawayTimings && (
-                      <div>{order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}</div>
+                      <div>{formatTimeTo12Hour(order.takeawayTimings.startTime)} - {formatTimeTo12Hour(order.takeawayTimings.endTime)}</div>
                     )}
                     {!order.eatTimings && !order.takeawayTimings && (
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-                    {order.waitingTime ? `${order.waitingTime.startTime} - ${order.waitingTime.endTime}` : '-'}
+                    {order.waitingTime ? `${formatTimeTo12Hour(order.waitingTime.startTime)} - ${formatTimeTo12Hour(order.waitingTime.endTime)}` : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">

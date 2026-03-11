@@ -8,6 +8,20 @@ import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
+// Utility function to format time to 12-hour format with AM/PM
+const formatTimeTo12Hour = (time24: string): string => {
+  if (!time24) return '-';
+  
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours, 10);
+  
+  if (isNaN(hour24) || hour24 < 0 || hour24 > 23) return '-';
+  
+  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 interface Reason {
   _id: string;
   reasonType: 'waiting' | 'rejected';
@@ -33,6 +47,10 @@ interface OrderDetail {
   numberOfGuests?: number;
   dineInstructions?: string;
   eatTimings?: {
+    startTime: string;
+    endTime: string;
+  };
+  takeawayTimings?: {
     startTime: string;
     endTime: string;
   };
@@ -265,38 +283,26 @@ export default function OrderRequestDetail() {
                 <p className="text-gray-900 dark:text-white capitalize">{order.orderType}</p>
               </div>
               
-              {order.waitingTime && order.status === 'waiting' && (
+              {(order.eatTimings || order.takeawayTimings) && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {order.eatTimings ? 'Eat Timings' : 'Takeaway Timings'}
+                  </label>
+                  <p className="text-gray-900 dark:text-white">
+                    {order.eatTimings 
+                      ? `${formatTimeTo12Hour(order.eatTimings.startTime)} - ${formatTimeTo12Hour(order.eatTimings.endTime)}`
+                      : `${formatTimeTo12Hour(order.takeawayTimings.startTime)} - ${formatTimeTo12Hour(order.takeawayTimings.endTime)}`
+                    }
+                  </p>
+                </div>
+              )}
+              
+              {order.waitingTime && (
                 <div>
                   <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Waiting Time</label>
-                  <p className="text-gray-900 dark:text-white">{order.waitingTime.startTime} - {order.waitingTime.endTime}</p>
+                  <p className="text-gray-900 dark:text-white">{formatTimeTo12Hour(order.waitingTime.startTime)} - {formatTimeTo12Hour(order.waitingTime.endTime)}</p>
                 </div>
               )}
-              
-              {order.statusUpdatedBy && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Status Updated By</label>
-                  <p className="text-gray-900 dark:text-white capitalize">{order.statusUpdatedBy}</p>
-                </div>
-              )}
-              
-              {order.numberOfGuests && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Guests</label>
-                  <p className="text-gray-900 dark:text-white">{order.numberOfGuests}</p>
-                </div>
-              )}
-              
-              {order.eatTimings ? (
-                <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Eat Timings</label>
-                  <p className="text-gray-900 dark:text-white">{order.eatTimings.startTime} - {order.eatTimings.endTime}</p>
-                </div>
-              ) : order.orderType === 'takeaway' ? (
-                <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Order Type</label>
-                  <p className="text-gray-900 dark:text-white">Takeaway Order</p>
-                </div>
-              ) : null}
               
               {order.dineInstructions && (
                 <div>
@@ -307,7 +313,7 @@ export default function OrderRequestDetail() {
               
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Order Req Date</label>
-                <p className="text-gray-900 dark:text-white">{new Date(order.createdAt).toLocaleDateString('en-GB').replace(/\//g, '/').slice(0, -2) + new Date(order.createdAt).toLocaleDateString('en-GB').slice(-2)} - {new Date(order.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
+                <p className="text-gray-900 dark:text-white">{new Date(order.createdAt).toLocaleDateString('en-GB').replace(/\//g, '/').slice(0, -2) + new Date(order.createdAt).toLocaleDateString('en-GB').slice(-2)} - {new Date(order.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</p>
               </div>
             </div>
             
@@ -510,56 +516,28 @@ export default function OrderRequestDetail() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Start Time
                     </label>
-                    <div className="flex gap-2">
-                      <select
-                        value={startTime.split(':')[0] || ''}
-                        onChange={(e) => setStartTime(`${e.target.value}:${startTime.split(':')[1] || '00'}`)}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="">HH</option>
-                        {Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0')).map(h => (
-                          <option key={h} value={h}>{h}</option>
-                        ))}
-                      </select>
-                      <span className="flex items-center text-gray-500">:</span>
-                      <select
-                        value={startTime.split(':')[1] || ''}
-                        onChange={(e) => setStartTime(`${startTime.split(':')[0] || '00'}:${e.target.value}`)}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="">MM</option>
-                        {Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0')).map(m => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
+                    <div className="relative">
+                      <input
+                        type="time"
+                        step="60"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
                     </div>
                   </div>
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       End Time
                     </label>
-                    <div className="flex gap-2">
-                      <select
-                        value={endTime.split(':')[0] || ''}
-                        onChange={(e) => setEndTime(`${e.target.value}:${endTime.split(':')[1] || '00'}`)}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="">HH</option>
-                        {Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0')).map(h => (
-                          <option key={h} value={h}>{h}</option>
-                        ))}
-                      </select>
-                      <span className="flex items-center text-gray-500">:</span>
-                      <select
-                        value={endTime.split(':')[1] || ''}
-                        onChange={(e) => setEndTime(`${endTime.split(':')[0] || '00'}:${e.target.value}`)}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                      >
-                        <option value="">MM</option>
-                        {Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0')).map(m => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
+                    <div className="relative">
+                      <input
+                        type="time"
+                        step="60"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
                     </div>
                   </div>
                 </>

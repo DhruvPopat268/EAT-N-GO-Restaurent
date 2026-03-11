@@ -10,6 +10,17 @@ import { formatDateTime } from '@/utils/dateUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
+// Utility function to format time to 12-hour format with AM/PM
+const formatTimeTo12Hour = (time24: string): string => {
+  if (!time24) return '-';
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours, 10);
+  if (isNaN(hour24) || hour24 < 0 || hour24 > 23) return '-';
+  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 const ordersApi = {
   getCancelled: async (page: number = 1, limit: number = 10, filters?: any) => {
     const params = new URLSearchParams({
@@ -96,6 +107,7 @@ const CancelledOrdersPage = () => {
   const [orderTypeFilter, setOrderTypeFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showLocationModal, setShowLocationModal] = useState<{show: boolean, order: Order | null}>({show: false, order: null});
 
   // Add order notifications
   useOrderNotifications("Cancelled Orders");
@@ -313,12 +325,12 @@ const CancelledOrdersPage = () => {
                       </div>
                       {order.eatTimings && (
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Eat: {order.eatTimings.startTime} - {order.eatTimings.endTime}
+                          Eat: {formatTimeTo12Hour(order.eatTimings.startTime)} - {formatTimeTo12Hour(order.eatTimings.endTime)}
                         </div>
                       )}
                       {order.takeawayTimings && (
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Takeaway: {order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}
+                          Takeaway: {formatTimeTo12Hour(order.takeawayTimings.startTime)} - {formatTimeTo12Hour(order.takeawayTimings.endTime)}
                         </div>
                       )}
                     </TableCell>
@@ -329,7 +341,7 @@ const CancelledOrdersPage = () => {
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm text-gray-900 dark:text-white">
-                        {order.waitingTime ? `${order.waitingTime.startTime} - ${order.waitingTime.endTime}` : '-'}
+                        {order.waitingTime ? `${formatTimeTo12Hour(order.waitingTime.startTime)} - ${formatTimeTo12Hour(order.waitingTime.endTime)}` : '-'}
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
@@ -363,11 +375,11 @@ const CancelledOrdersPage = () => {
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <div>{formatDateTime(order.createdAt).date}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.createdAt).time}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(order.createdAt).time)}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <div>{formatDateTime(order.updatedAt).date}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(order.updatedAt).time)}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center">
                       {order.userCurrentLocation ? (

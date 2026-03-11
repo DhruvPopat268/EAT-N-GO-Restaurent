@@ -12,6 +12,16 @@ import { playNotificationSound } from '@/utils/soundUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
+// Utility function to format time to 12-hour format with AM/PM
+const formatTimeTo12Hour = (time24: string): string => {
+  if (!time24) return '-';
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours, 10);
+  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 interface Reason {
   _id: string;
   reasonType: 'waiting' | 'rejected';
@@ -425,10 +435,10 @@ export default function PendingOrderRequests() {
             {/* Timings */}
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
               {order.eatTimings && (
-                <div>{order.eatTimings.startTime} - {order.eatTimings.endTime}</div>
+                <div>{formatTimeTo12Hour(order.eatTimings.startTime)} - {formatTimeTo12Hour(order.eatTimings.endTime)}</div>
               )}
               {order.takeawayTimings && (
-                <div>{order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}</div>
+                <div>{formatTimeTo12Hour(order.takeawayTimings.startTime)} - {formatTimeTo12Hour(order.takeawayTimings.endTime)}</div>
               )}
               {!order.eatTimings && !order.takeawayTimings && (
                 <span className="text-gray-400">-</span>
@@ -437,7 +447,7 @@ export default function PendingOrderRequests() {
 
             {/* Waiting Time */}
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-              {order.waitingTime ? `${order.waitingTime.startTime} - ${order.waitingTime.endTime}` : '-'}
+              {order.waitingTime ? `${formatTimeTo12Hour(order.waitingTime.startTime)} - ${formatTimeTo12Hour(order.waitingTime.endTime)}` : '-'}
             </td>
 
             {/* Status */}
@@ -626,56 +636,28 @@ export default function PendingOrderRequests() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Start Time
               </label>
-              <div className="flex gap-2">
-                <select
-                  value={startTime.split(':')[0] || ''}
-                  onChange={(e) => setStartTime(`${e.target.value}:${startTime.split(':')[1] || '00'}`)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">HH</option>
-                  {Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0')).map(h => (
-                    <option key={h} value={h}>{h}</option>
-                  ))}
-                </select>
-                <span className="flex items-center text-gray-500">:</span>
-                <select
-                  value={startTime.split(':')[1] || ''}
-                  onChange={(e) => setStartTime(`${startTime.split(':')[0] || '00'}:${e.target.value}`)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">MM</option>
-                  {Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0')).map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+              <div className="relative">
+                <input
+                  type="time"
+                  step="60"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
               </div>
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 End Time
               </label>
-              <div className="flex gap-2">
-                <select
-                  value={endTime.split(':')[0] || ''}
-                  onChange={(e) => setEndTime(`${e.target.value}:${endTime.split(':')[1] || '00'}`)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">HH</option>
-                  {Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0')).map(h => (
-                    <option key={h} value={h}>{h}</option>
-                  ))}
-                </select>
-                <span className="flex items-center text-gray-500">:</span>
-                <select
-                  value={endTime.split(':')[1] || ''}
-                  onChange={(e) => setEndTime(`${endTime.split(':')[0] || '00'}:${e.target.value}`)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">MM</option>
-                  {Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0')).map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
+              <div className="relative">
+                <input
+                  type="time"
+                  step="60"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                />
               </div>
             </div>
           </>

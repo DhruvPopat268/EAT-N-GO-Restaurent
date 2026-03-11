@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axiosInstance from "@/utils/axiosConfig";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -62,6 +62,8 @@ export default function Profile() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [primaryImageIndex, setPrimaryImageIndex] = useState<number>(-1);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const openTimeRef = useRef<HTMLInputElement>(null);
+  const closeTimeRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   // Add order notifications
@@ -120,24 +122,24 @@ export default function Profile() {
     if (files) {
       const existingCount = formData?.documents?.restaurantImages?.length || 0;
       const totalCount = existingCount + files.length;
-      
+
       if (totalCount > 10) {
         toast.error(`Only 10 restaurant images are allowed. You currently have ${existingCount} images and are trying to add ${files.length} more.`);
         return;
       }
-      
+
       setNewImages(Array.from(files));
     }
   };
 
   const setPrimaryImage = (imageUrl: string, index: number) => {
     if (!formData) return;
-    
+
     // If setting an existing gallery image as primary
     if (index >= 0) {
       const updatedImages = [...formData.documents.restaurantImages];
       // DON'T remove the image from gallery, keep it there
-      
+
       // If there's already a primary image, check if it exists in gallery before adding
       if (formData.documents.primaryImage) {
         // Only add the old primary image if it's not already in the gallery
@@ -146,7 +148,7 @@ export default function Profile() {
           updatedImages.unshift(formData.documents.primaryImage); // Add old primary to start of gallery
         }
       }
-      
+
       setFormData({
         ...formData,
         documents: {
@@ -182,7 +184,7 @@ export default function Profile() {
     const updatedImages = [...formData.documents.restaurantImages];
     const [movedImage] = updatedImages.splice(fromIndex, 1);
     updatedImages.splice(toIndex, 0, movedImage);
-    
+
     setFormData({
       ...formData,
       documents: {
@@ -229,27 +231,27 @@ export default function Profile() {
   const handleSave = async () => {
     try {
       const updateFormData = new FormData();
-      
+
       // Add form data
       updateFormData.append('basicInfo', JSON.stringify(formData?.basicInfo));
       updateFormData.append('contactDetails', JSON.stringify(formData?.contactDetails));
       updateFormData.append('businessDetails', JSON.stringify(formData?.businessDetails));
-      
+
       // Add primary image if exists
       if (formData?.documents?.primaryImage) {
         updateFormData.append('primaryImage', formData.documents.primaryImage);
       }
-      
+
       // Add existing gallery images as URLs
       (formData?.documents?.restaurantImages || []).forEach(imageUrl => {
         updateFormData.append('restaurantImages', imageUrl);
       });
-      
+
       // Add new images as files
       newImages.forEach(file => {
         updateFormData.append('restaurantImages', file);
       });
-      
+
       const response = await axiosInstance.patch(
         '/api/restaurants/updateData',
         updateFormData,
@@ -259,7 +261,7 @@ export default function Profile() {
           }
         }
       );
-      
+
       setRestaurantData(response.data.data);
       setFormData(response.data.data);
       setIsEditing(false);
@@ -296,16 +298,15 @@ export default function Profile() {
           <button
             onClick={() => isEditing ? handleSave() : setIsEditing(true)}
             disabled={isEditing && isImageLimitExceeded}
-            className={`px-4 py-2 rounded-lg ${
-              isEditing && isImageLimitExceeded
-                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                : 'bg-blue-500 text-white hover:bg-blue-600'
-            }`}
+            className={`px-4 py-2 rounded-lg ${isEditing && isImageLimitExceeded
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+              : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
           >
             {isEditing ? 'Save' : 'Edit'}
           </button>
         </div>
-        
+
         <div className="space-y-6">
           {/* Basic Info */}
           <div className="p-4 border rounded-lg">
@@ -409,23 +410,38 @@ export default function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-1">Opening Time</label>
                 {isEditing ? (
-                  <input
-                    type="time"
-                    step="60"
-                    value={data.basicInfo.operatingHours?.openTime || ''}
-                    onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
-                      ...data.basicInfo.operatingHours,
-                      openTime: e.target.value
-                    })}
-                    onFocus={(e) => {
-                      try {
-                        e.currentTarget.showPicker?.();
-                      } catch (error) {
-                        // Fallback for browsers that don't support showPicker
-                      }
-                    }}
-                    className="w-full p-2 border rounded"
-                  />
+                  <div className="relative">
+                    <input
+                      ref={openTimeRef}
+                      type="time"
+                      step="60"
+                      value={data.basicInfo.operatingHours?.openTime || ''}
+                      onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
+                        ...data.basicInfo.operatingHours,
+                        openTime: e.target.value
+                      })}
+                      className="w-full p-2 border rounded"
+                    />
+                    <div 
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 cursor-pointer flex items-center justify-center"
+                      onClick={() => {
+                        if (openTimeRef.current) {
+                          openTimeRef.current.focus();
+                          try {
+                            openTimeRef.current.showPicker?.();
+                          } catch (error) {
+                            // Fallback - try to trigger click on the hidden picker
+                            openTimeRef.current.click();
+                          }
+                        }
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                      </svg>
+                    </div>
+                  </div>
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">
                     {data.basicInfo.operatingHours?.openTime || 'Not set'}
@@ -435,23 +451,38 @@ export default function Profile() {
               <div>
                 <label className="block text-sm font-medium mb-1">Closing Time</label>
                 {isEditing ? (
-                  <input
-                    type="time"
-                    step="60"
-                    value={data.basicInfo.operatingHours?.closeTime || ''}
-                    onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
-                      ...data.basicInfo.operatingHours,
-                      closeTime: e.target.value
-                    })}
-                    onFocus={(e) => {
-                      try {
-                        e.currentTarget.showPicker?.();
-                      } catch (error) {
-                        // Fallback for browsers that don't support showPicker
-                      }
-                    }}
-                    className="w-full p-2 border rounded"
-                  />
+                  <div className="relative">
+                    <input
+                      ref={closeTimeRef}
+                      type="time"
+                      step="60"
+                      value={data.basicInfo.operatingHours?.closeTime || ''}
+                      onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
+                        ...data.basicInfo.operatingHours,
+                        closeTime: e.target.value
+                      })}
+                      className="w-full p-2 border rounded"
+                    />
+                    <div 
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 w-6 h-6 cursor-pointer flex items-center justify-center"
+                      onClick={() => {
+                        if (closeTimeRef.current) {
+                          closeTimeRef.current.focus();
+                          try {
+                            closeTimeRef.current.showPicker?.();
+                          } catch (error) {
+                            // Fallback - try to trigger click on the hidden picker
+                            closeTimeRef.current.click();
+                          }
+                        }
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                      </svg>
+                    </div>
+                  </div>
                 ) : (
                   <p className="p-2 bg-gray-50 rounded">
                     {data.basicInfo.operatingHours?.closeTime || 'Not set'}
@@ -492,7 +523,7 @@ export default function Profile() {
                 )}
               </div>
             </div>
-            
+
             {/* Location Section */}
             <div className="border-t pt-4">
               <h5 className="font-medium mb-3">Restaurant Location</h5>
@@ -661,7 +692,7 @@ export default function Profile() {
           {/* Restaurant Images */}
           <div className="p-4 border rounded-lg">
             <h4 className="font-semibold mb-3">Restaurant Images</h4>
-            
+
             {/* Primary Image Section */}
             <div className="mb-6">
               <h5 className="font-medium mb-2">Primary Image</h5>
@@ -722,15 +753,13 @@ export default function Profile() {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {data.documents.restaurantImages.map((image, index) => {
                   const isPrimaryImage = image === data.documents.primaryImage;
-                  
+
                   return (
-                    <div 
-                      key={index} 
-                      className={`relative ${
-                        isEditing ? 'cursor-move' : ''
-                      } ${
-                        draggedIndex === index ? 'opacity-50' : ''
-                      }`}
+                    <div
+                      key={index}
+                      className={`relative ${isEditing ? 'cursor-move' : ''
+                        } ${draggedIndex === index ? 'opacity-50' : ''
+                        }`}
                       draggable={isEditing}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={handleDragOver}
@@ -780,7 +809,7 @@ export default function Profile() {
 
       {/* Image Preview Modal */}
       {previewImage && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]"
           onClick={() => setPreviewImage(null)}
         >

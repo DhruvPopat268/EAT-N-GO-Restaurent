@@ -12,6 +12,16 @@ import { playNotificationSound } from '@/utils/soundUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
 
+// Utility function to format time to 12-hour format with AM/PM
+const formatTimeTo12Hour = (time24: string): string => {
+  if (!time24) return '-';
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours, 10);
+  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 interface Reason {
   _id: string;
   reasonType: 'waiting' | 'rejected' | 'cancelled';
@@ -409,10 +419,10 @@ export default function WaitingOrderRequests() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
                     {order.eatTimings && (
-                      <div>{order.eatTimings.startTime} - {order.eatTimings.endTime}</div>
+                      <div>{formatTimeTo12Hour(order.eatTimings.startTime)} - {formatTimeTo12Hour(order.eatTimings.endTime)}</div>
                     )}
                     {order.takeawayTimings && (
-                      <div>{order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}</div>
+                      <div>{formatTimeTo12Hour(order.takeawayTimings.startTime)} - {formatTimeTo12Hour(order.takeawayTimings.endTime)}</div>
                     )}
                     {!order.eatTimings && !order.takeawayTimings && (
                       <span className="text-gray-400">-</span>
@@ -424,7 +434,7 @@ export default function WaitingOrderRequests() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
-                    {order.waitingTime ? `${order.waitingTime.startTime} - ${order.waitingTime.endTime}` : '-'}
+                    {order.waitingTime ? `${formatTimeTo12Hour(order.waitingTime.startTime)} - ${formatTimeTo12Hour(order.waitingTime.endTime)}` : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
                     {getCurrency()}{order.cartTotal}

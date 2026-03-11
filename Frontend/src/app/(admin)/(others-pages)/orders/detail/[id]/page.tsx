@@ -7,6 +7,17 @@ import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import { formatDateTime } from '@/utils/dateUtils';
 
+// Utility function to format time to 12-hour format with AM/PM
+const formatTimeTo12Hour = (time24: string): string => {
+  if (!time24) return '-';
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours, 10);
+  if (isNaN(hour24) || hour24 < 0 || hour24 > 23) return '-';
+  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 const orderDetailApi = {
   getById: async (orderId: string) => {
     const response = await axiosInstance.get(`/api/restaurants/orders/detail/${orderId}`);
@@ -319,25 +330,21 @@ const OrderDetailPage = () => {
               <div>
                 <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Order Type</label>
                 <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{order.orderType}</p>
-                {order.numberOfGuests && (
+                {order.numberOfGuests != 0 && (
                   <p className="text-xs text-gray-500 dark:text-gray-500">Guests: {order.numberOfGuests}</p>
                 )}
               </div>
 
-              {order.eatTimings && (
+              {(order.eatTimings || order.takeawayTimings) && (
                 <div>
-                  <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Eat Timings</label>
+                  <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {order.eatTimings ? 'Eat Timings' : 'Takeaway Timings'}
+                  </label>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {order.eatTimings.startTime} - {order.eatTimings.endTime}
-                  </p>
-                </div>
-              )}
-
-              {order.takeawayTimings && (
-                <div>
-                  <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Takeaway Timings</label>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}
+                    {order.eatTimings 
+                      ? `${formatTimeTo12Hour(order.eatTimings.startTime)} - ${formatTimeTo12Hour(order.eatTimings.endTime)}`
+                      : `${formatTimeTo12Hour(order.takeawayTimings.startTime)} - ${formatTimeTo12Hour(order.takeawayTimings.endTime)}`
+                    }
                   </p>
                 </div>
               )}
@@ -346,7 +353,7 @@ const OrderDetailPage = () => {
                 <div>
                   <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Waiting Time</label>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {order.waitingTime.startTime} - {order.waitingTime.endTime}
+                    {formatTimeTo12Hour(order.waitingTime.startTime)} - {formatTimeTo12Hour(order.waitingTime.endTime)}
                   </p>
                 </div>
               )}
@@ -367,7 +374,7 @@ const OrderDetailPage = () => {
                 <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Created At</label>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   <div>{formatDateTime(order.createdAt).date}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.createdAt).time}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(order.createdAt).time)}</div>
                 </div>
               </div>
 
@@ -375,7 +382,7 @@ const OrderDetailPage = () => {
                 <label className="text-sm font-semibold text-gray-800 dark:text-gray-200">Updated At</label>
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   <div>{formatDateTime(order.updatedAt).date}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(order.updatedAt).time)}</div>
                 </div>
               </div>
 

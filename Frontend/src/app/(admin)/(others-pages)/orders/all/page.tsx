@@ -12,19 +12,33 @@ import { useSocket } from '@/context/SocketContext';
 import { useNotification } from '@/context/NotificationContext';
 import { playNotificationSound } from '@/utils/soundUtils';
 
+// Utility function to format time to 12-hour format with AM/PM
+const formatTimeTo12Hour = (time24: string): string => {
+  if (!time24) return '-';
+
+  const [hours, minutes] = time24.split(':');
+  const hour24 = parseInt(hours, 10);
+
+  if (isNaN(hour24) || hour24 < 0 || hour24 > 23) return '-';
+
+  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+  const ampm = hour24 >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 const ordersApi = {
   getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString()
     });
-    
+
     if (filters?.search) params.append('search', filters.search);
     if (filters?.status) params.append('status', filters.status);
     if (filters?.orderType) params.append('orderType', filters.orderType);
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
-    
+
     const response = await axiosInstance.get(`/api/restaurants/orders/all?${params.toString()}`);
     return response.data;
   },
@@ -122,13 +136,13 @@ const getAvailableStatuses = (currentStatus: string, orderType: string) => {
     'ready': orderType === 'dine-in' ? 'served' : 'completed',
     'served': 'completed'
   };
-  
+
   const nextStatus = statusFlow[currentStatus as keyof typeof statusFlow];
-  
+
   if (nextStatus) {
     return [currentStatus, nextStatus];
   }
-  
+
   // For final statuses (completed, cancelled, refunded), show only current
   return [currentStatus];
 };
@@ -144,7 +158,7 @@ const AllOrdersPage = () => {
     totalCount: 0,
     totalPages: 0
   });
-  
+
   // Get currency from localStorage
   const getCurrency = () => {
     try {
@@ -154,16 +168,16 @@ const AllOrdersPage = () => {
       return '₹';
     }
   };
-  
+
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
-  const [statusConfirm, setStatusConfirm] = useState<{show: boolean, orderId: string, orderNo: string, currentStatus: string, newStatus: string}>({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
-  const [showCancelModal, setShowCancelModal] = useState<{show: boolean, orderId: string, orderNo: string}>({show: false, orderId: '', orderNo: ''});
+  const [statusConfirm, setStatusConfirm] = useState<{ show: boolean, orderId: string, orderNo: string, currentStatus: string, newStatus: string }>({ show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: '' });
+  const [showCancelModal, setShowCancelModal] = useState<{ show: boolean, orderId: string, orderNo: string }>({ show: false, orderId: '', orderNo: '' });
   const [reasons, setReasons] = useState<Reason[]>([]);
   const [selectedReason, setSelectedReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState<{show: boolean, order: Order | null}>({show: false, order: null});
+  const [showLocationModal, setShowLocationModal] = useState<{ show: boolean, order: Order | null }>({ show: false, order: null });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [orderTypeFilter, setOrderTypeFilter] = useState('');
@@ -192,7 +206,7 @@ const AllOrdersPage = () => {
           itemsCount: orderData.items?.length || 0,
           timestamp: new Date().toISOString()
         });
-        
+
         if (pagination.page === 1 && !search && !statusFilter && !orderTypeFilter && !startDate && !endDate) {
           setOrders(prev => [orderData, ...prev]);
           setPagination(prev => ({ ...prev, totalCount: prev.totalCount + 1 }));
@@ -266,14 +280,14 @@ const AllOrdersPage = () => {
       toast.error(error.response?.data?.message || 'Failed to cancel order');
     } finally {
       setActionLoading(false);
-      setShowCancelModal({show: false, orderId: '', orderNo: ''});
+      setShowCancelModal({ show: false, orderId: '', orderNo: '' });
       setSelectedReason('');
     }
   };
 
   const openCancelModal = async (orderId: string, orderNo: string) => {
     await fetchReasons();
-    setShowCancelModal({show: true, orderId, orderNo});
+    setShowCancelModal({ show: true, orderId, orderNo });
   };
 
   const handleStatusChange = (orderId: string, orderNo: string, currentStatus: string, newStatus: string) => {
@@ -291,7 +305,7 @@ const AllOrdersPage = () => {
     try {
       let response;
       const { newStatus, orderId } = statusConfirm;
-      
+
       switch (newStatus) {
         case 'confirmed':
           response = await ordersApi.updateToConfirmed(orderId);
@@ -311,12 +325,12 @@ const AllOrdersPage = () => {
         case 'cancelled':
           // Don't call API here, open modal instead
           openCancelModal(orderId, orderNo);
-          setStatusConfirm({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
+          setStatusConfirm({ show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: '' });
           return;
         default:
           throw new Error('Invalid status update');
       }
-      
+
       if (response.success) {
         toast.success(`Order status updated to ${statusConfirm.newStatus}`);
         fetchOrders();
@@ -328,7 +342,7 @@ const AllOrdersPage = () => {
       toast.error('Error updating status');
     } finally {
       setUpdatingStatus(null);
-      setStatusConfirm({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''});
+      setStatusConfirm({ show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: '' });
     }
   };
 
@@ -503,12 +517,12 @@ const AllOrdersPage = () => {
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order No</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">User Info</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order Type</TableCell>
-                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Items Count</TableCell>
+                  <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Items Count</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Waiting Time</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Post Order</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Payment Method</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Total Amount</TableCell>
-                 
+
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Update Status To</TableCell>
                   <TableCell isHeader className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Cancelled By</TableCell>
@@ -540,12 +554,12 @@ const AllOrdersPage = () => {
                       </div>
                       {order.eatTimings && (
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Eat: {order.eatTimings.startTime} - {order.eatTimings.endTime}
+                          {formatTimeTo12Hour(order.eatTimings.startTime)} - {formatTimeTo12Hour(order.eatTimings.endTime)}
                         </div>
                       )}
                       {order.takeawayTimings && (
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          Takeaway: {order.takeawayTimings.startTime} - {order.takeawayTimings.endTime}
+                          {formatTimeTo12Hour(order.takeawayTimings.startTime)} - {formatTimeTo12Hour(order.takeawayTimings.endTime)}
                         </div>
                       )}
                     </TableCell>
@@ -554,9 +568,9 @@ const AllOrdersPage = () => {
                         {order.items?.length || 0}
                       </span>
                     </TableCell>
-                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <span className="text-sm text-gray-900 dark:text-white">
-                        {order.waitingTime ? `${order.waitingTime.startTime} - ${order.waitingTime.endTime}` : '-'}
+                        {order.waitingTime ? `${formatTimeTo12Hour(order.waitingTime.startTime)} - ${formatTimeTo12Hour(order.waitingTime.endTime)}` : '-'}
                       </span>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
@@ -578,18 +592,17 @@ const AllOrdersPage = () => {
                         {getCurrency()}{order.totalAmount}
                       </span>
                     </TableCell>
-                   
+
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                        order.status === 'preparing' ? 'bg-yellow-100 text-yellow-800' :
-                        order.status === 'ready' ? 'bg-purple-100 text-purple-800' :
-                        order.status === 'served' ? 'bg-indigo-100 text-indigo-800' :
-                        order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        order.status === 'refunded' ? 'bg-gray-100 text-gray-800' :
-                        'bg-gray-100 text-gray-800'
-                      } capitalize`}>
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${order.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                          order.status === 'preparing' ? 'bg-yellow-100 text-yellow-800' :
+                            order.status === 'ready' ? 'bg-purple-100 text-purple-800' :
+                              order.status === 'served' ? 'bg-indigo-100 text-indigo-800' :
+                                order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                  order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                    order.status === 'refunded' ? 'bg-gray-100 text-gray-800' :
+                                      'bg-gray-100 text-gray-800'
+                        } capitalize`}>
                         {order.status}
                       </span>
                     </TableCell>
@@ -629,15 +642,15 @@ const AllOrdersPage = () => {
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <div>{formatDateTime(order.createdAt).date}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.createdAt).time}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(order.createdAt).time)}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 whitespace-nowrap text-center">
                       <div>{formatDateTime(order.updatedAt).date}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(order.updatedAt).time}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(order.updatedAt).time)}</div>
                     </TableCell>
                     <TableCell className="px-6 py-4 text-center">
                       {order.userCurrentLocation ? (
-                        <button onClick={() => setShowLocationModal({show: true, order})} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm underline">
+                        <button onClick={() => setShowLocationModal({ show: true, order })} className="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm underline">
                           See Location
                         </button>
                       ) : '-'}
@@ -680,7 +693,7 @@ const AllOrdersPage = () => {
             </p>
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setStatusConfirm({show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: ''})}
+                onClick={() => setStatusConfirm({ show: false, orderId: '', orderNo: '', currentStatus: '', newStatus: '' })}
                 className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
               >
                 Cancel
@@ -726,16 +739,15 @@ const AllOrdersPage = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</label>
-                  <p className={`text-sm font-medium capitalize px-2 py-1 rounded-full inline-block ${
-                    viewingOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                    viewingOrder.status === 'preparing' ? 'bg-yellow-100 text-yellow-800' :
-                    viewingOrder.status === 'ready' ? 'bg-purple-100 text-purple-800' :
-                    viewingOrder.status === 'served' ? 'bg-indigo-100 text-indigo-800' :
-                    viewingOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    viewingOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    viewingOrder.status === 'refunded' ? 'bg-gray-100 text-gray-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>{viewingOrder.status}</p>
+                  <p className={`text-sm font-medium capitalize px-2 py-1 rounded-full inline-block ${viewingOrder.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                      viewingOrder.status === 'preparing' ? 'bg-yellow-100 text-yellow-800' :
+                        viewingOrder.status === 'ready' ? 'bg-purple-100 text-purple-800' :
+                          viewingOrder.status === 'served' ? 'bg-indigo-100 text-indigo-800' :
+                            viewingOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              viewingOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                viewingOrder.status === 'refunded' ? 'bg-gray-100 text-gray-800' :
+                                  'bg-gray-100 text-gray-800'
+                    }`}>{viewingOrder.status}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Customer</label>
@@ -746,10 +758,10 @@ const AllOrdersPage = () => {
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Order Type</label>
                   <p className="text-sm text-gray-900 dark:text-white capitalize">{viewingOrder.orderType}</p>
                   {viewingOrder.eatTimings && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Eat Timings: {viewingOrder.eatTimings.startTime} - {viewingOrder.eatTimings.endTime}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Eat Timings: {formatTimeTo12Hour(viewingOrder.eatTimings.startTime)} - {formatTimeTo12Hour(viewingOrder.eatTimings.endTime)}</p>
                   )}
                   {viewingOrder.takeawayTimings && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Takeaway Timings: {viewingOrder.takeawayTimings.startTime} - {viewingOrder.takeawayTimings.endTime}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Takeaway Timings: {formatTimeTo12Hour(viewingOrder.takeawayTimings.startTime)} - {formatTimeTo12Hour(viewingOrder.takeawayTimings.endTime)}</p>
                   )}
                 </div>
                 <div>
@@ -763,12 +775,12 @@ const AllOrdersPage = () => {
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Created At</label>
                   <div className="text-sm text-gray-900 dark:text-white">{formatDateTime(viewingOrder.createdAt).date}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(viewingOrder.createdAt).time}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(viewingOrder.createdAt).time)}</div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Updated At</label>
                   <div className="text-sm text-gray-900 dark:text-white">{formatDateTime(viewingOrder.updatedAt).date}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatDateTime(viewingOrder.updatedAt).time}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(viewingOrder.updatedAt).time)}</div>
                 </div>
               </div>
             </div>
@@ -797,7 +809,7 @@ const AllOrdersPage = () => {
                 </div>
               </div>
               <div className="flex justify-end mt-6">
-                <button onClick={() => setShowLocationModal({show: false, order: null})} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                <button onClick={() => setShowLocationModal({ show: false, order: null })} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
                   Close
                 </button>
               </div>
@@ -836,7 +848,7 @@ const AllOrdersPage = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowCancelModal({show: false, orderId: '', orderNo: ''});
+                    setShowCancelModal({ show: false, orderId: '', orderNo: '' });
                     setSelectedReason('');
                   }}
                   disabled={actionLoading}
