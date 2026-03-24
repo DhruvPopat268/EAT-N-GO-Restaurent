@@ -246,9 +246,14 @@ const AppSidebar: React.FC = () => {
           subItems: [
             { name: "Configuration", path: "/table-bookings/config" },
             { name: "All Bookings", path: "/table-bookings/all" },
-            { name: "Today's Bookings", path: "/table-bookings/today" },
-            { name: "Upcoming Bookings", path: "/table-bookings/upcoming" },
-            { name: "Cancelled Bookings", path: "/table-bookings/cancelled" }
+            { name: "Pending", path: "/table-bookings/pending" },
+            { name: "Confirmed", path: "/table-bookings/confirmed" },
+            { name: "Arrived", path: "/table-bookings/arrived" },
+            { name: "Seated", path: "/table-bookings/seated" },
+            { name: "Completed", path: "/table-bookings/completed" },
+            { name: "Cancelled", path: "/table-bookings/cancelled" },
+            { name: "Expired", path: "/table-bookings/expired" },
+            { name: "No Show", path: "/table-bookings/no_show" }
           ]
         }
       ] : menuType === "orders" ? [
@@ -536,9 +541,12 @@ return (
                     { name: "All", path: "/table-bookings/all" },
                     { name: "Pending", path: "/table-bookings/pending" },
                     { name: "Confirmed", path: "/table-bookings/confirmed" },
-                    { name: "Rejected", path: "/table-bookings/rejected" },
+                    { name: "Arrived", path: "/table-bookings/arrived" },
+                    { name: "Seated", path: "/table-bookings/seated" },
+                    { name: "Completed", path: "/table-bookings/completed" },
                     { name: "Cancelled", path: "/table-bookings/cancelled" },
-                    { name: "Completed", path: "/table-bookings/completed" }
+                    { name: "Expired", path: "/table-bookings/expired" },
+                    { name: "No Show", path: "/table-bookings/no_show" }
                   ]
                 }
               ], "table-bookings")}
