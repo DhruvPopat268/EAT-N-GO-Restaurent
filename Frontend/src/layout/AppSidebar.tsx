@@ -49,6 +49,37 @@ const ordersItems: NavItem[] = [
   },
 ];
 
+const orderRequestsItems: NavItem[] = [
+  {
+    name: "Order Requests",
+    icon: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+        </svg>
+    ),
+    subItems: [
+      { name: "All", path: "/order-requests/all" },
+      { name: "Pending", path: "/order-requests/pending" },
+      { name: "Confirmed", path: "/order-requests/confirmed" },
+      { name: "Completed", path: "/order-requests/completed" },
+      { name: "Rejected", path: "/order-requests/rejected" },
+      { name: "Cancelled", path: "/order-requests/cancelled" },
+      { name: "Waiting", path: "/order-requests/waiting" },
+      { name: "Reason Management", path: "/order-requests/reason-management" }
+    ]
+  },
+  ...ordersItems,
+  {
+    name: "Order Cancel & Refund Management",
+    icon: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+      </svg>
+    ),
+    path: "/orders/cancel-refund-settings"
+  }
+];
+
 const menuItems: NavItem[] = [
   {
     name: "Menu Management",
@@ -62,6 +93,36 @@ const menuItems: NavItem[] = [
       { name: "Addon Items", path: "/menu/addon-items", pro: false },
     ],
   },
+];
+
+const tableBookingsItems: NavItem[] = [
+  {
+    name: "Configuration",
+    icon: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+      </svg>
+    ),
+    path: "/table-bookings/config"
+  },
+  {
+    name: "Table Bookings",
+    icon: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+      </svg>
+    ),
+    subItems: [
+      { name: "All", path: "/table-bookings/all" },
+      { name: "Pending", path: "/table-bookings/pending" },
+      { name: "Confirmed", path: "/table-bookings/confirmed" },
+      { name: "Not Arrived", path: "/table-bookings/not-arrived" },
+      { name: "Arrived", path: "/table-bookings/arrived" },
+      { name: "Seated", path: "/table-bookings/seated" },
+      { name: "Completed", path: "/table-bookings/completed" },
+      { name: "Cancelled", path: "/table-bookings/cancelled" }
+    ]
+  }
 ];
 
 const othersItems: NavItem[] = [
@@ -235,46 +296,7 @@ const AppSidebar: React.FC = () => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
     ["main", "orders", "menu", "others", "customer", "payment", "help", "rbac", "coupons", "ratings", "table-bookings"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : menuType === "table-bookings" ? [
-        {
-          name: "Table Bookings",
-          icon: (
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-          ),
-          subItems: [
-            { name: "Configuration", path: "/table-bookings/config" },
-            { name: "All Bookings", path: "/table-bookings/all" },
-            { name: "Pending", path: "/table-bookings/pending" },
-            { name: "Confirmed", path: "/table-bookings/confirmed" },
-            { name: "Arrived", path: "/table-bookings/arrived" },
-            { name: "Seated", path: "/table-bookings/seated" },
-            { name: "Completed", path: "/table-bookings/completed" },
-            { name: "Cancelled", path: "/table-bookings/cancelled" },
-            { name: "Expired", path: "/table-bookings/expired" },
-            { name: "No Show", path: "/table-bookings/no_show" }
-          ]
-        }
-      ] : menuType === "orders" ? [
-        {
-          name: "Order Requests",
-          icon: (
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-          ),
-          subItems: [
-            { name: "All", path: "/order-requests/all" },
-            { name: "Pending", path: "/order-requests/pending" },
-            { name: "Confirmed", path: "/order-requests/confirmed" },
-            { name: "Rejected", path: "/order-requests/rejected" },
-            { name: "Waiting", path: "/order-requests/waiting" },
-            { name: "Reason Management", path: "/order-requests/reason-management" }
-          ]
-        },
-        ...ordersItems
-      ] : menuType === "menu" ? menuItems : menuType === "others" ? othersItems : menuType === "customer" ? [
+      const items = menuType === "main" ? navItems : menuType === "table-bookings" ? tableBookingsItems : menuType === "orders" ? orderRequestsItems : menuType === "menu" ? menuItems : menuType === "others" ? othersItems : menuType === "customer" ? [
         {
           name: "Customers",
           icon: (
@@ -449,36 +471,7 @@ return (
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems([
-                {
-                  name: "Order Requests",
-                  icon: (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                    </svg>
-                  ),
-                  subItems: [
-                    { name: "All", path: "/order-requests/all" },
-                    { name: "Pending", path: "/order-requests/pending" },
-                    { name: "Confirmed", path: "/order-requests/confirmed" },
-                    { name: "Completed", path: "/order-requests/completed" },
-                    { name: "Rejected", path: "/order-requests/rejected" },
-                    { name: "Cancelled", path: "/order-requests/cancelled" },
-                    { name: "Waiting", path: "/order-requests/waiting" },
-                    { name: "Reason Management", path: "/order-requests/reason-management" }
-                  ]
-                },
-                ...ordersItems,
-                {
-                  name: "Order Cancel & Refund Management",
-                  icon: (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                    </svg>
-                  ),
-                  path: "/orders/cancel-refund-settings"
-                }
-              ], "orders")}
+              {renderMenuItems(orderRequestsItems, "orders")}
             </div>
 
             <div className="">
@@ -520,36 +513,7 @@ return (
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems([
-                {
-                  name: "Configuration",
-                  icon: (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                    </svg>
-                  ),
-                  path: "/table-bookings/config"
-                },
-                {
-                  name: "Table Bookings",
-                  icon: (
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-                    </svg>
-                  ),
-                  subItems: [
-                    { name: "All", path: "/table-bookings/all" },
-                    { name: "Pending", path: "/table-bookings/pending" },
-                    { name: "Confirmed", path: "/table-bookings/confirmed" },
-                    { name: "Arrived", path: "/table-bookings/arrived" },
-                    { name: "Seated", path: "/table-bookings/seated" },
-                    { name: "Completed", path: "/table-bookings/completed" },
-                    { name: "Cancelled", path: "/table-bookings/cancelled" },
-                    { name: "Expired", path: "/table-bookings/expired" },
-                    { name: "No Show", path: "/table-bookings/no_show" }
-                  ]
-                }
-              ], "table-bookings")}
+              {renderMenuItems(tableBookingsItems, "table-bookings")}
             </div>
 
             <div className="">

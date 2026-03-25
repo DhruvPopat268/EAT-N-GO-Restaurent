@@ -50,16 +50,51 @@ const convertToInputFormat = (dateStr: string): string => {
   return formatDateToYYYYMMDD(dateStr);
 };
 
-// Get available status transitions for pending bookings
+// Get available status transitions based on current status
 const getAvailableStatuses = (currentStatus: string) => {
   const statusFlow = {
-    'pending': ['pending', 'confirmed', 'cancelled']
+    'pending': ['pending', 'confirmed', 'cancelled'],
+    'confirmed': ['confirmed', 'arrived', 'notArrived', 'cancelled'],
+    'arrived': ['arrived', 'seated'],
+    'seated': ['seated', 'completed'],
+    'notArrived': ['notArrived', 'arrived', 'cancelled'],
+    'completed': ['completed'],
+    'cancelled': ['cancelled']
   };
+
   return statusFlow[currentStatus as keyof typeof statusFlow] || [currentStatus];
 };
 
 // Table booking status update API functions
 const tableBookingApi = {
+  updateToArrived: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/arrived', {
+      bookingId
+    });
+    return response.data;
+  },
+
+  updateToSeated: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/seated', {
+      bookingId
+    });
+    return response.data;
+  },
+
+  updateToCompleted: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/completed', {
+      bookingId
+    });
+    return response.data;
+  },
+
+  updateToDidNotArrive: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/did-not-arrive', {
+      bookingId
+    });
+    return response.data;
+  },
+
   cancelBooking: async (bookingId: string, reason: string) => {
     const response = await axiosInstance.patch('/api/restaurants/table-bookings/cancel', {
       bookingId,
@@ -110,7 +145,7 @@ interface PaginationInfo {
   limit: number;
 }
 
-const PendingTableBookings = () => {
+const SeatedTableBookings = () => {
   const [bookings, setBookings] = useState<TableBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -119,15 +154,11 @@ const PendingTableBookings = () => {
     totalCount: 0,
     limit: 10
   });
-  const [showAllocateModal, setShowAllocateModal] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<TableBooking | null>(null);
-  const [tableNumbers, setTableNumbers] = useState<string[]>(['']);
-  const [allocating, setAllocating] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [statusConfirm, setStatusConfirm] = useState<{ show: boolean, bookingId: string, bookingNo: string, currentStatus: string, newStatus: string }>({ show: false, bookingId: '', bookingNo: '', currentStatus: '', newStatus: '' });
   const [showCancelModal, setShowCancelModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
   const [cancelReason, setCancelReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [statusConfirm, setStatusConfirm] = useState<{ show: boolean, bookingId: string, bookingNo: string, currentStatus: string, newStatus: string }>({ show: false, bookingId: '', bookingNo: '', currentStatus: '', newStatus: '' });
   
   // Filter states
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
@@ -141,7 +172,7 @@ const PendingTableBookings = () => {
     endDate: ''
   });
 
-  const fetchPendingBookings = async (page: number = pagination.currentPage, limit: number = pagination.limit, applyFilters: boolean = false) => {
+  const fetchSeatedBookings = async (page: number = pagination.currentPage, limit: number = pagination.limit, applyFilters: boolean = false) => {
     try {
       setLoading(true);
       const params: any = { page, limit };
@@ -159,17 +190,17 @@ const PendingTableBookings = () => {
         }
       }
       
-      const { data } = await axiosInstance.get('/api/restaurants/table-bookings/pending', {
+      const { data } = await axiosInstance.get('/api/restaurants/table-bookings/seated', {
         params
       });
-
+      
       if (data.success) {
         setBookings(data.data.bookings);
         setPagination(data.data.pagination);
       }
     } catch (error) {
-      console.error('Error fetching pending table bookings:', error);
-      toast.error('Error fetching pending table bookings');
+      console.error('Error fetching seated table bookings:', error);
+      toast.error('Error fetching seated table bookings');
     } finally {
       setLoading(false);
     }
@@ -187,18 +218,18 @@ const PendingTableBookings = () => {
   };
 
   useEffect(() => {
-    fetchPendingBookings();
+    fetchSeatedBookings();
     fetchTimeSlots();
   }, []);
 
   const handlePageChange = (page: number) => {
     const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
-    fetchPendingBookings(page, pagination.limit, hasActiveFilters);
+    fetchSeatedBookings(page, pagination.limit, hasActiveFilters);
   };
 
   const handleLimitChange = (limit: number) => {
     const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
-    fetchPendingBookings(1, limit, hasActiveFilters);
+    fetchSeatedBookings(1, limit, hasActiveFilters);
   };
 
   const handleFilterChange = (filterType: 'slot' | 'startDate' | 'endDate', value: string) => {
@@ -215,7 +246,7 @@ const PendingTableBookings = () => {
       if (hasActiveFilters) {
         applyFiltersWithValues(newFilters);
       } else {
-        fetchPendingBookings(1, pagination.limit, false);
+        fetchSeatedBookings(1, pagination.limit, false);
       }
     } else {
       const newFilters = { ...filters, [filterType]: value };
@@ -226,7 +257,7 @@ const PendingTableBookings = () => {
       if (hasActiveFilters) {
         applyFiltersWithValues(newFilters);
       } else {
-        fetchPendingBookings(1, pagination.limit, false);
+        fetchSeatedBookings(1, pagination.limit, false);
       }
     }
   };
@@ -245,7 +276,7 @@ const PendingTableBookings = () => {
     }
     
     setLoading(true);
-    axiosInstance.get('/api/restaurants/table-bookings/pending', { params })
+    axiosInstance.get('/api/restaurants/table-bookings/seated', { params })
       .then(({ data }) => {
         if (data.success) {
           setBookings(data.data.bookings);
@@ -265,98 +296,24 @@ const PendingTableBookings = () => {
     setFilters({ slot: '', startDate: '', endDate: '' });
     setDisplayDates({ startDate: '', endDate: '' });
     // Fetch all data without any filters
-    fetchPendingBookings(1, pagination.limit, false);
+    fetchSeatedBookings(1, pagination.limit, false);
   };
 
   const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
 
-  const handleAllocateTable = (booking: TableBooking) => {
-    setSelectedBooking(booking);
-    // Initialize with only 1 table input by default
-    setTableNumbers(['']);
-    setShowAllocateModal(true);
-  };
-
-  const addTableInput = () => {
-    setTableNumbers([...tableNumbers, '']);
-  };
-
-  const removeTableInput = (index: number) => {
-    if (tableNumbers.length > 1) {
-      const newTableNumbers = tableNumbers.filter((_, i) => i !== index);
-      setTableNumbers(newTableNumbers);
-    }
-  };
-
-  const updateTableNumber = (index: number, value: string) => {
-    const newTableNumbers = [...tableNumbers];
-    newTableNumbers[index] = value;
-    setTableNumbers(newTableNumbers);
-  };
-
-  const handleAllocateTables = async () => {
-    if (!selectedBooking) return;
-
-    // Filter out empty table numbers
-    const validTableNumbers = tableNumbers.filter(num => num.trim() !== '');
-
-    if (validTableNumbers.length === 0) {
-      toast.error('Please enter at least one table number');
-      return;
-    }
-
-    // Check for duplicate table numbers
-    const uniqueTableNumbers = [...new Set(validTableNumbers)];
-    if (uniqueTableNumbers.length !== validTableNumbers.length) {
-      toast.error('Please remove duplicate table numbers');
-      return;
-    }
-
-    setAllocating(true);
-    try {
-      const { data } = await axiosInstance.patch('/api/restaurants/table-bookings/allocate-tables', {
-        tableNumbers: validTableNumbers,
-        bookingId: selectedBooking._id
-      });
-
-      if (data.success) {
-        toast.success('Booking confirmed and tables allocated successfully');
-        setShowAllocateModal(false);
-        setSelectedBooking(null);
-        setTableNumbers(['']);
-        fetchPendingBookings(); // Refresh the bookings list
-      }
-    } catch (error: any) {
-      console.error('Error allocating tables:', error);
-      toast.error(error.response?.data?.message || 'Failed to allocate tables');
-    } finally {
-      setAllocating(false);
-    }
-  };
-
-  const closeAllocateModal = () => {
-    setShowAllocateModal(false);
-    setSelectedBooking(null);
-    setTableNumbers(['']);
-  };
-
   const handleStatusChange = (bookingId: string, bookingNo: string, currentStatus: string, newStatus: string) => {
-    if (newStatus === currentStatus) return;
-
+    console.log('Status change requested:', { bookingId, bookingNo, currentStatus, newStatus });
+    
+    if (newStatus === currentStatus) {
+      console.log('Same status selected, ignoring');
+      return;
+    }
+    
     if (newStatus === 'cancelled') {
       setShowCancelModal({ show: true, bookingId, bookingNo });
       return;
     }
-
-    if (newStatus === 'confirmed') {
-      // Find the booking and show allocate table modal directly
-      const booking = bookings.find(b => b._id === bookingId);
-      if (booking) {
-        handleAllocateTable(booking);
-      }
-      return;
-    }
-
+    
     setStatusConfirm({
       show: true,
       bookingId,
@@ -372,18 +329,36 @@ const PendingTableBookings = () => {
       let response;
       const { newStatus, bookingId } = statusConfirm;
 
+      console.log('Updating status to:', newStatus, 'for booking:', bookingId);
+
       switch (newStatus) {
+        case 'arrived':
+          response = await tableBookingApi.updateToArrived(bookingId);
+          break;
+        case 'seated':
+          response = await tableBookingApi.updateToSeated(bookingId);
+          break;
+        case 'completed':
+          response = await tableBookingApi.updateToCompleted(bookingId);
+          break;
+        case 'notArrived':
+          response = await tableBookingApi.updateToDidNotArrive(bookingId);
+          break;
         default:
           throw new Error(`Invalid status update: ${newStatus}`);
       }
 
+      console.log('API Response:', response);
+
       if (response.success) {
-        toast.success(`Booking status updated to ${newStatus}`);
-        fetchPendingBookings(); // Refresh the bookings list
+        toast.success(`Booking status updated to ${newStatus === 'notArrived' ? 'not arrived' : newStatus}`);
+        fetchSeatedBookings(); // Refresh the bookings list
       } else {
         toast.error(response.message || 'Error updating status');
       }
     } catch (error: any) {
+      console.error('Error updating status:', error);
+      console.error('Error details:', error.response?.data);
       toast.error(error.response?.data?.message || error.message || 'Error updating status');
     } finally {
       setUpdatingStatus(false);
@@ -396,14 +371,13 @@ const PendingTableBookings = () => {
       toast.error('Please enter a cancellation reason');
       return;
     }
-
+    
     setActionLoading(true);
     try {
       const response = await tableBookingApi.cancelBooking(showCancelModal.bookingId, cancelReason);
-
       if (response.success) {
         toast.success('Booking cancelled successfully');
-        fetchPendingBookings(); // Refresh the bookings list
+        fetchSeatedBookings(); // Refresh the bookings list
       } else {
         toast.error(response.message || 'Error cancelling booking');
       }
@@ -422,8 +396,16 @@ const PendingTableBookings = () => {
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
       case 'confirmed':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
+      case 'arrived':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100';
+      case 'seated':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100';
+      case 'completed':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
       case 'cancelled':
         return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
+      case 'notArrived':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
@@ -433,8 +415,8 @@ const PendingTableBookings = () => {
     return (
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pending Table Bookings</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage pending table bookings</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Seated Table Bookings</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage bookings where customers are seated</p>
         </div>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -446,8 +428,8 @@ const PendingTableBookings = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pending Table Bookings</h1>
-        <p className="text-gray-600 dark:text-gray-400">Manage pending table bookings</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Seated Table Bookings</h1>
+        <p className="text-gray-600 dark:text-gray-400">Manage bookings where customers are seated</p>
       </div>
 
       {/* Filters */}
@@ -530,7 +512,7 @@ const PendingTableBookings = () => {
       {/* Results Count and Records Per Page */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Showing {bookings.length} of {pagination.totalCount} pending bookings
+          Showing {bookings.length} of {pagination.totalCount} seated bookings
           {hasActiveFilters && (
             <span className="ml-2 text-blue-600 dark:text-blue-400">
               (filtered)
@@ -593,10 +575,10 @@ const PendingTableBookings = () => {
                     <div className="flex flex-col items-center justify-center">
                       <TableProperties className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        No Pending Table Bookings Found
+                        No Seated Table Bookings Found
                       </h3>
                       <p className="text-gray-500 dark:text-gray-400">
-                        There are currently no pending table bookings to display.
+                        There are currently no bookings where customers are seated.
                       </p>
                     </div>
                   </td>
@@ -622,19 +604,16 @@ const PendingTableBookings = () => {
                       {booking.currency?.symbol || '₹'}{booking.coverCharges}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${booking.coverChargePaymentStatus === 'paid'
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        booking.coverChargePaymentStatus === 'paid' 
                           ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
                           : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                        }`}>
+                      }`}>
                         {booking.coverChargePaymentStatus}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {booking.status === 'cancelled' ? (
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                          Cancelled
-                        </span>
-                      ) : (
+                      {!['completed', 'cancelled'].includes(booking.status) ? (
                         <select
                           value={booking.status}
                           onChange={(e) => handleStatusChange(booking._id, booking.tableBookingNo.toString(), booking.status, e.target.value)}
@@ -643,10 +622,14 @@ const PendingTableBookings = () => {
                         >
                           {getAvailableStatuses(booking.status).map(status => (
                             <option key={status} value={status} className="capitalize">
-                              {status === 'cancelled' ? 'Cancel' : status}
+                              {status === 'notArrived' ? 'Not Arrived' : status}
                             </option>
                           ))}
                         </select>
+                      ) : (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                          {booking.status === 'notArrived' ? 'Not Arrived' : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
@@ -686,118 +669,13 @@ const PendingTableBookings = () => {
         </div>
       )}
 
-      {/* Allocate Tables Modal */}
-      {showAllocateModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md shadow-xl">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Confirm Booking & Assign Tables
-                </h2>
-                <button
-                  onClick={closeAllocateModal}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Booking Details */}
-              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                  Booking Details
-                </h3>
-                <div className="space-y-1 text-sm">
-                  <p className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Booking #:</span> {selectedBooking.tableBookingNo}
-                  </p>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Customer:</span> {selectedBooking.userId.fullName}
-                  </p>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Guests:</span> {selectedBooking.numberOfGuests}
-                  </p>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Date & Time:</span> {selectedBooking.bookingTimings.date} at {formatTimeTo12Hour(selectedBooking.bookingTimings.slotTime)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Table Numbers Input */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Table Numbers
-                  </label>
-                  <button
-                    onClick={addTableInput}
-                    className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-                  >
-                    + Add Table
-                  </button>
-                </div>
-
-                <div className="space-y-3 max-h-48 overflow-y-auto">
-                  {tableNumbers.map((tableNumber, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={tableNumber}
-                        onChange={(e) => updateTableNumber(index, e.target.value)}
-                        placeholder={`Table ${index + 1} number`}
-                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 dark:bg-gray-700 dark:text-white text-sm"
-                      />
-                      {tableNumbers.length > 1 && (
-                        <button
-                          onClick={() => removeTableInput(index)}
-                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
-                          title="Remove table"
-                        >
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={closeAllocateModal}
-                  disabled={allocating}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAllocateTables}
-                  disabled={allocating || tableNumbers.every(num => num.trim() === '')}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {allocating && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  )}
-                  Confirm & Allocate Tables
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Status Confirmation Modal */}
       {statusConfirm.show && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Status Update</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Are you sure you want to update status from <span className="font-semibold capitalize">{statusConfirm.currentStatus}</span> to <span className="font-semibold capitalize">{statusConfirm.newStatus}</span> for booking #{statusConfirm.bookingNo}?
+              Are you sure you want to update status from <span className="font-semibold capitalize">{statusConfirm.currentStatus === 'notArrived' ? 'Not Arrived' : statusConfirm.currentStatus}</span> to <span className="font-semibold capitalize">{statusConfirm.newStatus === 'notArrived' ? 'Not Arrived' : statusConfirm.newStatus}</span> for booking #{statusConfirm.bookingNo}?
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -874,4 +752,4 @@ const PendingTableBookings = () => {
   );
 };
 
-export default PendingTableBookings;
+export default SeatedTableBookings;

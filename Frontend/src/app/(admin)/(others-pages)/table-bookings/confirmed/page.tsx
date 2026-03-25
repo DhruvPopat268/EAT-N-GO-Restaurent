@@ -50,16 +50,51 @@ const convertToInputFormat = (dateStr: string): string => {
   return formatDateToYYYYMMDD(dateStr);
 };
 
-// Get available status transitions for pending bookings
+// Get available status transitions based on current status
 const getAvailableStatuses = (currentStatus: string) => {
   const statusFlow = {
-    'pending': ['pending', 'confirmed', 'cancelled']
+    'pending': ['pending', 'cancelled'], // Removed 'confirmed' since no API route exists
+    'confirmed': ['confirmed', 'arrived', 'notArrived', 'cancelled'],
+    'arrived': ['arrived', 'seated'],
+    'seated': ['seated', 'completed'],
+    'notArrived': ['notArrived', 'arrived', 'cancelled'], // Allow transition to arrived if they show up late
+    'completed': ['completed'],
+    'cancelled': ['cancelled']
   };
+
   return statusFlow[currentStatus as keyof typeof statusFlow] || [currentStatus];
 };
 
 // Table booking status update API functions
 const tableBookingApi = {
+  updateToArrived: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/arrived', {
+      bookingId
+    });
+    return response.data;
+  },
+
+  updateToSeated: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/seated', {
+      bookingId
+    });
+    return response.data;
+  },
+
+  updateToCompleted: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/completed', {
+      bookingId
+    });
+    return response.data;
+  },
+
+  updateToDidNotArrive: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/did-not-arrive', {
+      bookingId
+    });
+    return response.data;
+  },
+
   cancelBooking: async (bookingId: string, reason: string) => {
     const response = await axiosInstance.patch('/api/restaurants/table-bookings/cancel', {
       bookingId,
@@ -110,7 +145,7 @@ interface PaginationInfo {
   limit: number;
 }
 
-const PendingTableBookings = () => {
+const ConfirmedTableBookings = () => {
   const [bookings, setBookings] = useState<TableBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -123,11 +158,11 @@ const PendingTableBookings = () => {
   const [selectedBooking, setSelectedBooking] = useState<TableBooking | null>(null);
   const [tableNumbers, setTableNumbers] = useState<string[]>(['']);
   const [allocating, setAllocating] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [statusConfirm, setStatusConfirm] = useState<{ show: boolean, bookingId: string, bookingNo: string, currentStatus: string, newStatus: string }>({ show: false, bookingId: '', bookingNo: '', currentStatus: '', newStatus: '' });
   const [showCancelModal, setShowCancelModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
   const [cancelReason, setCancelReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [statusConfirm, setStatusConfirm] = useState<{ show: boolean, bookingId: string, bookingNo: string, currentStatus: string, newStatus: string }>({ show: false, bookingId: '', bookingNo: '', currentStatus: '', newStatus: '' });
   
   // Filter states
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
@@ -141,7 +176,7 @@ const PendingTableBookings = () => {
     endDate: ''
   });
 
-  const fetchPendingBookings = async (page: number = pagination.currentPage, limit: number = pagination.limit, applyFilters: boolean = false) => {
+  const fetchConfirmedBookings = async (page: number = pagination.currentPage, limit: number = pagination.limit, applyFilters: boolean = false) => {
     try {
       setLoading(true);
       const params: any = { page, limit };
@@ -159,17 +194,17 @@ const PendingTableBookings = () => {
         }
       }
       
-      const { data } = await axiosInstance.get('/api/restaurants/table-bookings/pending', {
+      const { data } = await axiosInstance.get('/api/restaurants/table-bookings/confirmed', {
         params
       });
-
+      
       if (data.success) {
         setBookings(data.data.bookings);
         setPagination(data.data.pagination);
       }
     } catch (error) {
-      console.error('Error fetching pending table bookings:', error);
-      toast.error('Error fetching pending table bookings');
+      console.error('Error fetching confirmed table bookings:', error);
+      toast.error('Error fetching confirmed table bookings');
     } finally {
       setLoading(false);
     }
@@ -187,18 +222,18 @@ const PendingTableBookings = () => {
   };
 
   useEffect(() => {
-    fetchPendingBookings();
+    fetchConfirmedBookings();
     fetchTimeSlots();
   }, []);
 
   const handlePageChange = (page: number) => {
     const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
-    fetchPendingBookings(page, pagination.limit, hasActiveFilters);
+    fetchConfirmedBookings(page, pagination.limit, hasActiveFilters);
   };
 
   const handleLimitChange = (limit: number) => {
     const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
-    fetchPendingBookings(1, limit, hasActiveFilters);
+    fetchConfirmedBookings(1, limit, hasActiveFilters);
   };
 
   const handleFilterChange = (filterType: 'slot' | 'startDate' | 'endDate', value: string) => {
@@ -215,7 +250,7 @@ const PendingTableBookings = () => {
       if (hasActiveFilters) {
         applyFiltersWithValues(newFilters);
       } else {
-        fetchPendingBookings(1, pagination.limit, false);
+        fetchConfirmedBookings(1, pagination.limit, false);
       }
     } else {
       const newFilters = { ...filters, [filterType]: value };
@@ -226,7 +261,7 @@ const PendingTableBookings = () => {
       if (hasActiveFilters) {
         applyFiltersWithValues(newFilters);
       } else {
-        fetchPendingBookings(1, pagination.limit, false);
+        fetchConfirmedBookings(1, pagination.limit, false);
       }
     }
   };
@@ -245,7 +280,7 @@ const PendingTableBookings = () => {
     }
     
     setLoading(true);
-    axiosInstance.get('/api/restaurants/table-bookings/pending', { params })
+    axiosInstance.get('/api/restaurants/table-bookings/confirmed', { params })
       .then(({ data }) => {
         if (data.success) {
           setBookings(data.data.bookings);
@@ -265,7 +300,7 @@ const PendingTableBookings = () => {
     setFilters({ slot: '', startDate: '', endDate: '' });
     setDisplayDates({ startDate: '', endDate: '' });
     // Fetch all data without any filters
-    fetchPendingBookings(1, pagination.limit, false);
+    fetchConfirmedBookings(1, pagination.limit, false);
   };
 
   const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
@@ -296,16 +331,14 @@ const PendingTableBookings = () => {
 
   const handleAllocateTables = async () => {
     if (!selectedBooking) return;
-
-    // Filter out empty table numbers
+    
     const validTableNumbers = tableNumbers.filter(num => num.trim() !== '');
-
+    
     if (validTableNumbers.length === 0) {
       toast.error('Please enter at least one table number');
       return;
     }
 
-    // Check for duplicate table numbers
     const uniqueTableNumbers = [...new Set(validTableNumbers)];
     if (uniqueTableNumbers.length !== validTableNumbers.length) {
       toast.error('Please remove duplicate table numbers');
@@ -320,11 +353,11 @@ const PendingTableBookings = () => {
       });
 
       if (data.success) {
-        toast.success('Booking confirmed and tables allocated successfully');
+        toast.success('Tables allocated successfully');
         setShowAllocateModal(false);
         setSelectedBooking(null);
         setTableNumbers(['']);
-        fetchPendingBookings(); // Refresh the bookings list
+        fetchConfirmedBookings(); // Refresh the bookings list
       }
     } catch (error: any) {
       console.error('Error allocating tables:', error);
@@ -341,22 +374,18 @@ const PendingTableBookings = () => {
   };
 
   const handleStatusChange = (bookingId: string, bookingNo: string, currentStatus: string, newStatus: string) => {
-    if (newStatus === currentStatus) return;
-
+    console.log('Status change requested:', { bookingId, bookingNo, currentStatus, newStatus });
+    
+    if (newStatus === currentStatus) {
+      console.log('Same status selected, ignoring');
+      return;
+    }
+    
     if (newStatus === 'cancelled') {
       setShowCancelModal({ show: true, bookingId, bookingNo });
       return;
     }
-
-    if (newStatus === 'confirmed') {
-      // Find the booking and show allocate table modal directly
-      const booking = bookings.find(b => b._id === bookingId);
-      if (booking) {
-        handleAllocateTable(booking);
-      }
-      return;
-    }
-
+    
     setStatusConfirm({
       show: true,
       bookingId,
@@ -372,18 +401,36 @@ const PendingTableBookings = () => {
       let response;
       const { newStatus, bookingId } = statusConfirm;
 
+      console.log('Updating status to:', newStatus, 'for booking:', bookingId);
+
       switch (newStatus) {
+        case 'arrived':
+          response = await tableBookingApi.updateToArrived(bookingId);
+          break;
+        case 'seated':
+          response = await tableBookingApi.updateToSeated(bookingId);
+          break;
+        case 'completed':
+          response = await tableBookingApi.updateToCompleted(bookingId);
+          break;
+        case 'notArrived':
+          response = await tableBookingApi.updateToDidNotArrive(bookingId);
+          break;
         default:
           throw new Error(`Invalid status update: ${newStatus}`);
       }
 
+      console.log('API Response:', response);
+
       if (response.success) {
-        toast.success(`Booking status updated to ${newStatus}`);
-        fetchPendingBookings(); // Refresh the bookings list
+        toast.success(`Booking status updated to ${newStatus === 'notArrived' ? 'not arrived' : newStatus}`);
+        fetchConfirmedBookings(); // Refresh the bookings list
       } else {
         toast.error(response.message || 'Error updating status');
       }
     } catch (error: any) {
+      console.error('Error updating status:', error);
+      console.error('Error details:', error.response?.data);
       toast.error(error.response?.data?.message || error.message || 'Error updating status');
     } finally {
       setUpdatingStatus(false);
@@ -396,14 +443,13 @@ const PendingTableBookings = () => {
       toast.error('Please enter a cancellation reason');
       return;
     }
-
+    
     setActionLoading(true);
     try {
       const response = await tableBookingApi.cancelBooking(showCancelModal.bookingId, cancelReason);
-
       if (response.success) {
         toast.success('Booking cancelled successfully');
-        fetchPendingBookings(); // Refresh the bookings list
+        fetchConfirmedBookings(); // Refresh the bookings list
       } else {
         toast.error(response.message || 'Error cancelling booking');
       }
@@ -422,8 +468,16 @@ const PendingTableBookings = () => {
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
       case 'confirmed':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
+      case 'arrived':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100';
+      case 'seated':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100';
+      case 'completed':
+        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
       case 'cancelled':
         return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
+      case 'notArrived':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
@@ -433,8 +487,8 @@ const PendingTableBookings = () => {
     return (
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pending Table Bookings</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage pending table bookings</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Confirmed Table Bookings</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage confirmed table bookings</p>
         </div>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -446,8 +500,8 @@ const PendingTableBookings = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pending Table Bookings</h1>
-        <p className="text-gray-600 dark:text-gray-400">Manage pending table bookings</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Confirmed Table Bookings</h1>
+        <p className="text-gray-600 dark:text-gray-400">Manage confirmed table bookings</p>
       </div>
 
       {/* Filters */}
@@ -530,7 +584,7 @@ const PendingTableBookings = () => {
       {/* Results Count and Records Per Page */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Showing {bookings.length} of {pagination.totalCount} pending bookings
+          Showing {bookings.length} of {pagination.totalCount} confirmed bookings
           {hasActiveFilters && (
             <span className="ml-2 text-blue-600 dark:text-blue-400">
               (filtered)
@@ -593,10 +647,10 @@ const PendingTableBookings = () => {
                     <div className="flex flex-col items-center justify-center">
                       <TableProperties className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        No Pending Table Bookings Found
+                        No Confirmed Table Bookings Found
                       </h3>
                       <p className="text-gray-500 dark:text-gray-400">
-                        There are currently no pending table bookings to display.
+                        There are currently no confirmed table bookings to display.
                       </p>
                     </div>
                   </td>
@@ -622,19 +676,16 @@ const PendingTableBookings = () => {
                       {booking.currency?.symbol || '₹'}{booking.coverCharges}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${booking.coverChargePaymentStatus === 'paid'
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        booking.coverChargePaymentStatus === 'paid' 
                           ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
                           : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                        }`}>
+                      }`}>
                         {booking.coverChargePaymentStatus}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {booking.status === 'cancelled' ? (
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                          Cancelled
-                        </span>
-                      ) : (
+                      {!['completed', 'cancelled'].includes(booking.status) ? (
                         <select
                           value={booking.status}
                           onChange={(e) => handleStatusChange(booking._id, booking.tableBookingNo.toString(), booking.status, e.target.value)}
@@ -643,10 +694,14 @@ const PendingTableBookings = () => {
                         >
                           {getAvailableStatuses(booking.status).map(status => (
                             <option key={status} value={status} className="capitalize">
-                              {status === 'cancelled' ? 'Cancel' : status}
+                              {status === 'notArrived' ? 'Not Arrived' : status}
                             </option>
                           ))}
                         </select>
+                      ) : (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                          {booking.status === 'notArrived' ? 'Not Arrived' : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
@@ -693,7 +748,7 @@ const PendingTableBookings = () => {
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Confirm Booking & Assign Tables
+                  Allocate Tables
                 </h2>
                 <button
                   onClick={closeAllocateModal}
@@ -739,7 +794,7 @@ const PendingTableBookings = () => {
                     + Add Table
                   </button>
                 </div>
-
+                
                 <div className="space-y-3 max-h-48 overflow-y-auto">
                   {tableNumbers.map((tableNumber, index) => (
                     <div key={index} className="flex items-center gap-2">
@@ -783,7 +838,7 @@ const PendingTableBookings = () => {
                   {allocating && (
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   )}
-                  Confirm & Allocate Tables
+                  Allocate Tables
                 </button>
               </div>
             </div>
@@ -797,7 +852,7 @@ const PendingTableBookings = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Status Update</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Are you sure you want to update status from <span className="font-semibold capitalize">{statusConfirm.currentStatus}</span> to <span className="font-semibold capitalize">{statusConfirm.newStatus}</span> for booking #{statusConfirm.bookingNo}?
+              Are you sure you want to update status from <span className="font-semibold capitalize">{statusConfirm.currentStatus === 'notArrived' ? 'Not Arrived' : statusConfirm.currentStatus}</span> to <span className="font-semibold capitalize">{statusConfirm.newStatus === 'notArrived' ? 'Not Arrived' : statusConfirm.newStatus}</span> for booking #{statusConfirm.bookingNo}?
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -874,4 +929,4 @@ const PendingTableBookings = () => {
   );
 };
 
-export default PendingTableBookings;
+export default ConfirmedTableBookings;
