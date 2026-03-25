@@ -122,7 +122,7 @@ const TodaysBookingsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Today's Bookings
+              Today's Active Bookings
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
               View active time slots with online bookings for today
@@ -215,7 +215,7 @@ const TodaysBookingsPage = () => {
             <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <p className="text-sm text-blue-800 dark:text-blue-200">
                 <strong>Info:</strong> Showing only active time slots that have online bookings. 
-                Click on any slot to view all bookings for that time slot today.
+                Click on any slot to view active bookings for that time slot today (excludes completed/cancelled bookings).
                 Capacity is calculated as: Max Guests - (Online Guests + Offline Guests)
               </p>
             </div>
