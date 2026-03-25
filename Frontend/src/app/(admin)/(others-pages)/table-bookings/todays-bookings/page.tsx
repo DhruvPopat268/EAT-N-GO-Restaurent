@@ -144,11 +144,25 @@ const TodaysBookingsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
             <div className="flex items-center gap-3">
+              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <Calendar className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Today's Active Bookings</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {activeSlots.totalActiveBookings}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <div className="flex items-center gap-3">
               <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Active Slots</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Today's Active Slots</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {activeSlots.totalActiveSlots}
                 </p>
@@ -158,27 +172,13 @@ const TodaysBookingsPage = () => {
 
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Online Bookings</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {activeSlots.slots.reduce((sum, slot) => sum + slot.onlineGuests, 0)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
-            <div className="flex items-center gap-3">
               <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                <Calendar className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Slot Duration</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Today's Active Online Guests</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {activeSlots.slotDuration} min
+                  {activeSlots.totalOnlineGuests}
                 </p>
               </div>
             </div>
