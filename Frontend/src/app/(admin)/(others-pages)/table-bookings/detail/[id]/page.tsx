@@ -398,7 +398,7 @@ const TableBookingDetailPage = () => {
           <div className="space-y-3">
             <div>
               <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Date</label>
-              <p className="text-sm text-gray-900 dark:text-white">{booking.bookingTimings.date}</p>
+              <p className="text-sm text-gray-900 dark:text-white">{formatDateToDDMMYY(booking.bookingTimings.date)}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Time Slot</label>

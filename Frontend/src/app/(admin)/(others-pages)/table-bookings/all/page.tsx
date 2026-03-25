@@ -5,6 +5,7 @@ import axiosInstance from "@/utils/axiosConfig";
 import { toast } from "@/utils/toast";
 import { Eye, TableProperties } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 // Utility function to format time to 12-hour format with AM/PM
 const formatTimeTo12Hour = (time24: string): string => {
@@ -163,13 +164,15 @@ const AllTableBookings = () => {
   const [showCancelModal, setShowCancelModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
   const [cancelReason, setCancelReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const searchParams = useSearchParams();
 
   // Filter states
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [filters, setFilters] = useState({
     slot: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    activeBookings: false
   });
   const [displayDates, setDisplayDates] = useState({
     startDate: '',
@@ -187,9 +190,12 @@ const AllTableBookings = () => {
         }
         if (filters.startDate || filters.endDate) {
           params.date = JSON.stringify({
-            startDate: filters.startDate ? convertToDisplayFormat(filters.startDate) : undefined,
-            endDate: filters.endDate ? convertToDisplayFormat(filters.endDate) : undefined
+            startDate: filters.startDate || undefined,
+            endDate: filters.endDate || undefined
           });
+        }
+        if (filters.activeBookings) {
+          params.activeBookings = 'true';
         }
       }
 
@@ -221,9 +227,70 @@ const AllTableBookings = () => {
   };
 
   useEffect(() => {
-    fetchBookings();
+    // Check for URL parameters and set filters
+    const slot = searchParams.get('slot');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const activeBookings = searchParams.get('activeBookings');
+
+    if (slot || startDate || endDate || activeBookings) {
+      const newFilters = {
+        slot: slot || '',
+        startDate: startDate || '',
+        endDate: endDate || '',
+        activeBookings: activeBookings === 'true'
+      };
+      
+      const newDisplayDates = {
+        startDate: startDate ? convertToDisplayFormat(startDate) : '',
+        endDate: endDate ? convertToDisplayFormat(endDate) : ''
+      };
+
+      setFilters(newFilters);
+      setDisplayDates(newDisplayDates);
+      
+      // Fetch bookings with filters applied
+      fetchBookingsWithFilters(newFilters);
+    } else {
+      fetchBookings();
+    }
+    
     fetchTimeSlots();
-  }, []);
+  }, [searchParams]);
+
+  const fetchBookingsWithFilters = async (filterValues: typeof filters) => {
+    try {
+      setLoading(true);
+      const params: any = { page: 1, limit: pagination.limit };
+
+      if (filterValues.slot) {
+        params.slot = filterValues.slot;
+      }
+      if (filterValues.startDate || filterValues.endDate) {
+        params.date = JSON.stringify({
+          startDate: filterValues.startDate || undefined,
+          endDate: filterValues.endDate || undefined
+        });
+      }
+      if (filterValues.activeBookings) {
+        params.activeBookings = 'true';
+      }
+
+      const { data } = await axiosInstance.get('/api/restaurants/table-bookings', {
+        params
+      });
+
+      if (data.success) {
+        setBookings(data.data.bookings);
+        setPagination(data.data.pagination);
+      }
+    } catch (error) {
+      console.error('Error fetching table bookings:', error);
+      toast.error('Error fetching table bookings');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePageChange = (page: number) => {
     const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
@@ -270,9 +337,12 @@ const AllTableBookings = () => {
     }
     if (filterValues.startDate || filterValues.endDate) {
       params.date = JSON.stringify({
-        startDate: filterValues.startDate ? convertToDisplayFormat(filterValues.startDate) : undefined,
-        endDate: filterValues.endDate ? convertToDisplayFormat(filterValues.endDate) : undefined
+        startDate: filterValues.startDate || undefined,
+        endDate: filterValues.endDate || undefined
       });
+    }
+    if (filterValues.activeBookings) {
+      params.activeBookings = 'true';
     }
 
     setLoading(true);
@@ -293,12 +363,12 @@ const AllTableBookings = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ slot: '', startDate: '', endDate: '' });
+    setFilters({ slot: '', startDate: '', endDate: '', activeBookings: false });
     setDisplayDates({ startDate: '', endDate: '' });
     fetchBookings(1, pagination.limit, false);
   };
 
-  const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
+  const hasActiveFilters = filters.slot || filters.startDate || filters.endDate || filters.activeBookings;
 
   const handleAllocateTable = (booking: TableBooking) => {
     setSelectedBooking(booking);
@@ -501,7 +571,14 @@ const AllTableBookings = () => {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">All Table Bookings</h1>
-        <p className="text-gray-600 dark:text-gray-400">Manage all table bookings</p>
+        <div className="flex items-center gap-2">
+          <p className="text-gray-600 dark:text-gray-400">Manage all table bookings</p>
+          {filters.activeBookings && (
+            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+              Active Bookings Only
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -640,7 +717,7 @@ const AllTableBookings = () => {
                       <div className="text-xs text-gray-500 dark:text-gray-400">{booking.userId.phone}</div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{booking.bookingTimings.date}</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">{convertToDisplayFormat(booking.bookingTimings.date)}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(booking.bookingTimings.slotTime)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
@@ -748,7 +825,7 @@ const AllTableBookings = () => {
                     <span className="font-medium">Guests:</span> {selectedBooking.numberOfGuests}
                   </p>
                   <p className="text-gray-600 dark:text-gray-400">
-                    <span className="font-medium">Date & Time:</span> {selectedBooking.bookingTimings.date} at {formatTimeTo12Hour(selectedBooking.bookingTimings.slotTime)}
+                    <span className="font-medium">Date & Time:</span> {convertToDisplayFormat(selectedBooking.bookingTimings.date)} at {formatTimeTo12Hour(selectedBooking.bookingTimings.slotTime)}
                   </p>
                 </div>
               </div>

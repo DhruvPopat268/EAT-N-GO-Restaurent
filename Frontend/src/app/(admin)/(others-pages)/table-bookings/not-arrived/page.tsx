@@ -186,8 +186,8 @@ const NotArrivedTableBookings = () => {
         }
         if (filters.startDate || filters.endDate) {
           params.date = JSON.stringify({
-            startDate: filters.startDate ? convertToDisplayFormat(filters.startDate) : undefined,
-            endDate: filters.endDate ? convertToDisplayFormat(filters.endDate) : undefined
+            startDate: filters.startDate ? filters.startDate : undefined,
+            endDate: filters.endDate ? filters.endDate : undefined
           });
         }
       }
@@ -272,8 +272,8 @@ const NotArrivedTableBookings = () => {
     }
     if (filterValues.startDate || filterValues.endDate) {
       params.date = JSON.stringify({
-        startDate: filterValues.startDate ? convertToDisplayFormat(filterValues.startDate) : undefined,
-        endDate: filterValues.endDate ? convertToDisplayFormat(filterValues.endDate) : undefined
+        startDate: filterValues.startDate ? filterValues.startDate : undefined,
+        endDate: filterValues.endDate ? filterValues.endDate : undefined
       });
     }
     
@@ -596,7 +596,7 @@ const NotArrivedTableBookings = () => {
                       <div className="text-xs text-gray-500 dark:text-gray-400">{booking.userId.phone}</div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{booking.bookingTimings.date}</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">{convertToDisplayFormat(booking.bookingTimings.date)}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(booking.bookingTimings.slotTime)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
