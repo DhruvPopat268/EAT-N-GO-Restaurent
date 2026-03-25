@@ -120,6 +120,7 @@ const TableBookingConfigPage = () => {
   const [submittingOffer, setSubmittingOffer] = useState(false);
   const [viewOfferModal, setViewOfferModal] = useState<{ show: boolean, offer: Offer | null }>({ show: false, offer: null });
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean, id: string, name: string }>({ show: false, id: '', name: '' });
+  const [showUpdateSlotsConfirm, setShowUpdateSlotsConfirm] = useState(false);
 
   // Get currency from localStorage
   const getCurrency = () => {
@@ -179,6 +180,19 @@ const TableBookingConfigPage = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleUpdateTimeSlots = () => {
+    if (config.timeSlots && config.timeSlots.timeSlots.length > 0) {
+      setShowUpdateSlotsConfirm(true);
+    } else {
+      createOrUpdateTimeSlots(selectedDuration, maxGuests);
+    }
+  };
+
+  const confirmUpdateTimeSlots = () => {
+    setShowUpdateSlotsConfirm(false);
+    createOrUpdateTimeSlots(selectedDuration, maxGuests);
   };
 
   const createOrUpdateTimeSlots = async (duration: number, maxGuests: string) => {
@@ -555,7 +569,7 @@ const TableBookingConfigPage = () => {
                 </div>
 
                 <button
-                  onClick={() => generateTimeSlots(selectedDuration, maxGuests)}
+                  onClick={handleUpdateTimeSlots}
                   disabled={generatingSlots}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
                 >
@@ -1207,6 +1221,36 @@ const TableBookingConfigPage = () => {
                       className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                     >
                       Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Update Time Slots Confirmation Modal */}
+            {showUpdateSlotsConfirm && (
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Update Time Slots</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    By clicking "Update", all existing time slots will be reset and regenerated based on your restaurant's operating hours with the new duration ({selectedDuration} minutes) and max guests ({maxGuests}) settings. This action cannot be undone.
+                  </p>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowUpdateSlotsConfirm(false)}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={confirmUpdateTimeSlots}
+                      disabled={saving}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {saving && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      )}
+                      Update & Reset Slots
                     </button>
                   </div>
                 </div>
