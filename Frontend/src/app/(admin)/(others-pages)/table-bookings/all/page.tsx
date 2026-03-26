@@ -57,7 +57,7 @@ const getAvailableStatuses = (currentStatus: string) => {
   const statusFlow = {
     'pending': ['pending', 'confirmed', 'cancelled'],
     'confirmed': ['confirmed', 'arrived', 'notArrived', 'cancelled'],
-    'arrived': ['arrived', 'seated', 'expired'],
+    'arrived': ['arrived', 'seated'],
     'seated': ['seated', 'completed'],
     'notArrived': ['notArrived', 'arrived', 'expired'], // Added expired option
     'completed': ['completed'],

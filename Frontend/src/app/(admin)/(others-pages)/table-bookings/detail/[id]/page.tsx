@@ -35,9 +35,10 @@ const getAvailableStatuses = (currentStatus: string) => {
     'confirmed': ['confirmed', 'arrived', 'notArrived', 'cancelled'],
     'arrived': ['arrived', 'seated'],
     'seated': ['seated', 'completed'],
-    'notArrived': ['notArrived', 'arrived', 'cancelled'], // Allow transition to arrived if they show up late
+    'notArrived': ['notArrived', 'arrived', 'expired'], // Added expired option
     'completed': ['completed'],
-    'cancelled': ['cancelled']
+    'cancelled': ['cancelled'],
+    'expired': ['expired'] // Final state
   };
 
   return statusFlow[currentStatus as keyof typeof statusFlow] || [currentStatus];
@@ -68,6 +69,13 @@ const tableBookingApi = {
 
   updateToDidNotArrive: async (bookingId: string) => {
     const response = await axiosInstance.patch('/api/restaurants/table-bookings/did-not-arrive', {
+      bookingId
+    });
+    return response.data;
+  },
+
+  updateToExpired: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/expired', {
       bookingId
     });
     return response.data;
@@ -129,12 +137,84 @@ const TableBookingDetailPage = () => {
   const [showCancelModal, setShowCancelModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
   const [cancelReason, setCancelReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [showAllocateModal, setShowAllocateModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<TableBookingDetail | null>(null);
+  const [tableNumbers, setTableNumbers] = useState<string[]>(['']);
+  const [allocating, setAllocating] = useState(false);
 
   useEffect(() => {
     if (bookingId) {
       fetchBookingDetails();
     }
   }, [bookingId]);
+
+  const handleAllocateTable = (booking: TableBookingDetail) => {
+    setSelectedBooking(booking);
+    setTableNumbers(['']);
+    setShowAllocateModal(true);
+  };
+
+  const addTableInput = () => {
+    setTableNumbers([...tableNumbers, '']);
+  };
+
+  const removeTableInput = (index: number) => {
+    if (tableNumbers.length > 1) {
+      const newTableNumbers = tableNumbers.filter((_, i) => i !== index);
+      setTableNumbers(newTableNumbers);
+    }
+  };
+
+  const updateTableNumber = (index: number, value: string) => {
+    const newTableNumbers = [...tableNumbers];
+    newTableNumbers[index] = value;
+    setTableNumbers(newTableNumbers);
+  };
+
+  const handleAllocateTables = async () => {
+    if (!selectedBooking) return;
+
+    const validTableNumbers = tableNumbers.filter(num => num.trim() !== '');
+
+    if (validTableNumbers.length === 0) {
+      toast.error('Please enter at least one table number');
+      return;
+    }
+
+    const uniqueTableNumbers = [...new Set(validTableNumbers)];
+    if (uniqueTableNumbers.length !== validTableNumbers.length) {
+      toast.error('Please remove duplicate table numbers');
+      return;
+    }
+
+    setAllocating(true);
+    try {
+      const { data } = await axiosInstance.patch('/api/restaurants/table-bookings/allocate-tables', {
+        tableNumbers: validTableNumbers,
+        bookingId: selectedBooking._id
+      });
+
+      if (data.success) {
+        toast.success(selectedBooking.status === 'pending' ? 'Booking confirmed and tables allocated successfully' : 'Tables allocated successfully');
+        setShowAllocateModal(false);
+        setSelectedBooking(null);
+        setTableNumbers(['']);
+        // Update the booking with the response data
+        setBooking(data.data);
+      }
+    } catch (error: any) {
+      console.error('Error allocating tables:', error);
+      toast.error(error.response?.data?.message || 'Failed to allocate tables');
+    } finally {
+      setAllocating(false);
+    }
+  };
+
+  const closeAllocateModal = () => {
+    setShowAllocateModal(false);
+    setSelectedBooking(null);
+    setTableNumbers(['']);
+  };
 
   const fetchBookingDetails = async () => {
     try {
@@ -156,31 +236,20 @@ const TableBookingDetailPage = () => {
   };
 
   const handleStatusChange = (bookingId: string, bookingNo: string, currentStatus: string, newStatus: string) => {
-    console.log('Status change requested:', { bookingId, bookingNo, currentStatus, newStatus });
-    
-    if (newStatus === currentStatus) {
-      console.log('Same status selected, ignoring');
-      return;
-    }
-    
+    if (newStatus === currentStatus) return;
+
     if (newStatus === 'cancelled') {
       setShowCancelModal({ show: true, bookingId, bookingNo });
       return;
     }
-    
+
     if (newStatus === 'confirmed') {
-      // For confirmed status, we might want to show table allocation modal
-      // For now, just show confirmation
-      setStatusConfirm({
-        show: true,
-        bookingId,
-        bookingNo,
-        currentStatus,
-        newStatus
-      });
+      if (booking) {
+        handleAllocateTable(booking);
+      }
       return;
     }
-    
+
     setStatusConfirm({
       show: true,
       bookingId,
@@ -195,8 +264,6 @@ const TableBookingDetailPage = () => {
     try {
       let response;
       const { newStatus, bookingId } = statusConfirm;
-
-      console.log('Updating status to:', newStatus, 'for booking:', bookingId);
 
       switch (newStatus) {
         case 'confirmed':
@@ -217,11 +284,12 @@ const TableBookingDetailPage = () => {
         case 'notArrived':
           response = await tableBookingApi.updateToDidNotArrive(bookingId);
           break;
+        case 'expired':
+          response = await tableBookingApi.updateToExpired(bookingId);
+          break;
         default:
           throw new Error(`Invalid status update: ${newStatus}`);
       }
-
-      console.log('API Response:', response);
 
       if (response && response.success) {
         toast.success(`Booking status updated to ${newStatus === 'notArrived' ? 'not arrived' : newStatus}`);
@@ -231,7 +299,6 @@ const TableBookingDetailPage = () => {
       }
     } catch (error: any) {
       console.error('Error updating status:', error);
-      console.error('Error details:', error.response?.data);
       toast.error(error.response?.data?.message || error.message || 'Error updating status');
     } finally {
       setUpdatingStatus(false);
@@ -279,6 +346,8 @@ const TableBookingDetailPage = () => {
         return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
       case 'notArrived':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100';
+      case 'expired':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
@@ -338,7 +407,7 @@ const TableBookingDetailPage = () => {
           </div>
           
           {/* Status Update Dropdown - Right Corner */}
-          {!['completed', 'cancelled'].includes(booking.status) && (
+          {!['completed', 'cancelled', 'expired'].includes(booking.status) && (
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Update Status:</label>
               <select
@@ -487,6 +556,109 @@ const TableBookingDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Allocate Tables Modal */}
+      {showAllocateModal && selectedBooking && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md shadow-xl">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {selectedBooking.status === 'pending' ? 'Confirm Booking & Assign Tables' : 'Allocate Tables'}
+                </h2>
+                <button
+                  onClick={closeAllocateModal}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Booking Details */}
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Booking Details</h3>
+                <div className="space-y-1 text-sm">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">Booking #:</span> {selectedBooking.tableBookingNo}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">Customer:</span> {selectedBooking.userId.fullName}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">Guests:</span> {selectedBooking.numberOfGuests}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">Date & Time:</span> {formatDateToDDMMYY(selectedBooking.bookingTimings.date)} at {formatTimeTo12Hour(selectedBooking.bookingTimings.slotTime)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Table Numbers Input */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Table Numbers
+                  </label>
+                  <button
+                    onClick={addTableInput}
+                    className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                  >
+                    + Add Table
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-48 overflow-y-auto">
+                  {tableNumbers.map((tableNumber, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={tableNumber}
+                        onChange={(e) => updateTableNumber(index, e.target.value)}
+                        placeholder={`Table ${index + 1} number`}
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 dark:bg-gray-700 dark:text-white text-sm"
+                      />
+                      {tableNumbers.length > 1 && (
+                        <button
+                          onClick={() => removeTableInput(index)}
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
+                          title="Remove table"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={closeAllocateModal}
+                  disabled={allocating}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAllocateTables}
+                  disabled={allocating || tableNumbers.every(num => num.trim() === '')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {allocating && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  {selectedBooking.status === 'pending' ? 'Confirm & Allocate Tables' : 'Allocate Tables'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Status Confirmation Modal */}
       {statusConfirm.show && (

@@ -42,6 +42,7 @@ interface Offer {
   _id?: string;
   restaurantId: string;
   name: string;
+  description?: string;
   percentage: number;
   status: boolean;
   createdAt?: string;
@@ -50,6 +51,7 @@ interface Offer {
 
 interface OfferFormData {
   name: string;
+  description: string;
   percentage: string;
   status: boolean;
 }
@@ -63,6 +65,7 @@ const defaultConfig: TableBookingConfig = {
 const offersApi = {
   create: async (data: {
     name: string;
+    description?: string;
     percentage: number;
     status: boolean;
   }) => {
@@ -72,6 +75,7 @@ const offersApi = {
 
   update: async (offerId: string, data: {
     name: string;
+    description?: string;
     percentage: number;
     status: boolean;
   }) => {
@@ -114,6 +118,7 @@ const TableBookingConfigPage = () => {
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
   const [offerFormData, setOfferFormData] = useState<OfferFormData>({
     name: '',
+    description: '',
     percentage: '',
     status: true
   });
@@ -374,6 +379,7 @@ const TableBookingConfigPage = () => {
     try {
       const offerData = {
         name: offerFormData.name,
+        description: offerFormData.description,
         percentage: parseFloat(offerFormData.percentage),
         status: offerFormData.status
       };
@@ -393,6 +399,7 @@ const TableBookingConfigPage = () => {
         setEditingOfferId(null);
         setOfferFormData({
           name: '',
+          description: '',
           percentage: '',
           status: true
         });
@@ -414,6 +421,7 @@ const TableBookingConfigPage = () => {
 
       const updatedOfferData = {
         name: offerToUpdate.name,
+        description: offerToUpdate.description,
         percentage: offerToUpdate.percentage,
         status: !currentStatus
       };
@@ -439,6 +447,7 @@ const TableBookingConfigPage = () => {
     setEditingOfferId(offer._id!);
     setOfferFormData({
       name: offer.name,
+      description: offer.description || '',
       percentage: offer.percentage.toString(),
       status: offer.status
     });
@@ -599,7 +608,6 @@ const TableBookingConfigPage = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setShowAddSlotModal(true)}
-                          disabled
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                         >
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -852,82 +860,117 @@ const TableBookingConfigPage = () => {
                     </button>
                   </div>
 
-                  <form onSubmit={handleAddSlotSubmit} className="space-y-4">
+                  <form onSubmit={handleAddSlotSubmit} className="space-y-5">
+
+                    {/* TIME SLOT */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Time Slot (24-hour format) *
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Time Slot *
                       </label>
-                      <input
-                        type="time"
-                        value={addSlotData.time}
-                        onChange={(e) => {
-                          setAddSlotData(prev => ({ ...prev, time: e.target.value }));
-                        }}
-                      />
+
+                      <div className="relative">
+                        <input
+                          type="time"
+                          value={addSlotData.time}
+                          onChange={(e) =>
+                            setAddSlotData(prev => ({ ...prev, time: e.target.value }))
+                          }
+                          onClick={(e) => e.target.showPicker()}
+                          className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 
+        bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+        transition-all duration-200 shadow-sm"
+                        />
+                      </div>
+
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Select time in HH:MM format (e.g., 14:30 for 2:30 PM)
+                        Format: HH:MM (e.g., 14:30)
                       </p>
                     </div>
 
+                    {/* MAX GUESTS */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Max Guests *
                       </label>
-                      <input
-                        type="number"
-                        value={addSlotData.maxGuests}
-                        onChange={(e) =>
-                          setAddSlotData(prev => ({ ...prev, maxGuests: e.target.value }))
-                        }
-                      />
+
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="1"
+                          value={addSlotData.maxGuests}
+                          onChange={(e) =>
+                            setAddSlotData(prev => ({ ...prev, maxGuests: e.target.value }))
+                          }
+                          className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 
+        bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+        transition-all duration-200 shadow-sm"
+                          placeholder="Enter max guests"
+                        />
+                      </div>
                     </div>
 
+                    {/* STATUS TOGGLE */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Status
                       </label>
-                      <div className="flex items-center space-x-3">
+
+                      <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          {addSlotData.status ? "Active" : "Inactive"}
+                        </span>
+
                         <button
                           type="button"
-                          onClick={() => setAddSlotData(prev => ({ ...prev, status: !prev.status }))}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${addSlotData.status ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
-                            }`}
+                          onClick={() =>
+                            setAddSlotData(prev => ({ ...prev, status: !prev.status }))
+                          }
+                          className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 
+        ${addSlotData.status ? "bg-blue-600" : "bg-gray-300 dark:bg-gray-600"}`}
                         >
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${addSlotData.status ? 'translate-x-6' : 'translate-x-1'
-                            }`} />
+                          <span
+                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300
+          ${addSlotData.status ? "translate-x-6" : "translate-x-1"}`}
+                          />
                         </button>
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {addSlotData.status ? 'Active' : 'Inactive'}
-                        </span>
                       </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4">
+                    {/* ACTION BUTTONS */}
+                    <div className="flex justify-end gap-3 pt-3">
                       <button
                         type="button"
                         onClick={() => {
                           setShowAddSlotModal(false);
                           setAddSlotData({
-                            time: '',
-                            maxGuests: '4',
-                            status: true
+                            time: "",
+                            maxGuests: "4",
+                            status: true,
                           });
                         }}
-                        className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                        className="px-5 py-2 rounded-xl border border-gray-300 dark:border-gray-600
+      text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800
+      hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
                       >
                         Cancel
                       </button>
+
                       <button
                         type="submit"
                         disabled={addingSlot}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-5 py-2 rounded-xl bg-blue-600 text-white 
+      hover:bg-blue-700 transition-all duration-200
+      disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
                       >
                         {addingSlot && (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
                         )}
                         Add Slot
                       </button>
                     </div>
+
                   </form>
                 </div>
               </div>
@@ -968,6 +1011,7 @@ const TableBookingConfigPage = () => {
                       <thead className="bg-gray-50 dark:bg-gray-800/50">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Offer Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Description</th>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Percentage</th>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</th>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
@@ -980,6 +1024,11 @@ const TableBookingConfigPage = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">
                                 {offer.name}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-900 dark:text-white max-w-xs truncate">
+                                {offer.description || 'No description'}
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -1045,6 +1094,7 @@ const TableBookingConfigPage = () => {
                         setEditingOfferId(null);
                         setOfferFormData({
                           name: '',
+                          description: '',
                           percentage: '',
                           status: true
                         });
@@ -1069,6 +1119,19 @@ const TableBookingConfigPage = () => {
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg  dark:bg-gray-700 dark:text-white"
                         placeholder="Enter offer name"
                         required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        value={offerFormData.description}
+                        onChange={(e) => setOfferFormData(prev => ({ ...prev, description: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter offer description (optional)"
+                        rows={3}
                       />
                     </div>
 
@@ -1117,6 +1180,7 @@ const TableBookingConfigPage = () => {
                           setEditingOfferId(null);
                           setOfferFormData({
                             name: '',
+                            description: '',
                             percentage: '',
                             status: true
                           });
@@ -1166,6 +1230,13 @@ const TableBookingConfigPage = () => {
                           Offer Name
                         </label>
                         <p className="text-gray-900 dark:text-white">{viewOfferModal.offer.name}</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Description
+                        </label>
+                        <p className="text-gray-900 dark:text-white">{viewOfferModal.offer.description || 'No description provided'}</p>
                       </div>
 
                       <div>
