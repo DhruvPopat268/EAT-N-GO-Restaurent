@@ -56,10 +56,18 @@ interface ItemDetail {
       };
       price: number;
     }[];
-    currency: string;
+    currency: {
+      code: string;
+      name: string;
+      symbol: string;
+    };
     isAvailable: boolean;
   }[];
-  currency: string;
+  currency: {
+    code: string;
+    name: string;
+    symbol: string;
+  };
   isAvailable: boolean;
   createdAt: string;
   updatedAt: string;
@@ -198,7 +206,7 @@ const ItemDetailPage = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Currency</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{item.currency}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{item.currency.name} ({item.currency.symbol})</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
@@ -244,7 +252,7 @@ const ItemDetailPage = () => {
                     <div key={index} className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
                       <span className="font-medium text-gray-900 dark:text-white">{attr.attribute.name}</span>
                       <span className="text-lg font-bold text-gray-900 dark:text-white">
-                        {item.currency === 'INR' ? '₹' : '$'}{attr.price}
+                        {item.currency.symbol}{attr.price}
                       </span>
                     </div>
                   ))}
@@ -295,7 +303,7 @@ const ItemDetailPage = () => {
                         <div key={attrIndex} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                           <span className="font-medium text-gray-900 dark:text-white">{attr.attribute.name}</span>
                           <span className="font-semibold text-gray-900 dark:text-white">
-                            {addon.currency === 'INR' ? '₹' : '$'}{attr.price}
+                            {addon.currency.symbol}{attr.price}
                           </span>
                         </div>
                       ))}
@@ -333,7 +341,7 @@ const ItemDetailPage = () => {
                               : 'text-green-600 dark:text-green-400'
                           }`}>
                             {option.price > 0 
-                              ? `${item.currency === 'INR' ? '₹' : '$'}${option.price}`
+                              ? `${item.currency.symbol}${option.price}`
                               : 'Free'
                             }
                           </span>
