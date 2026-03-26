@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Pagination from "@/components/tables/Pagination";
 import axiosInstance from "@/utils/axiosConfig";
 import { toast } from "@/utils/toast";
@@ -169,12 +169,17 @@ const ConfirmedTableBookings = () => {
   const [filters, setFilters] = useState({
     slot: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    search: ''
   });
   const [displayDates, setDisplayDates] = useState({
     startDate: '',
     endDate: ''
   });
+
+  // Debounced search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   const fetchConfirmedBookings = async (page: number = pagination.currentPage, limit: number = pagination.limit, applyFilters: boolean = false) => {
     try {
@@ -183,6 +188,9 @@ const ConfirmedTableBookings = () => {
       
       // Apply filters if they exist and applyFilters is true
       if (applyFilters) {
+        if (filters.search) {
+          params.search = filters.search;
+        }
         if (filters.slot) {
           params.slot = filters.slot;
         }
@@ -221,22 +229,49 @@ const ConfirmedTableBookings = () => {
     }
   };
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Update filters when debounced search term changes
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, search: debouncedSearchTerm }));
+  }, [debouncedSearchTerm]);
+
+  // Fetch bookings when filters change
+  useEffect(() => {
+    const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
+    if (hasActiveFilters) {
+      fetchConfirmedBookings(1, pagination.limit, true);
+    }
+  }, [filters.search, filters.slot, filters.startDate, filters.endDate]);
+
   useEffect(() => {
     fetchConfirmedBookings();
     fetchTimeSlots();
   }, []);
 
   const handlePageChange = (page: number) => {
-    const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
+    const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
     fetchConfirmedBookings(page, pagination.limit, hasActiveFilters);
   };
 
   const handleLimitChange = (limit: number) => {
-    const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
+    const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
     fetchConfirmedBookings(1, limit, hasActiveFilters);
   };
 
-  const handleFilterChange = (filterType: 'slot' | 'startDate' | 'endDate', value: string) => {
+  const handleFilterChange = (filterType: 'search' | 'slot' | 'startDate' | 'endDate', value: string) => {
+    if (filterType === 'search') {
+      setSearchTerm(value);
+      return;
+    }
+    
     if (filterType === 'startDate' || filterType === 'endDate') {
       // Update both internal filter (YYYY-MM-DD) and display format (DD/MM/YY)
       const newFilters = { ...filters, [filterType]: value };
@@ -244,31 +279,18 @@ const ConfirmedTableBookings = () => {
       
       setFilters(newFilters);
       setDisplayDates(newDisplayDates);
-      
-      // Auto-apply filters when any filter changes
-      const hasActiveFilters = newFilters.slot || newFilters.startDate || newFilters.endDate;
-      if (hasActiveFilters) {
-        applyFiltersWithValues(newFilters);
-      } else {
-        fetchConfirmedBookings(1, pagination.limit, false);
-      }
     } else {
       const newFilters = { ...filters, [filterType]: value };
       setFilters(newFilters);
-      
-      // Auto-apply filters when any filter changes
-      const hasActiveFilters = newFilters.slot || newFilters.startDate || newFilters.endDate;
-      if (hasActiveFilters) {
-        applyFiltersWithValues(newFilters);
-      } else {
-        fetchConfirmedBookings(1, pagination.limit, false);
-      }
     }
   };
 
   const applyFiltersWithValues = (filterValues = filters) => {
     const params: any = { page: 1, limit: pagination.limit };
     
+    if (filterValues.search) {
+      params.search = filterValues.search;
+    }
     if (filterValues.slot) {
       params.slot = filterValues.slot;
     }
@@ -297,13 +319,15 @@ const ConfirmedTableBookings = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ slot: '', startDate: '', endDate: '' });
+    setFilters({ slot: '', startDate: '', endDate: '', search: '' });
     setDisplayDates({ startDate: '', endDate: '' });
+    setSearchTerm('');
+    setDebouncedSearchTerm('');
     // Fetch all data without any filters
     fetchConfirmedBookings(1, pagination.limit, false);
   };
 
-  const hasActiveFilters = filters.slot || filters.startDate || filters.endDate;
+  const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
 
   const handleAllocateTable = (booking: TableBooking) => {
     setSelectedBooking(booking);
@@ -506,79 +530,92 @@ const ConfirmedTableBookings = () => {
 
       {/* Filters */}
       <div className="mb-6">
-        <div className="flex flex-wrap justify-end items-end gap-4">
-          {/* Slot Filter */}
-          <div className="w-40">
+        <div className="flex flex-wrap justify-between items-end gap-4">
+          {/* Search */}
+          <div className="w-128">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Time Slot
+              Search
             </label>
-            <select
-              value={filters.slot}
-              onChange={(e) => handleFilterChange('slot', e.target.value)}
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+              placeholder="Search by table number, customer name, or phone..."
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
-            >
-              <option value="">All Slots</option>
-              {availableSlots.map((slot) => (
-                <option key={slot._id} value={slot.time}>
-                  {formatTimeTo12Hour(slot.time)}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
-          {/* Start Date Filter */}
-          <div className="w-40">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Start Date
-            </label>
-            <div className="relative">
-              <input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                onClick={(e) => e.target.showPicker()}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm opacity-0 absolute inset-0 cursor-pointer"
-              />
-              <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm pointer-events-none">
-                {displayDates.startDate || 'Select date'}
-              </div>
-            </div>
-          </div>
-
-          {/* End Date Filter */}
-          <div className="w-40">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              End Date
-            </label>
-            <div className="relative">
-              <input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                onClick={(e) => e.target.showPicker()}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm opacity-0 absolute inset-0 cursor-pointer"
-              />
-              <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm pointer-events-none">
-                {displayDates.endDate || 'Select date'}
-              </div>
-            </div>
-          </div>
-
-          {/* Clear Filters Button */}
-          {hasActiveFilters && (
-            <div>
-              <label className="block text-sm font-medium text-transparent mb-1">
-                &nbsp;
+          <div className="flex flex-wrap gap-4">
+            {/* Slot Filter */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Time Slot
               </label>
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+              <select
+                value={filters.slot}
+                onChange={(e) => handleFilterChange('slot', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
               >
-                Clear Filters
-              </button>
+                <option value="">All Slots</option>
+                {availableSlots.map((slot) => (
+                  <option key={slot._id} value={slot.time}>
+                    {formatTimeTo12Hour(slot.time)}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
+
+            {/* Start Date Filter */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Start Date
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={filters.startDate}
+                  onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                  onClick={(e) => e.target.showPicker()}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm opacity-0 absolute inset-0 cursor-pointer"
+                />
+                <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm pointer-events-none">
+                  {displayDates.startDate || 'Select date'}
+                </div>
+              </div>
+            </div>
+
+            {/* End Date Filter */}
+            <div className="w-40">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                End Date
+              </label>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={filters.endDate}
+                  onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                  onClick={(e) => e.target.showPicker()}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm opacity-0 absolute inset-0 cursor-pointer"
+                />
+                <div className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm pointer-events-none">
+                  {displayDates.endDate || 'Select date'}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        {/* Clear Filters */}
+        {hasActiveFilters && (
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Results Count and Records Per Page */}
