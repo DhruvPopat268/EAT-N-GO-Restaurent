@@ -131,7 +131,10 @@ interface TableBooking {
   coverCharges: number;
   coverChargePaymentStatus: string;
   status: string;
-  allocatedTables: any[];
+  allocatedTables?: {
+    tableNumbers: string[];
+    allocatedAt: string;
+  };
   currency?: {
     code: string;
     name: string;
@@ -804,8 +807,8 @@ const AllTableBookings = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
-                      {booking.allocatedTables && booking.allocatedTables.length > 0 ? (
-                        booking.allocatedTables.map(allocation => allocation.tableNumbers).flat().join(' , ')
+                      {booking.allocatedTables && booking.allocatedTables.tableNumbers && booking.allocatedTables.tableNumbers.length > 0 ? (
+                        booking.allocatedTables.tableNumbers.join(', ')
                       ) : (
                         <span className="text-gray-500 dark:text-gray-400">Not Allocated</span>
                       )}

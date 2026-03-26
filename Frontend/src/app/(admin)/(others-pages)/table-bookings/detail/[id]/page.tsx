@@ -96,7 +96,6 @@ interface UserInfo {
 interface AllocatedTable {
   tableNumbers: string[];
   allocatedAt: string;
-  _id: string;
 }
 
 interface TableBookingDetail {
@@ -108,7 +107,7 @@ interface TableBookingDetail {
   coverCharges: number;
   coverChargePaymentStatus: string;
   status: string;
-  allocatedTables: AllocatedTable[];
+  allocatedTables?: AllocatedTable;
   currency?: {
     code: string;
     name: string;
@@ -443,23 +442,21 @@ const TableBookingDetailPage = () => {
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Assigned Tables</h2>
           </div>
           <div className="space-y-3">
-            {booking.allocatedTables && booking.allocatedTables.length > 0 ? (
-              booking.allocatedTables.map((allocation, index) => (
-                <div key={allocation._id} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {allocation.tableNumbers.map((tableNumber, tableIndex) => (
-                      <div key={tableIndex} className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg">
-                        <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                          {tableNumber}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Assigned on {formatDateToDDMMYY(allocation.allocatedAt)} at {formatTimeTo12Hour(new Date(allocation.allocatedAt).toLocaleTimeString('en-US', { hour12: false }))}
-                  </p>
+            {booking.allocatedTables && booking.allocatedTables.tableNumbers && booking.allocatedTables.tableNumbers.length > 0 ? (
+              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {booking.allocatedTables.tableNumbers.map((tableNumber, tableIndex) => (
+                    <div key={tableIndex} className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg">
+                      <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                        {tableNumber}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Assigned on {formatDateToDDMMYY(booking.allocatedTables.allocatedAt)} at {formatTimeTo12Hour(new Date(booking.allocatedTables.allocatedAt).toLocaleTimeString('en-US', { hour12: false }))}
+                </p>
+              </div>
             ) : (
               <div className="text-center py-4">
                 <p className="text-sm text-gray-500 dark:text-gray-400">No tables assigned yet</p>

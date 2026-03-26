@@ -91,7 +91,10 @@ interface TableBooking {
   coverCharges: number;
   coverChargePaymentStatus: string;
   status: string;
-  allocatedTables: any[];
+  allocatedTables?: {
+    tableNumbers: string[];
+    allocatedAt: string;
+  };
   cancellation?: {
     cancelledBy: string;
     reason: string;
