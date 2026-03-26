@@ -129,7 +129,8 @@ const tableBookingsItems: NavItem[] = [
       { name: "Arrived", path: "/table-bookings/arrived" },
       { name: "Seated", path: "/table-bookings/seated" },
       { name: "Completed", path: "/table-bookings/completed" },
-      { name: "Cancelled", path: "/table-bookings/cancelled" }
+      { name: "Cancelled", path: "/table-bookings/cancelled" },
+      { name: "Expired", path: "/table-bookings/expired" }
     ]
   }
 ];

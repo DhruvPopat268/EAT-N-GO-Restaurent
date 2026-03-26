@@ -54,13 +54,7 @@ const convertToInputFormat = (dateStr: string): string => {
 // Get available status transitions based on current status
 const getAvailableStatuses = (currentStatus: string) => {
   const statusFlow = {
-    'pending': ['pending', 'confirmed', 'cancelled'],
-    'confirmed': ['confirmed', 'arrived', 'notArrived', 'cancelled'],
-    'arrived': ['arrived', 'seated'],
-    'seated': ['seated', 'completed'],
-    'notArrived': ['notArrived', 'arrived', 'cancelled'],
-    'completed': ['completed'],
-    'cancelled': ['cancelled']
+    'completed': ['completed']
   };
 
   return statusFlow[currentStatus as keyof typeof statusFlow] || [currentStatus];
@@ -289,20 +283,8 @@ const CompletedTableBookings = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
-      case 'confirmed':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
-      case 'arrived':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100';
-      case 'seated':
-        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100';
       case 'completed':
         return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
-      case 'notArrived':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }

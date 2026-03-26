@@ -51,16 +51,11 @@ const convertToInputFormat = (dateStr: string): string => {
   return formatDateToYYYYMMDD(dateStr);
 };
 
-// Get available status transitions based on current status
+// Get available status transitions for arrived bookings only
 const getAvailableStatuses = (currentStatus: string) => {
+  // For arrived page, only show transitions relevant to arrived bookings
   const statusFlow = {
-    'pending': ['pending', 'confirmed', 'cancelled'],
-    'confirmed': ['confirmed', 'arrived', 'notArrived', 'cancelled'],
-    'arrived': ['arrived', 'seated'],
-    'seated': ['seated', 'completed'],
-    'notArrived': ['notArrived', 'arrived', 'cancelled'],
-    'completed': ['completed'],
-    'cancelled': ['cancelled']
+    'arrived': ['arrived', 'seated']
   };
 
   return statusFlow[currentStatus as keyof typeof statusFlow] || [currentStatus];
@@ -422,20 +417,10 @@ const ArrivedTableBookings = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
-      case 'confirmed':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
       case 'arrived':
         return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100';
       case 'seated':
         return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100';
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
-      case 'notArrived':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
@@ -662,7 +647,7 @@ const ArrivedTableBookings = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {!['completed', 'cancelled'].includes(booking.status) ? (
+                      {booking.status !== 'seated' ? (
                         <select
                           value={booking.status}
                           onChange={(e) => handleStatusChange(booking._id, booking.tableBookingNo.toString(), booking.status, e.target.value)}

@@ -54,49 +54,10 @@ const convertToInputFormat = (dateStr: string): string => {
 // Get available status transitions based on current status
 const getAvailableStatuses = (currentStatus: string) => {
   const statusFlow = {
-    'seated': ['seated', 'completed']
+    'expired': ['expired'] // Final state
   };
 
   return statusFlow[currentStatus as keyof typeof statusFlow] || [currentStatus];
-};
-
-// Table booking status update API functions
-const tableBookingApi = {
-  updateToArrived: async (bookingId: string) => {
-    const response = await axiosInstance.patch('/api/restaurants/table-bookings/arrived', {
-      bookingId
-    });
-    return response.data;
-  },
-
-  updateToSeated: async (bookingId: string) => {
-    const response = await axiosInstance.patch('/api/restaurants/table-bookings/seated', {
-      bookingId
-    });
-    return response.data;
-  },
-
-  updateToCompleted: async (bookingId: string) => {
-    const response = await axiosInstance.patch('/api/restaurants/table-bookings/completed', {
-      bookingId
-    });
-    return response.data;
-  },
-
-  updateToDidNotArrive: async (bookingId: string) => {
-    const response = await axiosInstance.patch('/api/restaurants/table-bookings/did-not-arrive', {
-      bookingId
-    });
-    return response.data;
-  },
-
-  cancelBooking: async (bookingId: string, reason: string) => {
-    const response = await axiosInstance.patch('/api/restaurants/table-bookings/cancel', {
-      bookingId,
-      reason
-    });
-    return response.data;
-  }
 };
 
 interface TimeSlot {
@@ -145,7 +106,7 @@ interface PaginationInfo {
   limit: number;
 }
 
-const SeatedTableBookings = () => {
+const ExpiredTableBookings = () => {
   const [bookings, setBookings] = useState<TableBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -154,11 +115,6 @@ const SeatedTableBookings = () => {
     totalCount: 0,
     limit: 10
   });
-  const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [statusConfirm, setStatusConfirm] = useState<{ show: boolean, bookingId: string, bookingNo: string, currentStatus: string, newStatus: string }>({ show: false, bookingId: '', bookingNo: '', currentStatus: '', newStatus: '' });
-  const [showCancelModal, setShowCancelModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
-  const [cancelReason, setCancelReason] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
   
   // Filter states
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
@@ -177,7 +133,7 @@ const SeatedTableBookings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
-  const fetchSeatedBookings = async (page: number = pagination.currentPage, limit: number = pagination.limit, applyFilters: boolean = false) => {
+  const fetchExpiredBookings = async (page: number = pagination.currentPage, limit: number = pagination.limit, applyFilters: boolean = false) => {
     try {
       setLoading(true);
       const params: any = { page, limit };
@@ -198,7 +154,7 @@ const SeatedTableBookings = () => {
         }
       }
       
-      const { data } = await axiosInstance.get('/api/restaurants/table-bookings/seated', {
+      const { data } = await axiosInstance.get('/api/restaurants/table-bookings/expired', {
         params
       });
       
@@ -207,8 +163,8 @@ const SeatedTableBookings = () => {
         setPagination(data.data.pagination);
       }
     } catch (error) {
-      console.error('Error fetching seated table bookings:', error);
-      toast.error('Error fetching seated table bookings');
+      console.error('Error fetching expired table bookings:', error);
+      toast.error('Error fetching expired table bookings');
     } finally {
       setLoading(false);
     }
@@ -243,23 +199,23 @@ const SeatedTableBookings = () => {
   useEffect(() => {
     const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
     if (hasActiveFilters) {
-      fetchSeatedBookings(1, pagination.limit, true);
+      fetchExpiredBookings(1, pagination.limit, true);
     }
   }, [filters.search, filters.slot, filters.startDate, filters.endDate]);
 
   useEffect(() => {
-    fetchSeatedBookings();
+    fetchExpiredBookings();
     fetchTimeSlots();
   }, []);
 
   const handlePageChange = (page: number) => {
     const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
-    fetchSeatedBookings(page, pagination.limit, hasActiveFilters);
+    fetchExpiredBookings(page, pagination.limit, hasActiveFilters);
   };
 
   const handleLimitChange = (limit: number) => {
     const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
-    fetchSeatedBookings(1, limit, hasActiveFilters);
+    fetchExpiredBookings(1, limit, hasActiveFilters);
   };
 
   const handleFilterChange = (filterType: 'search' | 'slot' | 'startDate' | 'endDate', value: string) => {
@@ -298,7 +254,7 @@ const SeatedTableBookings = () => {
     }
     
     setLoading(true);
-    axiosInstance.get('/api/restaurants/table-bookings/seated', { params })
+    axiosInstance.get('/api/restaurants/table-bookings/expired', { params })
       .then(({ data }) => {
         if (data.success) {
           setBookings(data.data.bookings);
@@ -320,106 +276,15 @@ const SeatedTableBookings = () => {
     setSearchTerm('');
     setDebouncedSearchTerm('');
     // Fetch all data without any filters
-    fetchSeatedBookings(1, pagination.limit, false);
+    fetchExpiredBookings(1, pagination.limit, false);
   };
 
   const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
 
-  const handleStatusChange = (bookingId: string, bookingNo: string, currentStatus: string, newStatus: string) => {
-    console.log('Status change requested:', { bookingId, bookingNo, currentStatus, newStatus });
-    
-    if (newStatus === currentStatus) {
-      console.log('Same status selected, ignoring');
-      return;
-    }
-    
-    if (newStatus === 'cancelled') {
-      setShowCancelModal({ show: true, bookingId, bookingNo });
-      return;
-    }
-    
-    setStatusConfirm({
-      show: true,
-      bookingId,
-      bookingNo,
-      currentStatus,
-      newStatus
-    });
-  };
-
-  const confirmStatusUpdate = async () => {
-    setUpdatingStatus(true);
-    try {
-      let response;
-      const { newStatus, bookingId } = statusConfirm;
-
-      console.log('Updating status to:', newStatus, 'for booking:', bookingId);
-
-      switch (newStatus) {
-        case 'arrived':
-          response = await tableBookingApi.updateToArrived(bookingId);
-          break;
-        case 'seated':
-          response = await tableBookingApi.updateToSeated(bookingId);
-          break;
-        case 'completed':
-          response = await tableBookingApi.updateToCompleted(bookingId);
-          break;
-        case 'notArrived':
-          response = await tableBookingApi.updateToDidNotArrive(bookingId);
-          break;
-        default:
-          throw new Error(`Invalid status update: ${newStatus}`);
-      }
-
-      console.log('API Response:', response);
-
-      if (response.success) {
-        toast.success(`Booking status updated to ${newStatus === 'notArrived' ? 'not arrived' : newStatus}`);
-        fetchSeatedBookings(); // Refresh the bookings list
-      } else {
-        toast.error(response.message || 'Error updating status');
-      }
-    } catch (error: any) {
-      console.error('Error updating status:', error);
-      console.error('Error details:', error.response?.data);
-      toast.error(error.response?.data?.message || error.message || 'Error updating status');
-    } finally {
-      setUpdatingStatus(false);
-      setStatusConfirm({ show: false, bookingId: '', bookingNo: '', currentStatus: '', newStatus: '' });
-    }
-  };
-
-  const handleCancelBooking = async () => {
-    if (!cancelReason.trim()) {
-      toast.error('Please enter a cancellation reason');
-      return;
-    }
-    
-    setActionLoading(true);
-    try {
-      const response = await tableBookingApi.cancelBooking(showCancelModal.bookingId, cancelReason);
-      if (response.success) {
-        toast.success('Booking cancelled successfully');
-        fetchSeatedBookings(); // Refresh the bookings list
-      } else {
-        toast.error(response.message || 'Error cancelling booking');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to cancel booking');
-    } finally {
-      setActionLoading(false);
-      setShowCancelModal({ show: false, bookingId: '', bookingNo: '' });
-      setCancelReason('');
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'seated':
-        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100';
-      case 'completed':
-        return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
+      case 'expired':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
@@ -429,8 +294,8 @@ const SeatedTableBookings = () => {
     return (
       <div className="p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Seated Table Bookings</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage bookings where customers are seated</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Expired Table Bookings</h1>
+          <p className="text-gray-600 dark:text-gray-400">View expired table bookings</p>
         </div>
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -442,8 +307,8 @@ const SeatedTableBookings = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Seated Table Bookings</h1>
-        <p className="text-gray-600 dark:text-gray-400">Manage bookings where customers are seated</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Expired Table Bookings</h1>
+        <p className="text-gray-600 dark:text-gray-400">View expired table bookings</p>
       </div>
 
       {/* Filters */}
@@ -539,7 +404,7 @@ const SeatedTableBookings = () => {
       {/* Results Count and Records Per Page */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Showing {bookings.length} of {pagination.totalCount} seated bookings
+          Showing {bookings.length} of {pagination.totalCount} expired bookings
           {hasActiveFilters && (
             <span className="ml-2 text-blue-600 dark:text-blue-400">
               (filtered)
@@ -608,10 +473,10 @@ const SeatedTableBookings = () => {
                     <div className="flex flex-col items-center justify-center">
                       <TableProperties className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                        No Seated Table Bookings Found
+                        No Expired Table Bookings Found
                       </h3>
                       <p className="text-gray-500 dark:text-gray-400">
-                        There are currently no bookings where customers are seated.
+                        There are currently no expired table bookings to display.
                       </p>
                     </div>
                   </td>
@@ -646,24 +511,9 @@ const SeatedTableBookings = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {booking.status !== 'completed' ? (
-                        <select
-                          value={booking.status}
-                          onChange={(e) => handleStatusChange(booking._id, booking.tableBookingNo.toString(), booking.status, e.target.value)}
-                          disabled={updatingStatus}
-                          className="px-2 py-1 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 disabled:opacity-50 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white min-w-[120px]"
-                        >
-                          {getAvailableStatuses(booking.status).map(status => (
-                            <option key={status} value={status} className="capitalize">
-                              {status === 'notArrived' ? 'Not Arrived' : status}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
-                          {booking.status === 'notArrived' ? 'Not Arrived' : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                        </span>
-                      )}
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+                        Expired
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
                       {booking.allocatedTables && booking.allocatedTables.tableNumbers && booking.allocatedTables.tableNumbers.length > 0 ? (
@@ -709,88 +559,8 @@ const SeatedTableBookings = () => {
           />
         </div>
       )}
-
-      {/* Status Confirmation Modal */}
-      {statusConfirm.show && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Status Update</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Are you sure you want to update status from <span className="font-semibold capitalize">{statusConfirm.currentStatus === 'notArrived' ? 'Not Arrived' : statusConfirm.currentStatus}</span> to <span className="font-semibold capitalize">{statusConfirm.newStatus === 'notArrived' ? 'Not Arrived' : statusConfirm.newStatus}</span> for booking #{statusConfirm.bookingNo}?
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setStatusConfirm({ show: false, bookingId: '', bookingNo: '', currentStatus: '', newStatus: '' })}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmStatusUpdate}
-                disabled={updatingStatus}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-              >
-                {updatingStatus && (
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                )}
-                Update Status
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Cancel Modal */}
-      {showCancelModal.show && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Cancel Booking #{showCancelModal.bookingNo}
-              </h2>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Cancellation Reason
-                </label>
-                <textarea
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="Enter reason for cancellation..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
-                  rows={3}
-                  required
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCancelModal({ show: false, bookingId: '', bookingNo: '' });
-                    setCancelReason('');
-                  }}
-                  disabled={actionLoading}
-                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleCancelBooking}
-                  disabled={actionLoading || !cancelReason.trim()}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
-                >
-                  {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-                  Cancel Booking
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default SeatedTableBookings;
+export default ExpiredTableBookings;

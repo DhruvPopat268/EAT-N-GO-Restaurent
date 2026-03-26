@@ -57,11 +57,12 @@ const getAvailableStatuses = (currentStatus: string) => {
   const statusFlow = {
     'pending': ['pending', 'confirmed', 'cancelled'],
     'confirmed': ['confirmed', 'arrived', 'notArrived', 'cancelled'],
-    'arrived': ['arrived', 'seated'],
+    'arrived': ['arrived', 'seated', 'expired'],
     'seated': ['seated', 'completed'],
-    'notArrived': ['notArrived', 'arrived'], // Removed 'cancelled' option
+    'notArrived': ['notArrived', 'arrived', 'expired'], // Added expired option
     'completed': ['completed'],
-    'cancelled': ['cancelled']
+    'cancelled': ['cancelled'],
+    'expired': ['expired'] // Final state
   };
 
   return statusFlow[currentStatus as keyof typeof statusFlow] || [currentStatus];
@@ -92,6 +93,13 @@ const tableBookingApi = {
 
   updateToDidNotArrive: async (bookingId: string) => {
     const response = await axiosInstance.patch('/api/restaurants/table-bookings/did-not-arrive', {
+      bookingId
+    });
+    return response.data;
+  },
+
+  updateToExpired: async (bookingId: string) => {
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/expired', {
       bookingId
     });
     return response.data;
@@ -520,6 +528,9 @@ const AllTableBookings = () => {
         case 'notArrived':
           response = await tableBookingApi.updateToDidNotArrive(bookingId);
           break;
+        case 'expired':
+          response = await tableBookingApi.updateToExpired(bookingId);
+          break;
         default:
           throw new Error(`Invalid status update: ${newStatus}`);
       }
@@ -587,6 +598,8 @@ const AllTableBookings = () => {
         return 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
       case 'notArrived':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100';
+      case 'expired':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
@@ -792,7 +805,7 @@ const AllTableBookings = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {!['completed', 'cancelled'].includes(booking.status) ? (
+                      {!['completed', 'cancelled', 'expired'].includes(booking.status) ? (
                         <select
                           value={booking.status}
                           onChange={(e) => handleStatusChange(booking._id, booking.tableBookingNo.toString(), booking.status, e.target.value)}
