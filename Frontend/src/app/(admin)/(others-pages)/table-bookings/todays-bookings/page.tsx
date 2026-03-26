@@ -98,13 +98,6 @@ const TodaysBookingsPage = () => {
     return 'text-red-600 dark:text-red-400';
   };
 
-  const getCapacityBgColor = (availableCapacity: number, maxGuests: number) => {
-    const percentage = (availableCapacity / maxGuests) * 100;
-    if (percentage > 50) return 'bg-green-100 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-200 dark:hover:bg-green-900/30';
-    if (percentage > 20) return 'bg-yellow-100 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-900/30';
-    return 'bg-red-100 dark:bg-red-900/20 border-red-200 dark:border-red-800 hover:bg-red-200 dark:hover:bg-red-900/30';
-  };
-
   if (loading) {
     return (
       <div className="p-6">
@@ -225,7 +218,7 @@ const TodaysBookingsPage = () => {
                 <div
                   key={slot.slotId}
                   onClick={() => handleSlotClick(slot.time)}
-                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer transform hover:scale-105 ${getCapacityBgColor(slot.availableCapacity, slot.maxGuests)}`}
+                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer transform hover:scale-105 bg-blue-100 ${(slot.availableCapacity, slot.maxGuests)}`}
                   title="Click to view all bookings for this slot today"
                 >
                   <div className="flex items-center justify-between mb-3">
