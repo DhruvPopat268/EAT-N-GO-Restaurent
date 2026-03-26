@@ -5,6 +5,7 @@ import axiosInstance from "@/utils/axiosConfig";
 import { toast } from "@/utils/toast";
 import { Eye, TableProperties } from "lucide-react";
 import Link from "next/link";
+import { formatDateTime } from '@/utils/dateUtils';
 
 // Utility function to format time to 12-hour format with AM/PM
 const formatTimeTo12Hour = (time24: string): string => {
@@ -139,6 +140,8 @@ interface TableBooking {
     name: string;
     symbol: string;
   };
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface PaginationInfo {
@@ -604,6 +607,12 @@ const ArrivedTableBookings = () => {
                   Allocated Tables
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Created At
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Updated At
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -611,7 +620,7 @@ const ArrivedTableBookings = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
+                  <td colSpan={11} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <TableProperties className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -678,6 +687,14 @@ const ArrivedTableBookings = () => {
                       ) : (
                         <span className="text-gray-500 dark:text-gray-400">Not Allocated</span>
                       )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div>{formatDateTime(booking.createdAt).date}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(booking.createdAt).time)}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <div>{formatDateTime(booking.updatedAt).date}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{formatTimeTo12Hour(formatDateTime(booking.updatedAt).time)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <div className="flex justify-center">
