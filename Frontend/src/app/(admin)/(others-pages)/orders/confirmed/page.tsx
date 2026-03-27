@@ -11,6 +11,7 @@ import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useSocket } from '@/context/SocketContext';
 import { useNotification } from '@/context/NotificationContext';
 import { playNotificationSound } from '@/utils/soundUtils';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 // Utility function to format time to 12-hour format with AM/PM
 const formatTimeTo12Hour = (time24: string): string => {
@@ -144,6 +145,11 @@ const ConfirmedOrdersPage = () => {
 
   // Add order notifications
   useOrderNotifications("Confirmed Orders");
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Confirmed Orders"
+  });
 
   const { socket, isConnected } = useSocket();
   const { showNotification } = useNotification();

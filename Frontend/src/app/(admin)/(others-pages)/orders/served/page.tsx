@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { formatDateTime } from '@/utils/dateUtils';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 // Utility function to format time to 12-hour format with AM/PM
 const formatTimeTo12Hour = (time24: string): string => {
@@ -141,6 +142,11 @@ const ServedOrdersPage = () => {
   // Add order notifications
   useOrderNotifications("Served Orders");
   useOrderRequestNotifications("Served Orders");
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Served Orders"
+  });
 
   useEffect(() => {
     fetchOrders(1);

@@ -13,6 +13,7 @@ import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import { useOrderRequestNotifications } from "@/hooks/useOrderRequestNotifications";
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 const itemsApi = {
   getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
@@ -88,6 +89,14 @@ const ItemListPage = () => {
   // Add order notifications
   useOrderNotifications("Menu Items");
   useOrderRequestNotifications("Menu Items");
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Menu Items",
+    onNewBooking: (bookingData) => {
+      // Handle new table booking if needed
+    }
+  });
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);

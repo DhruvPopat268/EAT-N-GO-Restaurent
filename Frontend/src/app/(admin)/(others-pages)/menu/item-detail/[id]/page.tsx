@@ -6,6 +6,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import axiosInstance from '@/utils/axiosConfig';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 const itemDetailApi = {
   getDetail: async (itemId: string) => {
@@ -83,6 +84,14 @@ const ItemDetailPage = () => {
   // Add order notifications
   useOrderNotifications("Item Detail");
   useOrderRequestNotifications("Item Detail");
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Item Detail",
+    onNewBooking: (bookingData) => {
+      // Handle new table booking if needed
+    }
+  });
 
   useEffect(() => {
     if (params.id) {

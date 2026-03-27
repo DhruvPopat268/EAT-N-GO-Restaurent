@@ -11,6 +11,7 @@ import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useSocket } from '@/context/SocketContext';
 import { useNotification } from '@/context/NotificationContext';
 import { playNotificationSound } from '@/utils/soundUtils';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 // Utility function to format time to 12-hour format with AM/PM
 const formatTimeTo12Hour = (time24: string): string => {
@@ -187,6 +188,15 @@ const AllOrdersPage = () => {
   // Add order notifications
   useOrderNotifications("All Orders");
 
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "All Orders",
+    onNewBooking: (bookingData) => {
+      // Add real-time UI update logic here if needed
+      // For example, if this page shows table bookings in a list
+    }
+  });
+
   const { socket, isConnected } = useSocket();
   const { showNotification } = useNotification();
 
@@ -215,7 +225,10 @@ const AllOrdersPage = () => {
     };
 
     socket.on('new-order', handleNewOrder);
-    return () => socket.off('new-order', handleNewOrder);
+    
+    return () => {
+      socket.off('new-order', handleNewOrder);
+    };
   }, [socket, isConnected, showNotification, pagination.page, search, statusFilter, orderTypeFilter, startDate, endDate]);
 
   useEffect(() => {

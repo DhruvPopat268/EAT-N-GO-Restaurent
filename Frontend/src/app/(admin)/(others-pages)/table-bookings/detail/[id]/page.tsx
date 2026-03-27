@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import axiosInstance from "@/utils/axiosConfig";
 import { toast } from "@/utils/toast";
 import { ArrowLeft, User, Calendar, Users, CreditCard, MapPin, Clock } from "lucide-react";
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 // Utility function to format time to 12-hour format with AM/PM
 const formatTimeTo12Hour = (time24: string): string => {
@@ -141,6 +142,11 @@ const TableBookingDetailPage = () => {
   const [selectedBooking, setSelectedBooking] = useState<TableBookingDetail | null>(null);
   const [tableNumbers, setTableNumbers] = useState<string[]>(['']);
   const [allocating, setAllocating] = useState(false);
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Table Booking Details"
+  });
 
   useEffect(() => {
     if (bookingId) {

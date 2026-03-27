@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import MapLocationSelector from "@/components/common/MapLocationSelector";
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 import { toast } from "@/utils/toast";
 
 const cuisineTypes = [
@@ -68,6 +69,11 @@ export default function Profile() {
 
   // Add order notifications
   useOrderNotifications("Profile Page");
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Profile Page"
+  });
 
   useEffect(() => {
     const fetchRestaurantDetails = async () => {

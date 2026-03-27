@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import { Clock, Settings, DollarSign, Users, Calendar, ToggleLeft, ToggleRight } from "lucide-react";
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -126,6 +127,11 @@ const TableBookingConfigPage = () => {
   const [viewOfferModal, setViewOfferModal] = useState<{ show: boolean, offer: Offer | null }>({ show: false, offer: null });
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean, id: string, name: string }>({ show: false, id: '', name: '' });
   const [showUpdateSlotsConfirm, setShowUpdateSlotsConfirm] = useState(false);
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Table Booking Configuration"
+  });
 
   // Get currency from localStorage
   const getCurrency = () => {

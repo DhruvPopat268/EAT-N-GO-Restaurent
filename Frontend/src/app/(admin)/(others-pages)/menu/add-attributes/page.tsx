@@ -8,6 +8,7 @@ import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 const attributesApi = {
   getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
@@ -82,6 +83,14 @@ const AddAttributesPage = () => {
   // Add order notifications
   useOrderNotifications("Add Attributes");
   useOrderRequestNotifications("Add Attributes");
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Add Attributes",
+    onNewBooking: (bookingData) => {
+      // Handle new table booking if needed
+    }
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {

@@ -6,6 +6,7 @@ import { toast } from "@/utils/toast";
 import { Eye, TableProperties } from "lucide-react";
 import Link from "next/link";
 import { formatDateTime } from '@/utils/dateUtils';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 // Utility function to format time to 12-hour format with AM/PM
 const formatTimeTo12Hour = (time24: string): string => {
@@ -176,6 +177,11 @@ const SeatedTableBookings = () => {
   // Debounced search
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Seated Table Bookings"
+  });
 
   const fetchSeatedBookings = async (page: number = pagination.currentPage, limit: number = pagination.limit, applyFilters: boolean = false) => {
     try {

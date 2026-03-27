@@ -14,6 +14,7 @@ import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 import { useOrderRequestNotifications } from "@/hooks/useOrderRequestNotifications";
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 const BASE_URL = `${process.env.NEXT_PUBLIC_BASE_URL}`;
 
@@ -162,6 +163,14 @@ const ComboListPage = () => {
   // Add order notifications
   useOrderNotifications("Combos");
   useOrderRequestNotifications("Combos");
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Combos",
+    onNewBooking: (bookingData) => {
+      // Handle new table booking if needed
+    }
+  });
 
   const [combos, setCombos] = useState<ComboItem[]>([]);
   const [items, setItems] = useState<Item[]>([]);

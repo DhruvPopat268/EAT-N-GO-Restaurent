@@ -8,6 +8,7 @@ import MultiSelect from "@/components/form/MultiSelect";
 import axiosInstance from '@/utils/axiosConfig';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 const itemsApi = {
   create: async (data: any, images: File[]) => {
@@ -143,6 +144,14 @@ const AddItemPage = () => {
   // Add order notifications
   useOrderNotifications("Add Menu Item");
   useOrderRequestNotifications("Add Menu Item");
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Add Menu Item",
+    onNewBooking: (bookingData) => {
+      // Handle new table booking if needed
+    }
+  });
 
   useEffect(() => {
     fetchData();

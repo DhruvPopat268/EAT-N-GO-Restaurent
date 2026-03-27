@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import axiosInstance from '@/utils/axiosConfig';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 const combosApi = {
   getDetail: async (comboId: string) => {
@@ -56,6 +57,14 @@ const ComboDetailPage = () => {
   const router = useRouter();
   const [combo, setCombo] = useState<ComboDetail | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Combo Detail",
+    onNewBooking: (bookingData) => {
+      // Handle new table booking if needed
+    }
+  });
 
   useEffect(() => {
     if (params.id) {

@@ -7,6 +7,11 @@ import { Eye, TableProperties } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { formatDateTime } from '@/utils/dateUtils';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
+import { useTableBookingNotifications } from '@/hooks/useTableBookingNotifications';
+import { useSocket } from '@/context/SocketContext';
+import { useNotification } from '@/context/NotificationContext';
+import { playNotificationSound } from '@/utils/soundUtils';
 
 // Utility function to format time to 12-hour format with AM/PM
 const formatTimeTo12Hour = (time24: string): string => {
@@ -197,6 +202,11 @@ const AllTableBookings = () => {
   // Debounced search
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "All Table Bookings"
+  });
 
   const fetchBookings = async (page: number = pagination.currentPage, limit: number = pagination.limit, applyFilters: boolean = false) => {
     try {

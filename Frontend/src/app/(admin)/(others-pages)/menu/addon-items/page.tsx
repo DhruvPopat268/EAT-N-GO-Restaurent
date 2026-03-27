@@ -9,6 +9,7 @@ import axiosInstance from '@/utils/axiosConfig';
 import Pagination from '@/components/tables/Pagination';
 import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 import { useOrderRequestNotifications } from '@/hooks/useOrderRequestNotifications';
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 const addonItemsApi = {
   getAll: async (page: number = 1, limit: number = 10, filters?: any) => {
@@ -159,6 +160,14 @@ const AddonItemsPage = () => {
   // Add order notifications
   useOrderNotifications("Addon Items");
   useOrderRequestNotifications("Addon Items");
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Addon Items",
+    onNewBooking: (bookingData) => {
+      // Handle new table booking if needed
+    }
+  });
   
   // Filter subcategories based on selected category
   const filteredSubcategories = subcategories.filter(sub => 

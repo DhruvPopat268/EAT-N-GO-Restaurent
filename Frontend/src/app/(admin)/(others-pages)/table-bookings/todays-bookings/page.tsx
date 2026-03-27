@@ -4,6 +4,7 @@ import { toast } from "@/utils/toast";
 import axiosInstance from '@/utils/axiosConfig';
 import { Clock, Users, Calendar, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTableBookingSocket } from '@/hooks/useTableBookingSocket';
 
 interface ActiveSlot {
   slotId: string;
@@ -27,6 +28,11 @@ const TodaysBookingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+
+  // Add table booking socket events
+  useTableBookingSocket({
+    pageName: "Today's Bookings"
+  });
 
   useEffect(() => {
     fetchActiveSlots();

@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useNotification } from '@/context/NotificationContext';
-import { X, Eye, Clock, Users, CreditCard, ShoppingBag, Calendar, MapPin, Navigation } from 'lucide-react';
+import { X, Eye, Clock, Users, CreditCard, ShoppingBag, Calendar, MapPin, Navigation, TableProperties } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const NotificationPopup: React.FC = () => {
@@ -49,14 +49,53 @@ const NotificationPopup: React.FC = () => {
         const timings = notification.orderType === 'dine-in' ? notification.eatTimings : notification.takeawayTimings;
         const isOrderRequest = !!notification.orderRequestNo;
         const isUpdatedOrder = !!notification.isUpdated;
+        const isTableBooking = !!notification.isTableBooking;
+        const isStatusUpdate = !!notification.isStatusUpdate;
+        
+        // Format time to 12-hour format
+        const formatTimeTo12Hour = (time24: string): string => {
+          if (!time24) return '-';
+          const [hours, minutes] = time24.split(':');
+          const hour24 = parseInt(hours, 10);
+          if (isNaN(hour24) || hour24 < 0 || hour24 > 23) return '-';
+          const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+          const ampm = hour24 >= 12 ? 'PM' : 'AM';
+          return `${hour12}:${minutes} ${ampm}`;
+        };
+        
+        // Format date to DD/MM/YY
+        const formatDateToDDMMYY = (dateStr: string): string => {
+          if (!dateStr) return '';
+          const date = new Date(dateStr);
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear().toString().slice(-2);
+          return `${day}/${month}/${year}`;
+        };
         
         return (
           <div
             key={notification.id}
-            className={`bg-white dark:bg-gray-900 border-l-4 ${isOrderRequest ? 'border-l-amber-600 dark:border-l-amber-500' : isUpdatedOrder ? 'border-l-blue-600 dark:border-l-blue-500' : 'border-l-black dark:border-l-white'} rounded-2xl shadow-2xl overflow-hidden w-full max-w-md animate-slide-in relative transform transition-all duration-300 hover:scale-105`}
+            className={`bg-white dark:bg-gray-900 border-l-4 ${
+              isTableBooking 
+                ? (isStatusUpdate ? 'border-l-purple-600 dark:border-l-purple-500' : 'border-l-green-600 dark:border-l-green-500')
+                : isOrderRequest 
+                  ? 'border-l-amber-600 dark:border-l-amber-500' 
+                  : isUpdatedOrder 
+                    ? 'border-l-blue-600 dark:border-l-blue-500' 
+                    : 'border-l-black dark:border-l-white'
+            } rounded-2xl shadow-2xl overflow-hidden w-full max-w-md animate-slide-in relative transform transition-all duration-300 hover:scale-105`}
           >
             {/* Header with pulsing indicator */}
-            <div className={`${isOrderRequest ? 'bg-amber-600 dark:bg-amber-500' : isUpdatedOrder ? 'bg-blue-600 dark:bg-blue-500' : 'bg-black dark:bg-white'} px-6 py-4 relative overflow-hidden`}>
+            <div className={`${
+              isTableBooking 
+                ? (isStatusUpdate ? 'bg-purple-600 dark:bg-purple-500' : 'bg-green-600 dark:bg-green-500')
+                : isOrderRequest 
+                  ? 'bg-amber-600 dark:bg-amber-500' 
+                  : isUpdatedOrder 
+                    ? 'bg-blue-600 dark:bg-blue-500' 
+                    : 'bg-black dark:bg-white'
+            } px-6 py-4 relative overflow-hidden`}>
               <div className="absolute inset-0 bg-white/10 dark:bg-black/10 animate-pulse"></div>
               <div className="relative flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -64,7 +103,14 @@ const NotificationPopup: React.FC = () => {
                   <div className="w-3 h-3 bg-white dark:bg-black rounded-full animate-ping animation-delay-200"></div>
                   <div className="w-3 h-3 bg-white dark:bg-black rounded-full animate-ping animation-delay-400"></div>
                   <h3 className="text-white dark:text-black font-bold text-lg ml-2">
-                    {isOrderRequest ? '📋 Order Request!' : isUpdatedOrder ? '🔄 Order Updated!' : '🍽️ New Order Alert!'}
+                    {isTableBooking 
+                      ? (isStatusUpdate ? '📅 Table Booking Updated!' : '🪑 New Table Booking!')
+                      : isOrderRequest 
+                        ? '📋 Order Request!' 
+                        : isUpdatedOrder 
+                          ? '🔄 Order Updated!' 
+                          : '🍽️ New Order Alert!'
+                    }
                   </h3>
                 </div>
                 <button
@@ -113,16 +159,26 @@ const NotificationPopup: React.FC = () => {
                 <div className="flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
                   <CreditCard className="w-4 h-4 text-black dark:text-white" />
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Amount</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {isTableBooking ? 'Cover Charges' : 'Amount'}
+                    </p>
                     <p className="font-bold text-black dark:text-white">₹{notification.totalAmount}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
-                  <ShoppingBag className="w-4 h-4 text-black dark:text-white" />
+                  {isTableBooking ? (
+                    <Users className="w-4 h-4 text-black dark:text-white" />
+                  ) : (
+                    <ShoppingBag className="w-4 h-4 text-black dark:text-white" />
+                  )}
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Items</p>
-                    <p className="font-bold text-black dark:text-white">{notification.itemsCount}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {isTableBooking ? 'Guests' : 'Items'}
+                    </p>
+                    <p className="font-bold text-black dark:text-white">
+                      {isTableBooking ? notification.noOfGuest : notification.itemsCount}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -136,6 +192,36 @@ const NotificationPopup: React.FC = () => {
                     <p className="font-semibold text-black dark:text-white text-sm">
                       {notification.noOfGuest} {notification.noOfGuest === 1 ? 'Guest' : 'Guests'}
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Table Booking Date & Time - Only for table bookings */}
+              {isTableBooking && notification.bookingDate && notification.slotTime && (
+                <div className="flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
+                  <Calendar className="w-4 h-4 text-black dark:text-white" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Booking Date & Time</p>
+                    <p className="font-semibold text-black dark:text-white text-sm">
+                      {notification.bookingDate} at {notification.slotTime}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Status - Only for table bookings */}
+              {isTableBooking && notification.coverChargePaymentStatus && (
+                <div className="flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600">
+                  <CreditCard className="w-4 h-4 text-black dark:text-white" />
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Payment Status</p>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      notification.coverChargePaymentStatus === 'paid'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                        : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                    }`}>
+                      {notification.coverChargePaymentStatus}
+                    </span>
                   </div>
                 </div>
               )}
@@ -196,17 +282,36 @@ const NotificationPopup: React.FC = () => {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => {
-                    // Use orderRequestNo field to determine navigation route
-                    const detailUrl = notification.orderRequestNo 
-                      ? `/order-requests/detail/${notification.id}` 
-                      : `/orders/detail/${notification.id}`;
+                    let detailUrl;
+                    if (isTableBooking) {
+                      detailUrl = `/table-bookings/detail/${notification.id}`;
+                    } else if (notification.orderRequestNo) {
+                      detailUrl = `/order-requests/detail/${notification.id}`;
+                    } else {
+                      detailUrl = `/orders/detail/${notification.id}`;
+                    }
                     router.push(detailUrl);
                     dismissNotification(notification.id);
                   }}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 ${isOrderRequest ? 'bg-amber-600 dark:bg-amber-500 text-white hover:bg-amber-700 dark:hover:bg-amber-600' : isUpdatedOrder ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600' : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'} rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 ${
+                    isTableBooking 
+                      ? (isStatusUpdate ? 'bg-purple-600 dark:bg-purple-500 text-white hover:bg-purple-700 dark:hover:bg-purple-600' : 'bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600')
+                      : isOrderRequest 
+                        ? 'bg-amber-600 dark:bg-amber-500 text-white hover:bg-amber-700 dark:hover:bg-amber-600' 
+                        : isUpdatedOrder 
+                          ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600' 
+                          : 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200'
+                  } rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg`}
                 >
                   <Eye className="w-4 h-4" />
-                  {isOrderRequest ? 'View Order Req' : isUpdatedOrder ? 'View Updated Order' : 'View Order'}
+                  {isTableBooking 
+                    ? (isStatusUpdate ? 'View Updated Booking' : 'View Table Booking')
+                    : isOrderRequest 
+                      ? 'View Order Req' 
+                      : isUpdatedOrder 
+                        ? 'View Updated Order' 
+                        : 'View Order'
+                  }
                 </button>
                 <button
                   onClick={() => dismissNotification(notification.id)}
