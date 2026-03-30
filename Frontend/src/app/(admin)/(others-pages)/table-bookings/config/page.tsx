@@ -1217,7 +1217,7 @@ const TableBookingConfigPage = () => {
             {/* Create/Edit Offer Modal */}
             {isOfferModalOpen && (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg mx-4 shadow-xl">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {editingOfferId ? "Edit Offer" : "Create New Offer"}
@@ -1284,6 +1284,40 @@ const TableBookingConfigPage = () => {
                         step="0.01"
                         required
                       />
+                    </div>
+
+                    {/* Discount Breakdown Info */}
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <h4 className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-3">
+                        Discount Breakdown
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-blue-800 dark:text-blue-300">Restaurant Discount:</span>
+                          <span className="font-medium text-blue-900 dark:text-blue-200">
+                            {offerFormData.restaurantDiscount || '0'}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-blue-800 dark:text-blue-300">Admin Discount:</span>
+                          <span className="font-medium text-blue-900 dark:text-blue-200">
+                            {config.adminOfferPercentageOnBill || 0}%
+                          </span>
+                        </div>
+                        <div className="border-t border-blue-200 dark:border-blue-700 pt-2">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-blue-900 dark:text-blue-200">Total Customer Discount:</span>
+                            <span className="font-bold text-blue-900 dark:text-blue-200">
+                              {(parseFloat(offerFormData.restaurantDiscount) || 0) + (config.adminOfferPercentageOnBill || 0)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-3">
+                        <strong>Note:</strong> Admin will contribute {config.adminOfferPercentageOnBill || 0}% discount. 
+                        Customer will receive total {(parseFloat(offerFormData.restaurantDiscount) || 0) + (config.adminOfferPercentageOnBill || 0)}% discount 
+                        (Restaurant: {offerFormData.restaurantDiscount || '0'}% + Admin: {config.adminOfferPercentageOnBill || 0}%)
+                      </p>
                     </div>
 
                     <div>
