@@ -33,10 +33,16 @@ interface TokenCharges {
   chargesPerPerson: number;
 }
 
+interface CoverChargeConfig {
+  coverChargePerPerson: number;
+  minBufferTimeBeforeCancel: number;
+}
+
 interface TableBookingConfig {
   tableReservationBooking: boolean;
   timeSlots: TimeSlotConfig | null;
   tokenCharges: TokenCharges | null;
+  tableReservationBookingConfig?: CoverChargeConfig;
 }
 
 interface Offer {
@@ -44,7 +50,9 @@ interface Offer {
   restaurantId: string;
   name: string;
   description?: string;
-  percentage: number;
+  restaurantDiscount: number;
+  adminDiscount: number;
+  totalDiscount: number;
   status: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -53,7 +61,7 @@ interface Offer {
 interface OfferFormData {
   name: string;
   description: string;
-  percentage: string;
+  restaurantDiscount: string;
   status: boolean;
 }
 
@@ -67,7 +75,7 @@ const offersApi = {
   create: async (data: {
     name: string;
     description?: string;
-    percentage: number;
+    restaurantDiscount: number;
     status: boolean;
   }) => {
     const response = await axiosInstance.post('/api/restaurants/table-booking/offers', data);
@@ -77,7 +85,7 @@ const offersApi = {
   update: async (offerId: string, data: {
     name: string;
     description?: string;
-    percentage: number;
+    restaurantDiscount: number;
     status: boolean;
   }) => {
     // Include offerId in the request body as required by backend
@@ -120,13 +128,20 @@ const TableBookingConfigPage = () => {
   const [offerFormData, setOfferFormData] = useState<OfferFormData>({
     name: '',
     description: '',
-    percentage: '',
+    restaurantDiscount: '',
     status: true
   });
   const [submittingOffer, setSubmittingOffer] = useState(false);
   const [viewOfferModal, setViewOfferModal] = useState<{ show: boolean, offer: Offer | null }>({ show: false, offer: null });
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean, id: string, name: string }>({ show: false, id: '', name: '' });
   const [showUpdateSlotsConfirm, setShowUpdateSlotsConfirm] = useState(false);
+
+  // Cover Charges state
+  const [coverChargeData, setCoverChargeData] = useState({
+    coverChargePerPerson: '',
+    minBufferTimeBeforeCancel: ''
+  });
+  const [savingCoverCharge, setSavingCoverCharge] = useState(false);
 
   // Add table booking socket events
   useTableBookingSocket({
@@ -146,6 +161,15 @@ const TableBookingConfigPage = () => {
   useEffect(() => {
     fetchConfig(); // This now fetches both config and offers
   }, []);
+
+  useEffect(() => {
+    if (config.tableReservationBookingConfig) {
+      setCoverChargeData({
+        coverChargePerPerson: config.tableReservationBookingConfig.coverChargePerPerson?.toString() || '',
+        minBufferTimeBeforeCancel: config.tableReservationBookingConfig.minBufferTimeBeforeCancel?.toString() || ''
+      });
+    }
+  }, [config.tableReservationBookingConfig]);
 
   const fetchConfig = async () => {
     try {
@@ -386,7 +410,7 @@ const TableBookingConfigPage = () => {
       const offerData = {
         name: offerFormData.name,
         description: offerFormData.description,
-        percentage: parseFloat(offerFormData.percentage),
+        restaurantDiscount: parseFloat(offerFormData.restaurantDiscount),
         status: offerFormData.status
       };
 
@@ -406,7 +430,7 @@ const TableBookingConfigPage = () => {
         setOfferFormData({
           name: '',
           description: '',
-          percentage: '',
+          restaurantDiscount: '',
           status: true
         });
       } else {
@@ -428,7 +452,7 @@ const TableBookingConfigPage = () => {
       const updatedOfferData = {
         name: offerToUpdate.name,
         description: offerToUpdate.description,
-        percentage: offerToUpdate.percentage,
+        restaurantDiscount: offerToUpdate.restaurantDiscount,
         status: !currentStatus
       };
 
@@ -454,7 +478,7 @@ const TableBookingConfigPage = () => {
     setOfferFormData({
       name: offer.name,
       description: offer.description || '',
-      percentage: offer.percentage.toString(),
+      restaurantDiscount: offer.restaurantDiscount.toString(),
       status: offer.status
     });
     setIsOfferModalOpen(true);
@@ -474,6 +498,29 @@ const TableBookingConfigPage = () => {
       toast.error(error.response?.data?.message || 'Error deleting offer');
     } finally {
       setDeleteConfirm({ show: false, id: '', name: '' });
+    }
+  };
+
+  // Cover Charges functions
+  const handleCoverChargeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingCoverCharge(true);
+
+    try {
+      const response = await axiosInstance.patch('/api/restaurants/table-booking/updateCoverChargeConfig', {
+        coverChargePerPerson: parseFloat(coverChargeData.coverChargePerPerson) || 0,
+        minBufferTimeBeforeCancel: parseFloat(coverChargeData.minBufferTimeBeforeCancel) || 0
+      });
+
+      if (response.data.message) {
+        await fetchConfig();
+        toast.success('Cover charge configuration updated successfully!');
+      }
+    } catch (error: any) {
+      console.error('Error updating cover charge config:', error);
+      toast.error(error.response?.data?.message || 'Error updating cover charge configuration');
+    } finally {
+      setSavingCoverCharge(false);
     }
   };
 
@@ -982,6 +1029,75 @@ const TableBookingConfigPage = () => {
               </div>
             )}
 
+            {/* Cover Charges Section */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Cover Charges Configuration
+                </h3>
+              </div>
+
+              <form onSubmit={handleCoverChargeSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Cover Charge Per Person ({getCurrency()})
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={coverChargeData.coverChargePerPerson}
+                      onChange={(e) => setCoverChargeData(prev => ({ ...prev, coverChargePerPerson: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 
+                        bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                        transition-all duration-200 shadow-sm"
+                      placeholder="Enter cover charge amount"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Current: {config.tableReservationBookingConfig?.coverChargePerPerson ? `${getCurrency()}${config.tableReservationBookingConfig.coverChargePerPerson}` : 'Not set'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Min Buffer Time Before Cancel (minutes)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={coverChargeData.minBufferTimeBeforeCancel}
+                      onChange={(e) => setCoverChargeData(prev => ({ ...prev, minBufferTimeBeforeCancel: e.target.value }))}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 
+                        bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
+                        transition-all duration-200 shadow-sm"
+                      placeholder="Enter buffer time in minutes"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Current: {config.tableReservationBookingConfig?.minBufferTimeBeforeCancel ? `${config.tableReservationBookingConfig.minBufferTimeBeforeCancel} minutes` : 'Not set'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={savingCoverCharge}
+                    className="px-6 py-2.5 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 
+                      transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed 
+                      flex items-center gap-2 shadow-md"
+                  >
+                    {savingCoverCharge && (
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    )}
+                    Update Cover Charges
+                  </button>
+                </div>
+              </form>
+            </div>
+
             {/* Create Offers Section */}
             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
               <div className="flex items-center justify-between mb-6">
@@ -1018,7 +1134,9 @@ const TableBookingConfigPage = () => {
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Offer Name</th>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Description</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Percentage</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Restaurant Discount</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Admin Discount</th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Total Discount</th>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</th>
                           <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -1039,7 +1157,17 @@ const TableBookingConfigPage = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900 dark:text-white">
-                                {offer.percentage}%
+                                {offer.restaurantDiscount}%
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900 dark:text-white">
+                                {offer.adminDiscount || 0}%
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900 dark:text-white">
+                                {offer.totalDiscount || 0}%
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -1101,7 +1229,7 @@ const TableBookingConfigPage = () => {
                         setOfferFormData({
                           name: '',
                           description: '',
-                          percentage: '',
+                          restaurantDiscount: '',
                           status: true
                         });
                       }}
@@ -1143,14 +1271,14 @@ const TableBookingConfigPage = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Percentage (%) *
+                        Restaurant Discount (%) *
                       </label>
                       <input
                         type="number"
-                        value={offerFormData.percentage}
-                        onChange={(e) => setOfferFormData(prev => ({ ...prev, percentage: e.target.value }))}
+                        value={offerFormData.restaurantDiscount}
+                        onChange={(e) => setOfferFormData(prev => ({ ...prev, restaurantDiscount: e.target.value }))}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg  dark:bg-gray-700 dark:text-white"
-                        placeholder="Enter percentage (e.g., 10, 15, 20)"
+                        placeholder="Enter restaurant discount percentage (e.g., 10, 15, 20)"
                         min="0"
                         max="100"
                         step="0.01"
@@ -1187,7 +1315,7 @@ const TableBookingConfigPage = () => {
                           setOfferFormData({
                             name: '',
                             description: '',
-                            percentage: '',
+                            restaurantDiscount: '',
                             status: true
                           });
                         }}
@@ -1247,9 +1375,9 @@ const TableBookingConfigPage = () => {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Percentage
+                          Restaurant Discount
                         </label>
-                        <p className="text-gray-900 dark:text-white">{viewOfferModal.offer.percentage}%</p>
+                        <p className="text-gray-900 dark:text-white">{viewOfferModal.offer.restaurantDiscount}%</p>
                       </div>
 
                       <div>
