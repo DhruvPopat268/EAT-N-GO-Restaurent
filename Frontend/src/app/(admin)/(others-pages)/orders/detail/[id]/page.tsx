@@ -106,6 +106,7 @@ interface OrderDetail {
     };
     savedAmount: number;
   };
+  appliedPendingCancellationCharges?: number;
   status: string;
   waitingTime?: {
     startTime: string;
@@ -544,6 +545,13 @@ const OrderDetailPage = () => {
                       </span>
                     </div>
                     <span className="text-sm font-semibold text-red-600 dark:text-red-400">-₹{order.appliedCoupon.savedAmount}</span>
+                  </div>
+                )}
+                
+                {order.appliedPendingCancellationCharges && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Cancellation Charges:</span>
+                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">+₹{order.appliedPendingCancellationCharges}</span>
                   </div>
                 )}
                 

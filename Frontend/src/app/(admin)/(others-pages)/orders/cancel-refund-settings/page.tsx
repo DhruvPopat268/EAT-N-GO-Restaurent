@@ -24,6 +24,17 @@ const CancelRefundSettingsPage = () => {
     ready: { percentage: 0, status: false },
     served: { percentage: 0, status: false }
   });
+  const [maxUserDues, setMaxUserDues] = useState<number>(500);
+
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
 
   useEffect(() => {
     fetchSettings();
@@ -34,8 +45,9 @@ const CancelRefundSettingsPage = () => {
       setLoading(true);
       const response = await axiosInstance.get('/api/restaurants/order-cancel-refund');
       if (response.data.success && response.data.data) {
-        const { confirmed, preparing, ready, served } = response.data.data;
+        const { confirmed, preparing, ready, served, maxUserDues = 500 } = response.data.data;
         setSettings({ confirmed, preparing, ready, served });
+        setMaxUserDues(maxUserDues);
       }
     } catch (error: any) {
       if (error.response?.status !== 404) {
@@ -59,7 +71,10 @@ const CancelRefundSettingsPage = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      const response = await axiosInstance.put('/api/restaurants/order-cancel-refund', settings);
+      const response = await axiosInstance.put('/api/restaurants/order-cancel-refund', {
+        ...settings,
+        maxOrderCancellationChargesDues: maxUserDues
+      });
       if (response.data.success) {
         toast.success('Settings saved successfully');
       }
@@ -155,22 +170,57 @@ const CancelRefundSettingsPage = () => {
             </div>
           ))}
         </div>
+      </div>
 
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            {saving && (
-              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            )}
-            Save Settings
-          </button>
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 mt-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Payment Restriction Settings
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Configure maximum dues limit for pay at restaurant option
+          </p>
         </div>
+
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Maximum User Dues (Cancellation Charges)
+              </label>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Users with pending cancellation charges above this amount will only see online payment options
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-gray-600 dark:text-gray-400">{getCurrency()}</span>
+              <input
+                type="number"
+                min="0"
+                step="50"
+                value={maxUserDues}
+                onChange={(e) => setMaxUserDues(parseInt(e.target.value) || 0)}
+                className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          {saving && (
+            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          )}
+          Save Settings
+        </button>
       </div>
     </div>
   );
