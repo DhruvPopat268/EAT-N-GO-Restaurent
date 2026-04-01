@@ -45,9 +45,9 @@ const CancelRefundSettingsPage = () => {
       setLoading(true);
       const response = await axiosInstance.get('/api/restaurants/order-cancel-refund');
       if (response.data.success && response.data.data) {
-        const { confirmed, preparing, ready, served, maxUserDues = 500 } = response.data.data;
+        const { confirmed, preparing, ready, served, maxOrderCancellationChargesDues = 500 } = response.data.data;
         setSettings({ confirmed, preparing, ready, served });
-        setMaxUserDues(maxUserDues);
+        setMaxUserDues(maxOrderCancellationChargesDues);
       }
     } catch (error: any) {
       if (error.response?.status !== 404) {
