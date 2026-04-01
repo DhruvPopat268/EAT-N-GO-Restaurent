@@ -196,6 +196,16 @@ const OrderDetailPage = () => {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [statusConfirm, setStatusConfirm] = useState<{show: boolean, currentStatus: string, newStatus: string}>({show: false, currentStatus: '', newStatus: ''});
 
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
+
   useEffect(() => {
     if (orderId) {
       fetchOrderDetail();
@@ -469,7 +479,7 @@ const OrderDetailPage = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-green-600 dark:text-green-400">₹{item.itemTotal}</p>
+                          <p className="font-semibold text-green-600 dark:text-green-400">{getCurrency()}{item.itemTotal}</p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">Qty: {item.quantity}</p>
                         </div>
                       </div>
@@ -500,7 +510,7 @@ const OrderDetailPage = () => {
                               </div>
                             ))}
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              Customization Total: ₹{item.customizationTotal}
+                              Customization Total: {getCurrency()}{item.customizationTotal}
                             </p>
                           </div>
                         )}
@@ -512,12 +522,12 @@ const OrderDetailPage = () => {
                             {item.selectedAddons.map((addon, idx) => (
                               <div key={idx} className="ml-2">
                                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  • {addon.addonId.name} ({addon.selectedAttribute.name}) x {addon.quantity} - ₹{addon.addonTotal}
+                                  • {addon.addonId.name} ({addon.selectedAttribute.name}) x {addon.quantity} - {getCurrency()}{addon.addonTotal}
                                 </p>
                               </div>
                             ))}
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              Addons Total: ₹{item.addonsTotal}
+                              Addons Total: {getCurrency()}{item.addonsTotal}
                             </p>
                           </div>
                         )}
@@ -533,7 +543,7 @@ const OrderDetailPage = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Base Total:</span>
-                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">₹{order.baseTotalAmount}</span>
+                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">{getCurrency()}{order.baseTotalAmount}</span>
                 </div>
                 
                 {order.appliedCoupon && (
@@ -544,21 +554,21 @@ const OrderDetailPage = () => {
                         {order.appliedCoupon.couponId.couponCode}
                       </span>
                     </div>
-                    <span className="text-sm font-semibold text-red-600 dark:text-red-400">-₹{order.appliedCoupon.savedAmount}</span>
+                    <span className="text-sm font-semibold text-red-600 dark:text-red-400">-{getCurrency()}{order.appliedCoupon.savedAmount}</span>
                   </div>
                 )}
                 
-                {order.appliedPendingCancellationCharges && (
+                {order.appliedPendingCancellationCharges > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Cancellation Charges:</span>
-                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">+₹{order.appliedPendingCancellationCharges}</span>
+                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">+{getCurrency()}{order.appliedPendingCancellationCharges}</span>
                   </div>
                 )}
                 
                 <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-900 dark:text-white">Final Total:</span>
-                    <span className="text-xl font-bold text-green-600 dark:text-green-400">₹{order.totalAmount}</span>
+                    <span className="text-xl font-bold text-green-600 dark:text-green-400">{getCurrency()}{order.totalAmount}</span>
                   </div>
                 </div>
               </div>

@@ -60,6 +60,7 @@ interface OrderDetail {
     couponId: string;
     savedAmount: number;
   };
+  appliedPendingCancellationCharges?: number;
   waitingTime?: {
     startTime: string;
     endTime: string;
@@ -98,6 +99,16 @@ export default function OrderRequestDetail() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
+
+  // Get currency from localStorage
+  const getCurrency = () => {
+    try {
+      const currency = JSON.parse(localStorage.getItem('currency') || '{}');
+      return currency.symbol || '₹';
+    } catch {
+      return '₹';
+    }
+  };
 
   // Add order notifications
   useOrderNotifications("Order Request Detail");
@@ -372,7 +383,7 @@ export default function OrderRequestDetail() {
                           <p className="text-gray-600 dark:text-gray-400 text-sm">{item.itemId.description}</p>
                         </div>
                         <div className="text-right ml-4">
-                          <p className="text-lg font-semibold text-green-600">₹{item.itemTotal}</p>
+                          <p className="text-lg font-semibold text-green-600">{getCurrency()}{item.itemTotal}</p>
                         </div>
                       </div>
                       
@@ -428,20 +439,27 @@ export default function OrderRequestDetail() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Base Total:</span>
-                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">₹{order.baseCartTotal}</span>
+                  <span className="text-sm font-semibold text-green-600 dark:text-green-400">{getCurrency()}{order.baseCartTotal}</span>
                 </div>
                 
                 {order.appliedCoupon && order.appliedCoupon.savedAmount > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Coupon Discount:</span>
-                    <span className="text-sm font-semibold text-red-600 dark:text-red-400">-₹{order.appliedCoupon.savedAmount}</span>
+                    <span className="text-sm font-semibold text-red-600 dark:text-red-400">-{getCurrency()}{order.appliedCoupon.savedAmount}</span>
+                  </div>
+                )}
+                
+                {order.appliedPendingCancellationCharges && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Cancellation Charges:</span>
+                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">+{getCurrency()}{order.appliedPendingCancellationCharges}</span>
                   </div>
                 )}
                 
                 <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-900 dark:text-white">Final Total:</span>
-                    <span className="text-xl font-bold text-green-600 dark:text-green-400">₹{order.cartTotal}</span>
+                    <span className="text-xl font-bold text-green-600 dark:text-green-400">{getCurrency()}{order.cartTotal}</span>
                   </div>
                 </div>
               </div>
