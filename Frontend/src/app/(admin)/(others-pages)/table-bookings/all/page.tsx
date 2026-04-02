@@ -89,10 +89,16 @@ const tableBookingApi = {
     return response.data;
   },
 
-  updateToCompleted: async (bookingId: string) => {
-    const response = await axiosInstance.patch('/api/restaurants/table-bookings/completed', {
-      bookingId
-    });
+  updateToCompleted: async (bookingId: string, finalBillAmount?: number, collectedBy?: string) => {
+    const payload: any = { bookingId };
+    if (finalBillAmount !== undefined) {
+      payload.finalBillAmount = finalBillAmount;
+    }
+    if (collectedBy !== undefined) {
+      payload.collectedBy = collectedBy;
+    }
+    
+    const response = await axiosInstance.patch('/api/restaurants/table-bookings/completed', payload);
     return response.data;
   },
 
@@ -145,6 +151,12 @@ interface TableBooking {
   coverCharges: number;
   coverChargePaymentStatus: string;
   status: string;
+  finalBillPaymentId?: string;
+  finalBill?: {
+    amount: number;
+    collectedBy: 'restaurant' | 'app';
+    setAt: string;
+  };
   allocatedTables?: {
     tableNumbers: string[];
     allocatedAt: string;
@@ -183,6 +195,9 @@ const AllTableBookings = () => {
   const [showCancelModal, setShowCancelModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
   const [cancelReason, setCancelReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [showBillCollectionModal, setShowBillCollectionModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
+  const [finalBillAmount, setFinalBillAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'restaurant' | 'app'>('restaurant');
   const searchParams = useSearchParams();
 
   // Filter states
@@ -510,6 +525,15 @@ const AllTableBookings = () => {
       return;
     }
 
+    // Check if transitioning from seated to completed and no finalBill
+    if (currentStatus === 'seated' && newStatus === 'completed') {
+      const booking = bookings.find(b => b._id === bookingId);
+      if (booking && !booking.finalBill) {
+        setShowBillCollectionModal({ show: true, bookingId, bookingNo });
+        return;
+      }
+    }
+
     setStatusConfirm({
       show: true,
       bookingId,
@@ -589,6 +613,49 @@ const AllTableBookings = () => {
       setActionLoading(false);
       setShowCancelModal({ show: false, bookingId: '', bookingNo: '' });
       setCancelReason('');
+    }
+  };
+
+  const handleBillCollection = async () => {
+    if (!finalBillAmount.trim()) {
+      toast.error('Please enter the final bill amount');
+      return;
+    }
+
+    const billAmount = parseInt(finalBillAmount);
+    if (isNaN(billAmount) || billAmount <= 0) {
+      toast.error('Please enter a valid bill amount');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const response = await axiosInstance.patch('/api/restaurants/table-bookings/completed', {
+        bookingId: showBillCollectionModal.bookingId,
+        finalBillAmount: billAmount,
+        collectedBy: paymentMethod
+      });
+
+      if (response.data.success) {
+        if (paymentMethod === 'restaurant') {
+          toast.success('Booking completed successfully!');
+        } else {
+          toast.success('Final bill set. Waiting for customer payment via app.');
+        }
+        
+        // Refresh bookings
+        fetchBookings();
+      } else {
+        toast.error(response.data.message || 'Error setting final bill');
+      }
+    } catch (error: any) {
+      console.error('Error setting final bill:', error);
+      toast.error(error.response?.data?.message || 'Failed to set final bill');
+    } finally {
+      setActionLoading(false);
+      setShowBillCollectionModal({ show: false, bookingId: '', bookingNo: '' });
+      setFinalBillAmount('');
+      setPaymentMethod('restaurant');
     }
   };
 
@@ -767,6 +834,7 @@ const AllTableBookings = () => {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Guests</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Cover Charges</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Payment Status</th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Final Bill</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Allocated Tables</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Created At</th>
@@ -777,7 +845,7 @@ const AllTableBookings = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-12 text-center">
+                  <td colSpan={12} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <TableProperties className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Table Bookings Found</h3>
@@ -813,6 +881,22 @@ const AllTableBookings = () => {
                       }`}>
                         {booking.coverChargePaymentStatus}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
+                      {booking.finalBill ? (
+                        <div>
+                          <div className="font-medium">{booking.currency?.symbol || '₹'}{booking.finalBill.amount}</div>
+                          <div className={`text-xs px-2 py-1 rounded-full inline-flex ${
+                            booking.finalBill.collectedBy === 'restaurant'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+                              : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100'
+                          }`}>
+                            {booking.finalBill.collectedBy === 'restaurant' ? 'Restaurant' : 'Via App'}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">Not Set</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       {!['completed', 'cancelled', 'expired'].includes(booking.status) ? (
@@ -976,6 +1060,106 @@ const AllTableBookings = () => {
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   )}
                   {selectedBooking.status === 'pending' ? 'Confirm & Allocate Tables' : 'Allocate Tables'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bill Collection Modal */}
+      {showBillCollectionModal.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Set Final Bill - Booking #{showBillCollectionModal.bookingNo}
+              </h2>
+              
+              {/* Payment Method Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  How will the customer pay?
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="restaurant"
+                      checked={paymentMethod === 'restaurant'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'restaurant' | 'app')}
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">Pay directly to restaurant</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay cash/card to restaurant</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="app"
+                      checked={paymentMethod === 'app'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'restaurant' | 'app')}
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">Pay via app</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay through the mobile app</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Final Bill Amount
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    value={finalBillAmount}
+                    onChange={(e) => setFinalBillAmount(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    step="1"
+                    onKeyPress={(e) => {
+                      // Prevent decimal point entry
+                      if (e.key === '.' || e.key === ',') {
+                        e.preventDefault();
+                      }
+                    }}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBillCollectionModal({ show: false, bookingId: '', bookingNo: '' });
+                    setFinalBillAmount('');
+                    setPaymentMethod('restaurant');
+                  }}
+                  disabled={actionLoading}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBillCollection}
+                  disabled={actionLoading || !finalBillAmount.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                  {paymentMethod === 'restaurant' ? 'Set Bill & Complete' : 'Set Bill Amount'}
                 </button>
               </div>
             </div>
