@@ -87,6 +87,15 @@ interface TableBooking {
   coverCharges: number;
   coverChargePaymentStatus: string;
   status: string;
+  finalBillPaymentId?: {
+    _id: string;
+    status: string;
+  };
+  finalBill?: {
+    amount: number;
+    collectedBy: 'restaurant' | 'app';
+    setAt: string;
+  };
   allocatedTables?: {
     tableNumbers: string[];
     allocatedAt: string;
@@ -456,6 +465,12 @@ const CompletedTableBookings = () => {
                   Payment Status
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Final Bill
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Bill Payment Status
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -475,7 +490,7 @@ const CompletedTableBookings = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-12 text-center">
+                  <td colSpan={12} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <TableProperties className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -515,6 +530,41 @@ const CompletedTableBookings = () => {
                       }`}>
                         {booking.coverChargePaymentStatus}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
+                      {booking.finalBill ? (
+                        <div>
+                          <div className="font-medium">{booking.currency?.symbol || '₹'}{booking.finalBill.amount}</div>
+                          <div className={`text-xs px-2 py-1 rounded-full inline-flex ${
+                            booking.finalBill.collectedBy === 'restaurant'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+                              : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100'
+                          }`}>
+                            {booking.finalBill.collectedBy === 'restaurant' ? 'Restaurant' : 'Via App'}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">Not Set</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 dark:text-white">
+                      {booking.finalBill && booking.finalBill.collectedBy === 'app' ? (
+                        booking.finalBillPaymentId ? (
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            booking.finalBillPaymentId.status === 'success'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                              : booking.finalBillPaymentId.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
+                              : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                          }`}>
+                            {booking.finalBillPaymentId.status.charAt(0).toUpperCase() + booking.finalBillPaymentId.status.slice(1)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-500 dark:text-gray-400">Pending</span>
+                        )
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(booking.status)}`}>
