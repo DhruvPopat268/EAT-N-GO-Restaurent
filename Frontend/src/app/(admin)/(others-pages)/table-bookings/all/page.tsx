@@ -525,12 +525,20 @@ const AllTableBookings = () => {
       return;
     }
 
-    // Check if transitioning from seated to completed and no finalBill
+    // Check if transitioning from seated to completed
     if (currentStatus === 'seated' && newStatus === 'completed') {
       const booking = bookings.find(b => b._id === bookingId);
-      if (booking && !booking.finalBill) {
-        setShowBillCollectionModal({ show: true, bookingId, bookingNo });
-        return;
+      if (booking) {
+        // If no final bill is set, show bill collection modal
+        if (!booking.finalBill) {
+          setShowBillCollectionModal({ show: true, bookingId, bookingNo });
+          return;
+        }
+        // If final bill is set but payment is via app, prevent transition
+        if (booking.finalBill.collectedBy === 'app') {
+          toast.error('Cannot complete booking. Customer payment via app is still pending.');
+          return;
+        }
       }
     }
 
