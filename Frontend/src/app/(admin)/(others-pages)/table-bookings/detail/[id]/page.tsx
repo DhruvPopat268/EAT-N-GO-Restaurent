@@ -69,7 +69,7 @@ const tableBookingApi = {
     if (collectedBy !== undefined) {
       payload.collectedBy = collectedBy;
     }
-
+    
     const response = await axiosInstance.patch('/api/restaurants/table-bookings/completed', payload);
     return response.data;
   },
@@ -122,11 +122,28 @@ interface TableBookingDetail {
   coverCharges: number;
   coverChargePaymentStatus: string;
   status: string;
-  finalBillPaymentId?: string;
+  finalBillPaymentId?: { _id: string; status: string } | string;
   finalBill?: {
     amount: number;
     collectedBy: 'restaurant' | 'app';
     setAt: string;
+  };
+  finalBillPaidBreakdown?: {
+    originalFinalBill: number;
+    restaurantDiscount: number;
+    adminDiscount: number;
+    coverChargesDeducted: number;
+    discountedFinalBill: number;
+  };
+  settlement?: {
+    status: string;
+    settledAt: string;
+    finalBillAmount: number;
+    restaurantDiscount: number;
+    adminDiscount: number;
+    restaurantEarn: number;
+    adminCommissionAmount: number;
+    adminCommissionInINR: number;
   };
   allocatedTables?: AllocatedTable;
   currency?: {
@@ -134,6 +151,7 @@ interface TableBookingDetail {
     name: string;
     symbol: string;
   };
+  adminCommission?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -142,7 +160,7 @@ const TableBookingDetailPage = () => {
   const params = useParams();
   const router = useRouter();
   const bookingId = params.id as string;
-
+  
   const [booking, setBooking] = useState<TableBookingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -348,7 +366,7 @@ const TableBookingDetailPage = () => {
       toast.error('Please enter a cancellation reason');
       return;
     }
-
+    
     setActionLoading(true);
     try {
       const response = await tableBookingApi.cancelBooking(showCancelModal.bookingId, cancelReason);
@@ -393,7 +411,7 @@ const TableBookingDetailPage = () => {
         } else {
           toast.success('Final bill set. Waiting for customer payment via app.');
         }
-
+        
         // Update the booking with the response data
         setBooking(response.data.data);
       } else {
@@ -434,7 +452,7 @@ const TableBookingDetailPage = () => {
   };
 
   const getPaymentStatusColor = (status: string) => {
-    return status === 'paid'
+    return status === 'paid' 
       ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
       : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
   };
@@ -466,219 +484,559 @@ const TableBookingDetailPage = () => {
     );
   }
 
-
-
   return (
-    <div className="p-6 w-full space-y-6">
-
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">
-            Booking #{booking.tableBookingNo}
-          </h1>
-
-          <div className="flex gap-2 mt-2 flex-wrap">
-            <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(booking.status)}`}>
-              {booking.status}
-            </span>
-
-            <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">
-              ₹{booking.finalBill?.amount || 0}
-            </span>
-
-            <span className="px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-700">
-              {booking.finalBill?.collectedBy === 'app' ? 'Paid via App' : 'Restaurant Payment'}
-            </span>
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center justify-center w-10 h-10 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Booking #{booking.tableBookingNo}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">Table booking details</p>
+            </div>
           </div>
+          
+          {/* Status Update Dropdown - Right Corner */}
+          {!['completed', 'cancelled', 'expired'].includes(booking.status) && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Update Status:</label>
+              <select
+                value={booking.status}
+                onChange={(e) => handleStatusChange(booking._id, booking.tableBookingNo.toString(), booking.status, e.target.value)}
+                disabled={updatingStatus}
+                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:opacity-50 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white min-w-[150px]"
+              >
+                {getAvailableStatuses(booking.status).map(status => (
+                  <option key={status} value={status} className="capitalize">
+                    {status === 'notArrived' ? 'Not Arrived' : status}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Status Badge */}
+        <div className="flex items-center gap-3">
+          <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(booking.status)}`}>
+            {booking.status === 'notArrived' ? 'Not Arrived' : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+          </span>
+          <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getPaymentStatusColor(booking.coverChargePaymentStatus)}`}>
+            Payment: {booking.coverChargePaymentStatus.charAt(0).toUpperCase() + booking.coverChargePaymentStatus.slice(1)}
+          </span>
         </div>
       </div>
 
-      {/* TOP SUMMARY */}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-
-        {/* Customer */}
-        <div className="bg-white p-5 rounded-xl shadow border">
-          <p className="text-sm text-gray-500">Customer</p>
-          <p className="font-semibold">{booking.userId.fullName}</p>
-          <p className="text-sm text-gray-500">{booking.userId.phone}</p>
+      {/* Main Content - Row 1: 3 cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Customer Information */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <User className="w-5 h-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Customer Information</h2>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Full Name</label>
+              <p className="text-sm text-gray-900 dark:text-white">{booking.userId.fullName}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</label>
+              <p className="text-sm text-gray-900 dark:text-white">{booking.userId.phone}</p>
+            </div>
+          </div>
         </div>
 
-        {/* Booking */}
-        <div className="bg-white p-5 rounded-xl shadow border">
-          <p className="text-sm text-gray-500">Booking</p>
-          <p>{formatDateToDDMMYY(booking.bookingTimings.date)}</p>
-          <p>{formatTimeTo12Hour(booking.bookingTimings.slotTime)}</p>
-          <p>{booking.numberOfGuests} guests</p>
+        {/* Booking Information */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Calendar className="w-5 h-5 text-green-600" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Booking Information</h2>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Date</label>
+              <p className="text-sm text-gray-900 dark:text-white">{formatDateToDDMMYY(booking.bookingTimings.date)}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Time Slot</label>
+              <p className="text-sm text-gray-900 dark:text-white">{formatTimeTo12Hour(booking.bookingTimings.slotTime)}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Number of Guests</label>
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-gray-500" />
+                <p className="text-sm text-gray-900 dark:text-white">{booking.numberOfGuests} guests</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Cover Charge */}
-        <div className="bg-white p-5 rounded-xl shadow border">
-          <p className="text-sm text-gray-500">Cover Charge</p>
-          <p className="text-xl font-bold">₹{booking.coverCharges}</p>
-
-          <span className={`text-xs px-2 py-1 rounded ${booking.coverChargePaymentStatus === "redeemed"
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-            }`}>
-            {booking.coverChargePaymentStatus}
-          </span>
-        </div>
-
-        {/* 🔥 NEW USER PAID CARD */}
-        <div className="bg-white p-5 rounded-xl shadow border">
-          <p className="text-sm text-gray-500">User Paid</p>
-
-          <p className="text-xl font-bold">
-            ₹{booking.finalBillPaidBreakdown?.discountedFinalBill || 0}
-          </p>
-
-          <span className={`text-xs px-2 py-1 rounded ${booking.finalBillPaymentId?.status === "success"
-              ? "bg-green-100 text-green-700"
-              : "bg-yellow-100 text-yellow-700"
-            }`}>
-            {booking.finalBillPaymentId?.status || "pending"}
-          </span>
-        </div>
-
-        {/* Tables */}
-        <div className="bg-white p-5 rounded-xl shadow border">
-          <p className="text-sm text-gray-500">Tables</p>
-          <div className="flex gap-2 mt-2 flex-wrap">
+        {/* Assigned Tables */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <MapPin className="w-5 h-5 text-orange-600" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Assigned Tables</h2>
+          </div>
+          <div className="space-y-3">
             {booking.allocatedTables?.tableNumbers?.length ? (
-              booking.allocatedTables.tableNumbers.map((t, i) => (
-                <span key={i} className="px-3 py-1 bg-blue-100 text-blue-700 rounded">
-                  {t}
-                </span>
-              ))
+              <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {booking.allocatedTables.tableNumbers.map((tableNumber, tableIndex) => (
+                    <div key={tableIndex} className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg">
+                      <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">{tableNumber}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Assigned on {formatDateToDDMMYY(booking.allocatedTables.allocatedAt)} at {formatTimeTo12Hour(new Date(booking.allocatedTables.allocatedAt).toLocaleTimeString('en-US', { hour12: false }))}
+                </p>
+              </div>
             ) : (
-              <span className="text-gray-400 text-sm">Not assigned</span>
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-gray-400">No tables assigned yet</p>
+              </div>
             )}
           </div>
         </div>
-
       </div>
 
-
-
-      {/* MAIN GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* LEFT SIDE */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* OFFER */}
-          {booking.offer && (
-            <div className="bg-white p-6 rounded-xl shadow border">
-              <h2 className="font-semibold text-lg mb-3">Offer Applied</h2>
-
-              <p className="font-medium">{booking.offer.offerName}</p>
-              <p className="text-sm text-gray-500 mb-3">
-                {booking.offer.offerDescription}
-              </p>
-
-              <div className="flex justify-between text-sm">
-                <span>Restaurant Contribution</span>
-                <span>{booking.offer.restaurantOfferPercentageOnBill}%</span>
-              </div>
-
-              <div className="flex justify-between text-sm">
-                <span>Admin Contribution</span>
-                <span>{booking.offer.adminOfferPercentageOnBill}%</span>
-              </div>
+      {/* Row 2: Payment, Bill Breakdown, Settlement */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        {/* Cover Charge Payment Info */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <CreditCard className="w-5 h-5 text-purple-600" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Cover Charge Payment Info</h2>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Cover Charges</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                {booking.currency?.symbol || '₹'}{booking.coverCharges}
+              </span>
             </div>
-          )}
-
-          {/* BILL BREAKDOWN */}
-          <div className="bg-white p-6 rounded-xl shadow border">
-            <h2 className="font-semibold text-lg mb-4">Bill Breakdown</h2>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Original Bill</span>
-                <span>₹{booking.finalBillPaidBreakdown.originalFinalBill}</span>
-              </div>
-
-              <div className="flex justify-between text-red-500">
-                <span>Restaurant Discount</span>
-                <span>-₹{booking.finalBillPaidBreakdown.restaurantDiscount}</span>
-              </div>
-
-              <div className="flex justify-between text-red-500">
-                <span>Admin Discount</span>
-                <span>-₹{booking.finalBillPaidBreakdown.adminDiscount}</span>
-              </div>
-
-              <div className="flex justify-between text-green-600">
-                <span>Cover Used</span>
-                <span>-₹{booking.finalBillPaidBreakdown.coverChargesDeducted}</span>
-              </div>
-
-              <div className="border-t pt-2 flex justify-between font-bold text-lg">
-                <span>Final Paid</span>
-                <span>₹{booking.finalBillPaidBreakdown.discountedFinalBill}</span>
-              </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Payment Status</span>
+              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPaymentStatusColor(booking.coverChargePaymentStatus)}`}>
+                {booking.coverChargePaymentStatus.charAt(0).toUpperCase() + booking.coverChargePaymentStatus.slice(1)}
+              </span>
             </div>
           </div>
-
+          
         </div>
 
-        {/* RIGHT SIDE */}
-        <div className="space-y-6">
-
-          {/* PAYMENT BREAKDOWN */}
-          <div className="bg-white p-6 rounded-xl shadow border">
-            <h2 className="font-semibold mb-3">Payment Breakdown</h2>
-
-            <div className="text-sm space-y-2">
-              <div className="flex justify-between">
-                <span>Received</span>
-                <span>₹{booking.paymentBreakdown.receivedAmount}</span>
+        {/* Final Bill Breakdown */}
+        {booking.finalBillPaidBreakdown && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <CreditCard className="w-5 h-5 text-teal-600" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Final Bill Breakdown</h2>
+            </div>
+            <div className="space-y-3">
+              {([
+                ['Original Bill', booking.finalBillPaidBreakdown.originalFinalBill],
+                ['Restaurant Discount', booking.finalBillPaidBreakdown.restaurantDiscount],
+                ['Admin Discount', booking.finalBillPaidBreakdown.adminDiscount],
+                ['Cover Charges Deducted', booking.finalBillPaidBreakdown.coverChargesDeducted],
+              ] as [string, number][]).map(([label, value]) => (
+                <div key={label} className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{booking.currency?.symbol || '₹'}{value}</span>
+                </div>
+              ))}
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-2 flex justify-between items-center">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">Discounted Final Bill</span>
+                <span className="text-base font-bold text-green-600 dark:text-green-400">{booking.currency?.symbol || '₹'}{booking.finalBillPaidBreakdown.discountedFinalBill}</span>
               </div>
+              {booking.finalBill && (
+                <div className="border-t border-gray-200 dark:border-gray-600 pt-3 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Collected By</span>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      booking.finalBill.collectedBy === 'restaurant'
+                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+                        : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100'
+                    }`}>
+                      {booking.finalBill.collectedBy === 'restaurant' ? 'Restaurant' : 'Via App'}
+                    </span>
+                  </div>
+                  {typeof booking.finalBillPaymentId === 'object' && booking.finalBillPaymentId?.status && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Payment Status</span>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        booking.finalBillPaymentId.status === 'success'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                          : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                      }`}>
+                        {booking.finalBillPaymentId.status.charAt(0).toUpperCase() + booking.finalBillPaymentId.status.slice(1)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-              <div className="flex justify-between">
-                <span>Commission ({booking.paymentBreakdown.commissionPercentage}%)</span>
-                <span>₹{booking.paymentBreakdown.commissionAmount}</span>
+        {/* Settlement */}
+        {booking.settlement && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <CreditCard className="w-5 h-5 text-indigo-600" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Settlement</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                  booking.settlement.status === 'settled'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
+                }`}>
+                  {booking.settlement.status.charAt(0).toUpperCase() + booking.settlement.status.slice(1)}
+                </span>
               </div>
-
-              <div className="flex justify-between font-semibold">
-                <span>Restaurant Share</span>
-                <span>₹{booking.paymentBreakdown.restaurantShare}</span>
+              {([
+                ['Final Bill Amount', booking.settlement.finalBillAmount],
+                ['Restaurant Discount', booking.settlement.restaurantDiscount],
+                ['Admin Discount', booking.settlement.adminDiscount],
+                ['Admin Commission', booking.settlement.adminCommissionAmount],
+              ] as [string, number][]).map(([label, value]) => (
+                <div key={label} className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{booking.currency?.symbol || '₹'}{value}</span>
+                </div>
+              ))}
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-2 flex justify-between items-center">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">Restaurant Earnings</span>
+                <span className="text-base font-bold text-green-600 dark:text-green-400">{booking.currency?.symbol || '₹'}{booking.settlement.restaurantEarn}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Settled At</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {formatDateToDDMMYY(booking.settlement.settledAt)} at {formatTimeTo12Hour(new Date(booking.settlement.settledAt).toLocaleTimeString('en-US', { hour12: false }))}
+                </span>
               </div>
             </div>
           </div>
+        )}
+      </div>
 
-          {/* SETTLEMENT */}
-          <div className="bg-white p-6 rounded-xl shadow border">
-            <h2 className="font-semibold mb-3">Settlement</h2>
-
-            <span className="px-3 py-1 rounded bg-green-100 text-green-700 text-sm">
-              {booking.settlement.status}
-            </span>
-
-            <div className="mt-3 text-sm space-y-2">
-              <div className="flex justify-between">
-                <span>Restaurant Earn</span>
-                <span>₹{booking.settlement.restaurantEarn}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span>Admin Commission</span>
-                <span>₹{booking.settlement.adminCommissionAmount}</span>
-              </div>
-            </div>
+      {/* Timestamps */}
+      <div className="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Clock className="w-5 h-5 text-gray-600" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Booking Timeline</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Created At</label>
+            <p className="text-sm text-gray-900 dark:text-white">
+              {formatDateToDDMMYY(booking.createdAt)} at {formatTimeTo12Hour(new Date(booking.createdAt).toLocaleTimeString('en-US', { hour12: false }))}
+            </p>
           </div>
-
+          <div>
+            <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</label>
+            <p className="text-sm text-gray-900 dark:text-white">
+              {formatDateToDDMMYY(booking.updatedAt)} at {formatTimeTo12Hour(new Date(booking.updatedAt).toLocaleTimeString('en-US', { hour12: false }))}
+            </p>
+          </div>
         </div>
       </div>
 
+      {/* Allocate Tables Modal */}
+      {showAllocateModal && selectedBooking && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md shadow-xl">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {selectedBooking.status === 'pending' ? 'Confirm Booking & Assign Tables' : 'Allocate Tables'}
+                </h2>
+                <button
+                  onClick={closeAllocateModal}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Booking Details */}
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Booking Details</h3>
+                <div className="space-y-1 text-sm">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">Booking #:</span> {selectedBooking.tableBookingNo}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">Customer:</span> {selectedBooking.userId.fullName}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">Guests:</span> {selectedBooking.numberOfGuests}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    <span className="font-medium">Date & Time:</span> {formatDateToDDMMYY(selectedBooking.bookingTimings.date)} at {formatTimeTo12Hour(selectedBooking.bookingTimings.slotTime)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Table Numbers Input */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Table Numbers
+                  </label>
+                  <button
+                    onClick={addTableInput}
+                    className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                  >
+                    + Add Table
+                  </button>
+                </div>
+
+                <div className="space-y-3 max-h-48 overflow-y-auto">
+                  {tableNumbers.map((tableNumber, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={tableNumber}
+                        onChange={(e) => updateTableNumber(index, e.target.value)}
+                        placeholder={`Table ${index + 1} number`}
+                        className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-gray-400 dark:focus:border-gray-500 dark:bg-gray-700 dark:text-white text-sm"
+                      />
+                      {tableNumbers.length > 1 && (
+                        <button
+                          onClick={() => removeTableInput(index)}
+                          className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 p-1"
+                          title="Remove table"
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={closeAllocateModal}
+                  disabled={allocating}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAllocateTables}
+                  disabled={allocating || tableNumbers.every(num => num.trim() === '')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {allocating && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  {selectedBooking.status === 'pending' ? 'Confirm & Allocate Tables' : 'Allocate Tables'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Confirmation Modal */}
+      {statusConfirm.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999]">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Confirm Status Update</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to update status from <span className="font-semibold capitalize">{statusConfirm.currentStatus === 'notArrived' ? 'Not Arrived' : statusConfirm.currentStatus}</span> to <span className="font-semibold capitalize">{statusConfirm.newStatus === 'notArrived' ? 'Not Arrived' : statusConfirm.newStatus}</span> for booking #{statusConfirm.bookingNo}?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setStatusConfirm({ show: false, bookingId: '', bookingNo: '', currentStatus: '', newStatus: '' })}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmStatusUpdate}
+                disabled={updatingStatus}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {updatingStatus && (
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                Update Status
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Modal */}
+      {showCancelModal.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Cancel Booking #{showCancelModal.bookingNo}
+              </h2>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Cancellation Reason
+                </label>
+                <textarea
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Enter reason for cancellation..."
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+                  rows={3}
+                  required
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCancelModal({ show: false, bookingId: '', bookingNo: '' });
+                    setCancelReason('');
+                  }}
+                  disabled={actionLoading}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleCancelBooking}
+                  disabled={actionLoading || !cancelReason.trim()}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                  Cancel Booking
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bill Collection Modal */}
+      {showBillCollectionModal.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Set Final Bill - Booking #{showBillCollectionModal.bookingNo}
+              </h2>
+              
+              {/* Payment Method Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  How will the customer pay?
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="restaurant"
+                      checked={paymentMethod === 'restaurant'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'restaurant' | 'app')}
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">Pay directly to restaurant</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay cash/card to restaurant</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="app"
+                      checked={paymentMethod === 'app'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'restaurant' | 'app')}
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">Pay via app</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay through the mobile app</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Final Bill Amount
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    value={finalBillAmount}
+                    onChange={(e) => setFinalBillAmount(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    step="1"
+                    onKeyPress={(e) => {
+                      // Prevent decimal point entry
+                      if (e.key === '.' || e.key === ',') {
+                        e.preventDefault();
+                      }
+                    }}
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBillCollectionModal({ show: false, bookingId: '', bookingNo: '' });
+                    setFinalBillAmount('');
+                    setPaymentMethod('restaurant');
+                  }}
+                  disabled={actionLoading}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBillCollection}
+                  disabled={actionLoading || !finalBillAmount.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                  {paymentMethod === 'restaurant' ? 'Set Bill & Complete' : 'Set Bill Amount'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-
-
-
-
 };
 
 export default TableBookingDetailPage;
