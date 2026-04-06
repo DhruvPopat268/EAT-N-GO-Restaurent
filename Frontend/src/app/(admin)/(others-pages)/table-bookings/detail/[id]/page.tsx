@@ -705,27 +705,33 @@ const TableBookingDetailPage = () => {
                   {booking.settlement.status.charAt(0).toUpperCase() + booking.settlement.status.slice(1)}
                 </span>
               </div>
-              {([
-                ['Final Bill Amount', booking.settlement.finalBillAmount],
-                ['Restaurant Discount', booking.settlement.restaurantDiscount],
-                ['Admin Discount', booking.settlement.adminDiscount],
-                ['Admin Commission', booking.settlement.adminCommissionAmount],
-              ] as [string, number][]).map(([label, value]) => (
-                <div key={label} className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">{booking.currency?.symbol || '₹'}{value}</span>
-                </div>
-              ))}
-              <div className="border-t border-gray-200 dark:border-gray-600 pt-2 flex justify-between items-center">
-                <span className="text-sm font-semibold text-gray-900 dark:text-white">Restaurant Earnings</span>
-                <span className="text-base font-bold text-green-600 dark:text-green-400">{booking.currency?.symbol || '₹'}{booking.settlement.restaurantEarn}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Settled At</span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {formatDateToDDMMYY(booking.settlement.settledAt)} at {formatTimeTo12Hour(new Date(booking.settlement.settledAt).toLocaleTimeString('en-US', { hour12: false }))}
-                </span>
-              </div>
+              
+              {/* Only show settlement details if status is 'settled' */}
+              {booking.settlement.status === 'settled' && (
+                <>
+                  {([
+                    ['Final Bill Amount', booking.settlement.finalBillAmount],
+                    ['Restaurant Discount', booking.settlement.restaurantDiscount],
+                    ['Admin Discount', booking.settlement.adminDiscount],
+                    ['Admin Commission', booking.settlement.adminCommissionAmount],
+                  ] as [string, number][]).map(([label, value]) => (
+                    <div key={label} className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{label}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{booking.currency?.symbol || '₹'}{value}</span>
+                    </div>
+                  ))}
+                  <div className="border-t border-gray-200 dark:border-gray-600 pt-2 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">Restaurant Earnings</span>
+                    <span className="text-base font-bold text-green-600 dark:text-green-400">{booking.currency?.symbol || '₹'}{booking.settlement.restaurantEarn}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Settled At</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {formatDateToDDMMYY(booking.settlement.settledAt)} at {formatTimeTo12Hour(new Date(booking.settlement.settledAt).toLocaleTimeString('en-US', { hour12: false }))}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

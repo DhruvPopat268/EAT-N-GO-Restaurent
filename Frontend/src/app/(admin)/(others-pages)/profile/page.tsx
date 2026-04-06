@@ -422,6 +422,7 @@ export default function Profile() {
                       type="time"
                       step="60"
                       value={data.basicInfo.operatingHours?.openTime || ''}
+                      onClick={(e) => e.target.showPicker()}
                       onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
                         ...data.basicInfo.operatingHours,
                         openTime: e.target.value
@@ -463,6 +464,7 @@ export default function Profile() {
                       type="time"
                       step="60"
                       value={data.basicInfo.operatingHours?.closeTime || ''}
+                      onClick={(e) => e.target.showPicker()}
                       onChange={(e) => handleInputChange('basicInfo', 'operatingHours', {
                         ...data.basicInfo.operatingHours,
                         closeTime: e.target.value

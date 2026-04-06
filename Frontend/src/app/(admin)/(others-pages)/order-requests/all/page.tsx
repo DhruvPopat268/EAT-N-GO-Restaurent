@@ -686,6 +686,7 @@ export default function AllOrderRequests() {
                         step="60"
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
+                        onClick={(e) => e.target.showPicker()}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                       />
                     </div>
@@ -699,6 +700,7 @@ export default function AllOrderRequests() {
                         type="time"
                         step="60"
                         value={endTime}
+                        onClick={(e) => e.target.showPicker()}
                         onChange={(e) => setEndTime(e.target.value)}
                         
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
