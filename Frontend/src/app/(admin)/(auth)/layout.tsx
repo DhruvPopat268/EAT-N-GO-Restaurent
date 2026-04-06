@@ -21,16 +21,14 @@ export default function AuthLayout({
                 <Image
                   width={231}
                   height={48}
-                  src="./images/logo/auth-logo.svg"
+                  src="/images/logo/logo.png"
                   alt="Logo"
                 />
               </Link>
             </div>
           </div>
         </div>
-        <div className="fixed bottom-6 right-6 z-50 hidden sm:block">
-          <ThemeTogglerTwo />
-        </div>
+        
       </div>
     </div>
   );

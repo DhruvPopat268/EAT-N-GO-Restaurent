@@ -135,6 +135,21 @@ const tableBookingsItems: NavItem[] = [
   }
 ];
 
+const walletItems: NavItem[] = [
+  {
+    name: "Wallet Management",
+    icon: (
+      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+        <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+      </svg>
+    ),
+    subItems: [
+      { name: "Transactions", path: "/wallet/transactions" }
+    ]
+  }
+];
+
 const othersItems: NavItem[] = [
   {
     icon: <PieChartIcon />,
@@ -175,7 +190,7 @@ const AppSidebar: React.FC = () => {
 
   const renderMenuItems = (
     navItems: NavItem[],
-    menuType: "main" | "orders" | "menu" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings" | "table-bookings"
+    menuType: "main" | "orders" | "menu" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings" | "table-bookings" | "wallet"
   ) => (
     <ul className="flex flex-col gap-4">
       {navItems.map((nav, index) => (
@@ -291,7 +306,7 @@ const AppSidebar: React.FC = () => {
   );
 
   const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings" | "table-bookings";
+    type: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings" | "table-bookings" | "wallet";
     index: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
@@ -305,8 +320,8 @@ const AppSidebar: React.FC = () => {
   useEffect(() => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
-    ["main", "orders", "menu", "others", "customer", "payment", "help", "rbac", "coupons", "ratings", "table-bookings"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : menuType === "table-bookings" ? tableBookingsItems : menuType === "orders" ? orderRequestsItems : menuType === "menu" ? menuItems : menuType === "others" ? othersItems : menuType === "customer" ? [
+    ["main", "orders", "menu", "others", "customer", "payment", "help", "rbac", "coupons", "ratings", "table-bookings", "wallet"].forEach((menuType) => {
+      const items = menuType === "main" ? navItems : menuType === "table-bookings" ? tableBookingsItems : menuType === "wallet" ? walletItems : menuType === "orders" ? orderRequestsItems : menuType === "menu" ? menuItems : menuType === "others" ? othersItems : menuType === "customer" ? [
         {
           name: "Customers",
           icon: (
@@ -387,7 +402,7 @@ const AppSidebar: React.FC = () => {
           nav.subItems.forEach((subItem) => {
             if (isActive(subItem.path)) {
               setOpenSubmenu({
-                type: menuType as "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings" | "table-bookings",
+                type: menuType as "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings" | "table-bookings" | "wallet",
                 index,
               });
               submenuMatched = true;
@@ -416,7 +431,7 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings" | "table-bookings") => {
+  const handleSubmenuToggle = (index: number, menuType: "main" | "orders" | "menu" | "others" | "customer" | "help" | "payment" | "rbac" | "coupons" | "ratings" | "table-bookings" | "wallet") => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&
@@ -524,6 +539,22 @@ return (
                 )}
               </h2>
               {renderMenuItems(tableBookingsItems, "table-bookings")}
+            </div>
+
+            <div className="">
+              <h2
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                  ? "lg:justify-center"
+                  : "justify-start"
+                  }`}
+              >
+                {isExpanded || isHovered || isMobileOpen ? (
+                  "Wallet Management"
+                ) : (
+                  <HorizontaLDots />
+                )}
+              </h2>
+              {renderMenuItems(walletItems, "wallet")}
             </div>
 
             <div className="">
