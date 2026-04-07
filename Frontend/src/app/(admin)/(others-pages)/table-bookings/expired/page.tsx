@@ -204,9 +204,7 @@ const ExpiredTableBookings = () => {
   // Fetch bookings when filters change
   useEffect(() => {
     const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
-    if (hasActiveFilters) {
-      fetchExpiredBookings(1, pagination.limit, true);
-    }
+    fetchExpiredBookings(1, pagination.limit, !!hasActiveFilters);
   }, [filters.search, filters.slot, filters.startDate, filters.endDate]);
 
   useEffect(() => {

@@ -138,6 +138,10 @@ const ServedOrdersPage = () => {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
+  // Debounced search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   // Add order notifications
   useOrderNotifications("Served Orders");
@@ -147,6 +151,20 @@ const ServedOrdersPage = () => {
   useTableBookingSocket({
     pageName: "Served Orders"
   });
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Update search when debounced search term changes
+  useEffect(() => {
+    setSearch(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
   useEffect(() => {
     fetchOrders(1);
@@ -287,8 +305,8 @@ const ServedOrdersPage = () => {
             </label>
             <input
               type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by customer name, phone, or order number..."
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
             />
@@ -329,6 +347,8 @@ const ServedOrdersPage = () => {
             <button
               onClick={() => {
                 setSearch('');
+                setSearchTerm('');
+                setDebouncedSearchTerm('');
                 setStartDate('');
                 setEndDate('');
               }}

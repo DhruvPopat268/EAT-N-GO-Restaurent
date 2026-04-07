@@ -69,7 +69,7 @@ const tableBookingApi = {
     if (collectedBy !== undefined) {
       payload.collectedBy = collectedBy;
     }
-    
+
     const response = await axiosInstance.patch('/api/restaurants/table-bookings/completed', payload);
     return response.data;
   },
@@ -160,7 +160,7 @@ const TableBookingDetailPage = () => {
   const params = useParams();
   const router = useRouter();
   const bookingId = params.id as string;
-  
+
   const [booking, setBooking] = useState<TableBookingDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -174,7 +174,7 @@ const TableBookingDetailPage = () => {
   const [allocating, setAllocating] = useState(false);
   const [showBillCollectionModal, setShowBillCollectionModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
   const [finalBillAmount, setFinalBillAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'restaurant' | 'app'>('restaurant');
+  const [paymentMethod, setPaymentMethod] = useState<'restaurant' | 'app'>('app');
 
   // Add table booking socket events
   useTableBookingSocket({
@@ -366,7 +366,7 @@ const TableBookingDetailPage = () => {
       toast.error('Please enter a cancellation reason');
       return;
     }
-    
+
     setActionLoading(true);
     try {
       const response = await tableBookingApi.cancelBooking(showCancelModal.bookingId, cancelReason);
@@ -411,7 +411,7 @@ const TableBookingDetailPage = () => {
         } else {
           toast.success('Final bill set. Waiting for customer payment via app.');
         }
-        
+
         // Update the booking with the response data
         setBooking(response.data.data);
       } else {
@@ -452,7 +452,7 @@ const TableBookingDetailPage = () => {
   };
 
   const getPaymentStatusColor = (status: string) => {
-    return status === 'paid' 
+    return status === 'paid'
       ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
       : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100';
   };
@@ -503,7 +503,7 @@ const TableBookingDetailPage = () => {
               <p className="text-gray-600 dark:text-gray-400">Table booking details</p>
             </div>
           </div>
-          
+
           {/* Status Update Dropdown - Right Corner */}
           {!['completed', 'cancelled', 'expired'].includes(booking.status) && (
             <div className="flex items-center gap-2">
@@ -582,27 +582,56 @@ const TableBookingDetailPage = () => {
 
         {/* Assigned Tables */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          {/* Header */}
           <div className="flex items-center gap-3 mb-4">
             <MapPin className="w-5 h-5 text-orange-600" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Assigned Tables</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Assigned Tables
+            </h2>
           </div>
+
+          {/* Content */}
           <div className="space-y-3">
             {booking.allocatedTables?.tableNumbers?.length ? (
               <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="flex flex-wrap gap-2 mb-2">
+
+                {/* Tables Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
                   {booking.allocatedTables.tableNumbers.map((tableNumber, tableIndex) => (
-                    <div key={tableIndex} className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg">
-                      <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">{tableNumber}</span>
+                    <div
+                      key={tableIndex}
+                      className="
+                flex items-center justify-center
+                min-h-[60px]
+                px-2 py-2
+                bg-gradient-to-br from-blue-100 to-blue-200
+                dark:from-blue-900 dark:to-blue-800
+                border border-blue-300 dark:border-blue-700
+                rounded-xl shadow-sm
+                text-center
+              "
+                    >
+                      <span className="text-sm font-semibold text-blue-900 dark:text-blue-100 leading-tight break-words">
+                        {tableNumber}
+                      </span>
                     </div>
                   ))}
                 </div>
+
+                {/* Assigned Time */}
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Assigned on {formatDateToDDMMYY(booking.allocatedTables.allocatedAt)} at {formatTimeTo12Hour(new Date(booking.allocatedTables.allocatedAt).toLocaleTimeString('en-US', { hour12: false }))}
+                  Assigned on{" "}
+                  {formatDateToDDMMYY(booking.allocatedTables.allocatedAt)} at{" "}
+                  {formatTimeTo12Hour(
+                    new Date(booking.allocatedTables.allocatedAt).toLocaleTimeString("en-US", { hour12: false })
+                  )}
                 </p>
               </div>
             ) : (
               <div className="text-center py-4">
-                <p className="text-sm text-gray-500 dark:text-gray-400">No tables assigned yet</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No tables assigned yet
+                </p>
               </div>
             )}
           </div>
@@ -631,7 +660,7 @@ const TableBookingDetailPage = () => {
               </span>
             </div>
           </div>
-          
+
         </div>
 
         {/* Final Bill Breakdown */}
@@ -661,22 +690,20 @@ const TableBookingDetailPage = () => {
                 <div className="border-t border-gray-200 dark:border-gray-600 pt-3 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Collected By</span>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      booking.finalBill.collectedBy === 'restaurant'
-                        ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
-                        : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100'
-                    }`}>
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${booking.finalBill.collectedBy === 'restaurant'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+                      : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100'
+                      }`}>
                       {booking.finalBill.collectedBy === 'restaurant' ? 'Restaurant' : 'Via App'}
                     </span>
                   </div>
                   {typeof booking.finalBillPaymentId === 'object' && booking.finalBillPaymentId?.status && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-600 dark:text-gray-400">Payment Status</span>
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        booking.finalBillPaymentId.status === 'success'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                          : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                      }`}>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${booking.finalBillPaymentId.status === 'success'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                        : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                        }`}>
                         {booking.finalBillPaymentId.status.charAt(0).toUpperCase() + booking.finalBillPaymentId.status.slice(1)}
                       </span>
                     </div>
@@ -697,15 +724,14 @@ const TableBookingDetailPage = () => {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  booking.settlement.status === 'settled'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
-                }`}>
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${booking.settlement.status === 'settled'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
+                  }`}>
                   {booking.settlement.status.charAt(0).toUpperCase() + booking.settlement.status.slice(1)}
                 </span>
               </div>
-              
+
               {/* Only show settlement details if status is 'settled' */}
               {booking.settlement.status === 'settled' && (
                 <>
@@ -950,27 +976,13 @@ const TableBookingDetailPage = () => {
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Set Final Bill - Booking #{showBillCollectionModal.bookingNo}
               </h2>
-              
+
               {/* Payment Method Selection */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   How will the customer pay?
                 </label>
                 <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="restaurant"
-                      checked={paymentMethod === 'restaurant'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'restaurant' | 'app')}
-                      className="mr-3 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">Pay directly to restaurant</span>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay cash/card to restaurant</p>
-                    </div>
-                  </label>
                   <label className="flex items-center">
                     <input
                       type="radio"
@@ -983,6 +995,20 @@ const TableBookingDetailPage = () => {
                     <div>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">Pay via app</span>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay through the mobile app</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="restaurant"
+                      checked={paymentMethod === 'restaurant'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'restaurant' | 'app')}
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">Pay directly to restaurant</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay cash/card to restaurant</p>
                     </div>
                   </label>
                 </div>
@@ -1014,14 +1040,14 @@ const TableBookingDetailPage = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="flex justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowBillCollectionModal({ show: false, bookingId: '', bookingNo: '' });
                     setFinalBillAmount('');
-                    setPaymentMethod('restaurant');
+                    setPaymentMethod('app');
                   }}
                   disabled={actionLoading}
                   className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"

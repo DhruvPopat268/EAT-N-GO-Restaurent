@@ -86,9 +86,27 @@ export default function RejectedOrderRequests() {
   const [showLocationModal, setShowLocationModal] = useState<{show: boolean, order: OrderRequest | null}>({show: false, order: null});
   const router = useRouter();
 
+  // Debounced search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
   // Add order notifications
   useOrderNotifications("Rejected Order Requests");
   useOrderRequestNotifications("Rejected Order Requests");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Update search when debounced search term changes
+  useEffect(() => {
+    setSearch(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
   useEffect(() => {
     fetchOrders(1);
@@ -146,8 +164,8 @@ export default function RejectedOrderRequests() {
             </label>
             <input
               type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by customer name, phone, or order number..."
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
             />
@@ -204,6 +222,8 @@ export default function RejectedOrderRequests() {
             <button
               onClick={() => {
                 setSearch('');
+                setSearchTerm('');
+                setDebouncedSearchTerm('');
                 setOrderTypeFilter('');
                 setStartDate('');
                 setEndDate('');

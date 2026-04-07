@@ -142,6 +142,10 @@ const ConfirmedOrdersPage = () => {
   const [orderTypeFilter, setOrderTypeFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  
+  // Debounced search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
   // Add order notifications
   useOrderNotifications("Confirmed Orders");
@@ -153,6 +157,20 @@ const ConfirmedOrdersPage = () => {
 
   const { socket, isConnected } = useSocket();
   const { showNotification } = useNotification();
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Update search when debounced search term changes
+  useEffect(() => {
+    setSearch(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
   // Real-time order updates
   useEffect(() => {
@@ -322,8 +340,8 @@ const ConfirmedOrdersPage = () => {
             </label>
             <input
               type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by customer name, phone, or order number..."
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
             />
@@ -380,6 +398,8 @@ const ConfirmedOrdersPage = () => {
             <button
               onClick={() => {
                 setSearch('');
+                setSearchTerm('');
+                setDebouncedSearchTerm('');
                 setOrderTypeFilter('');
                 setStartDate('');
                 setEndDate('');

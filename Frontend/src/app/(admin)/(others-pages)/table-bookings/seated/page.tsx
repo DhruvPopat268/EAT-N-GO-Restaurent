@@ -177,7 +177,7 @@ const SeatedTableBookings = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [showBillCollectionModal, setShowBillCollectionModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
   const [finalBillAmount, setFinalBillAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'restaurant' | 'app'>('restaurant');
+  const [paymentMethod, setPaymentMethod] = useState<'restaurant' | 'app'>('app');
   
   // Filter states
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
@@ -266,9 +266,7 @@ const SeatedTableBookings = () => {
   // Fetch bookings when filters change
   useEffect(() => {
     const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
-    if (hasActiveFilters) {
-      fetchSeatedBookings(1, pagination.limit, true);
-    }
+    fetchSeatedBookings(1, pagination.limit, !!hasActiveFilters);
   }, [filters.search, filters.slot, filters.startDate, filters.endDate]);
 
   useEffect(() => {
@@ -854,20 +852,6 @@ const SeatedTableBookings = () => {
                     <input
                       type="radio"
                       name="paymentMethod"
-                      value="restaurant"
-                      checked={paymentMethod === 'restaurant'}
-                      onChange={(e) => setPaymentMethod(e.target.value as 'restaurant' | 'app')}
-                      className="mr-3 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">Pay directly to restaurant</span>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay cash/card to restaurant</p>
-                    </div>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
                       value="app"
                       checked={paymentMethod === 'app'}
                       onChange={(e) => setPaymentMethod(e.target.value as 'restaurant' | 'app')}
@@ -876,6 +860,20 @@ const SeatedTableBookings = () => {
                     <div>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">Pay via app</span>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay through the mobile app</p>
+                    </div>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="restaurant"
+                      checked={paymentMethod === 'restaurant'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'restaurant' | 'app')}
+                      className="mr-3 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">Pay directly to restaurant</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Customer will pay cash/card to restaurant</p>
                     </div>
                   </label>
                 </div>
@@ -914,7 +912,7 @@ const SeatedTableBookings = () => {
                   onClick={() => {
                     setShowBillCollectionModal({ show: false, bookingId: '', bookingNo: '' });
                     setFinalBillAmount('');
-                    setPaymentMethod('restaurant');
+                    setPaymentMethod('app');
                   }}
                   disabled={actionLoading}
                   className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"

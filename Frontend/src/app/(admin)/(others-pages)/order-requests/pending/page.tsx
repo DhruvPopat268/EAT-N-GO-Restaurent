@@ -103,6 +103,10 @@ export default function PendingOrderRequests() {
   const [endDate, setEndDate] = useState('');
   const router = useRouter();
   
+  // Debounced search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  
   // Socket integration for notifications
   const { socket, isConnected } = useSocket();
   const { showNotification } = useNotification();
@@ -110,6 +114,20 @@ export default function PendingOrderRequests() {
   // Add order notifications
   useOrderNotifications("Pending Order Requests");
   useOrderRequestNotifications("Pending Order Requests");
+
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Update search when debounced search term changes
+  useEffect(() => {
+    setSearch(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
   // Direct socket listener for new order requests
   useEffect(() => {
@@ -261,8 +279,8 @@ export default function PendingOrderRequests() {
             </label>
             <input
               type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by customer name, phone, or order number..."
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white text-sm"
             />
@@ -319,6 +337,8 @@ export default function PendingOrderRequests() {
             <button
               onClick={() => {
                 setSearch('');
+                setSearchTerm('');
+                setDebouncedSearchTerm('');
                 setOrderTypeFilter('');
                 setStartDate('');
                 setEndDate('');

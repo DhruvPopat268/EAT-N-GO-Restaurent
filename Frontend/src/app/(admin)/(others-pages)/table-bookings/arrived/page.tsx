@@ -249,9 +249,7 @@ const ArrivedTableBookings = () => {
   // Fetch bookings when filters change
   useEffect(() => {
     const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
-    if (hasActiveFilters) {
-      fetchArrivedBookings(1, pagination.limit, true);
-    }
+    fetchArrivedBookings(1, pagination.limit, !!hasActiveFilters);
   }, [filters.search, filters.slot, filters.startDate, filters.endDate]);
 
   useEffect(() => {

@@ -230,9 +230,7 @@ const PendingTableBookings = () => {
   // Fetch bookings when filters change
   useEffect(() => {
     const hasActiveFilters = filters.search || filters.slot || filters.startDate || filters.endDate;
-    if (hasActiveFilters) {
-      fetchPendingBookings(1, pagination.limit, true);
-    }
+    fetchPendingBookings(1, pagination.limit, !!hasActiveFilters);
   }, [filters.search, filters.slot, filters.startDate, filters.endDate]);
 
   useEffect(() => {
