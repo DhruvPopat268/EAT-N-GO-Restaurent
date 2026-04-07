@@ -201,6 +201,7 @@ const AllTableBookings = () => {
   const [showBillCollectionModal, setShowBillCollectionModal] = useState<{ show: boolean, bookingId: string, bookingNo: string }>({ show: false, bookingId: '', bookingNo: '' });
   const [finalBillAmount, setFinalBillAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'restaurant' | 'app'>('app');
+  const [showBillConfirmModal, setShowBillConfirmModal] = useState<{ show: boolean, bookingId: string, bookingNo: string, amount: string, method: 'restaurant' | 'app' }>({ show: false, bookingId: '', bookingNo: '', amount: '', method: 'app' });
   const searchParams = useSearchParams();
 
   // Filter states
@@ -625,7 +626,7 @@ const AllTableBookings = () => {
     }
   };
 
-  const handleBillCollection = async () => {
+  const handleBillCollection = () => {
     if (!finalBillAmount.trim()) {
       toast.error('Please enter the final bill amount');
       return;
@@ -637,16 +638,27 @@ const AllTableBookings = () => {
       return;
     }
 
+    // Show confirmation modal
+    setShowBillConfirmModal({
+      show: true,
+      bookingId: showBillCollectionModal.bookingId,
+      bookingNo: showBillCollectionModal.bookingNo,
+      amount: finalBillAmount,
+      method: paymentMethod
+    });
+  };
+
+  const confirmBillCollection = async () => {
     setActionLoading(true);
     try {
       const response = await axiosInstance.patch('/api/restaurants/table-bookings/completed', {
-        bookingId: showBillCollectionModal.bookingId,
-        finalBillAmount: billAmount,
-        collectedBy: paymentMethod
+        bookingId: showBillConfirmModal.bookingId,
+        finalBillAmount: parseInt(showBillConfirmModal.amount),
+        collectedBy: showBillConfirmModal.method
       });
 
       if (response.data.success) {
-        if (paymentMethod === 'restaurant') {
+        if (showBillConfirmModal.method === 'restaurant') {
           toast.success('Booking completed successfully!');
         } else {
           toast.success('Final bill set. Waiting for customer payment via app.');
@@ -663,8 +675,9 @@ const AllTableBookings = () => {
     } finally {
       setActionLoading(false);
       setShowBillCollectionModal({ show: false, bookingId: '', bookingNo: '' });
+      setShowBillConfirmModal({ show: false, bookingId: '', bookingNo: '', amount: '', method: 'app' });
       setFinalBillAmount('');
-      setPaymentMethod('restaurant');
+      setPaymentMethod('app');
     }
   };
 
@@ -1184,10 +1197,9 @@ const AllTableBookings = () => {
                 </button>
                 <button
                   onClick={handleBillCollection}
-                  disabled={actionLoading || !finalBillAmount.trim()}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                  disabled={!finalBillAmount.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                 >
-                  {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
                   {paymentMethod === 'restaurant' ? 'Set Bill & Complete' : 'Set Bill Amount'}
                 </button>
               </div>
@@ -1277,6 +1289,79 @@ const AllTableBookings = () => {
                 >
                   {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
                   Cancel Booking
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bill Confirmation Modal */}
+      {showBillConfirmModal.show && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[99999] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Confirm Final Bill
+              </h2>
+              
+              <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                      Important Notice
+                    </h3>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                      Once the final bill is set, you cannot change the amount or payment method.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Booking Number:</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">#{showBillConfirmModal.bookingNo}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Final Bill Amount:</span>
+                  <span className="text-lg font-bold text-green-600 dark:text-green-400">₹{showBillConfirmModal.amount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Payment Method:</span>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    showBillConfirmModal.method === 'restaurant'
+                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+                      : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100'
+                  }`}>
+                    {showBillConfirmModal.method === 'restaurant' ? 'Pay to Restaurant' : 'Pay via App'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowBillConfirmModal({ show: false, bookingId: '', bookingNo: '', amount: '', method: 'app' });
+                  }}
+                  disabled={actionLoading}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBillCollection}
+                  disabled={actionLoading}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {actionLoading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                  Confirm & {showBillConfirmModal.method === 'restaurant' ? 'Complete Booking' : 'Set Final Bill'}
                 </button>
               </div>
             </div>
